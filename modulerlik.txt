@@ -1,0 +1,25 @@
+faaliyet_takip/
+├── gui/
+│   ├── __init__.py
+│   ├── main_window.py         # Ana arayüz (ekle, tema, yönlendirme)
+│   ├── list_window.py         # Listeleme ve filtreleme ekranı
+│   ├── stats_window.py        # İstatistik ve grafik ekranı
+│   ├── edit_window.py         # Kayıt düzenleme penceresi
+│   └── widgets.py             # Ortak bileşenler (tarih seçici, vs.)
+
+
+proje/
+│
+├── main.py
+├── database.py
+├── models.py
+├── utils.py
+├── gui/
+│   ├── __init__.py
+│   ├── main_window.py
+│   ├── widgets/
+│   │   └── date_picker.py
+│   └── screens/
+│       ├── list_window.py
+│       ├── stats_window.py
+│       └── edit_window.py
