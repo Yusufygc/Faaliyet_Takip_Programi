@@ -111,7 +111,7 @@ def open_list_window():
         open_edit_window(activity, list_filtered_activities)
 
     button_frame = ctk.CTkFrame(list_window)
-    button_frame.pack(pady=10)
+    button_frame.pack(pady=20)
 
     ctk.CTkButton(filter_frame, text="Filtrele", command=list_filtered_activities).grid(row=0, column=6, padx=10)
     ctk.CTkButton(button_frame, text="Seçili Kaydı Sil", command=delete_selected).pack(side="left", padx=10)
