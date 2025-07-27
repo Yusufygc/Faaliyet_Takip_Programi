@@ -1,4 +1,12 @@
 from datetime import datetime
+from collections import Counter
+
+def sayim_yap_kategorilere_gore(rows):
+    """
+    Gelen kayıtlar arasında 'type' alanına göre sayım yapar.
+    """
+    turler = [row[1] for row in rows]  # index 1 = type
+    return Counter(turler)
 
 def is_valid_yyyymm(date_str):
     try:
