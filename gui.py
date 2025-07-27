@@ -120,11 +120,10 @@ def open_edit_window(activity: Activity):
 
     ctk.CTkButton(edit_win, text="Güncelle", command=update_activity).pack(pady=15)
 
-
 def open_list_window():
     list_win = ctk.CTkToplevel()
-    list_win.title("Kayıtları Listele ve Filtrele")
-    list_win.geometry("950x600")
+    list_win.title("Kayıtları Listele")
+    list_win.geometry("900x600")
 
     filter_frame = ctk.CTkFrame(list_win)
     filter_frame.pack(pady=10, padx=10, fill="x")
@@ -134,21 +133,20 @@ def open_list_window():
     filter_type_dropdown = ctk.CTkOptionMenu(filter_frame, variable=filter_type_var, values=[""].__add__(FAALIYET_TURLERI))
     filter_type_dropdown.grid(row=0, column=1, padx=5)
 
-    ctk.CTkLabel(filter_frame, text="Tarih (YYYY-MM):").grid(row=0, column=2, padx=5)
-    filter_date_entry = ctk.CTkEntry(filter_frame, width=120)
-    filter_date_entry.grid(row=0, column=3, padx=5)
+    ctk.CTkLabel(filter_frame, text="Tarih:").grid(row=0, column=2, padx=5)
+    date_picker = build_month_year_picker(filter_frame)
+    date_picker.grid(row=0, column=3, padx=5)
 
     ctk.CTkLabel(filter_frame, text="İsim:").grid(row=0, column=4, padx=5)
-    filter_name_entry = ctk.CTkEntry(filter_frame, width=120)
+    filter_name_entry = ctk.CTkEntry(filter_frame)
     filter_name_entry.grid(row=0, column=5, padx=5)
 
-    tree = ttk.Treeview(list_win, columns=("ID", "Tür", "Ad", "Tarih", "Yorum", "Puan"), show="headings", height=20)
+    tree = ttk.Treeview(list_win, columns=("ID", "Tür", "Ad", "Tarih", "Yorum", "Puan"), show="headings")
     for col in tree["columns"]:
         tree.heading(col, text=col)
-        tree.column(col, width=130)
     tree.pack(padx=10, pady=10, fill="both", expand=True)
 
-    def list_filtered_activities():
+    def list_filtered():
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -159,17 +157,10 @@ def open_list_window():
             query += " AND type = ?"
             params.append(filter_type_var.get())
 
-        tarih_input = filter_date_entry.get().strip()
-        if tarih_input:
-            if is_valid_yyyymm(tarih_input):
-                query += " AND date = ?"
-                params.append(tarih_input)
-            elif is_valid_yyyy(tarih_input):
-                query += " AND date LIKE ?"
-                params.append(tarih_input + "%")
-            else:
-                messagebox.showerror("Hatalı tarih", "Tarih formatı YYYY veya YYYY-MM olmalı.")
-                return
+        tarih = get_formatted_date_from_picker(date_picker)
+        if tarih:
+            query += " AND date = ?"
+            params.append(tarih)
 
         if filter_name_entry.get():
             query += " AND name LIKE ?"
@@ -213,12 +204,12 @@ def open_list_window():
 
     button_frame = ctk.CTkFrame(list_win)
     button_frame.pack(pady=10)
-
-    ctk.CTkButton(filter_frame, text="Filtrele", command=list_filtered_activities).grid(row=0, column=6, padx=10)
+    ctk.CTkButton(filter_frame, text="Filtrele", command=list_filtered).grid(row=0, column=6, padx=10)
     ctk.CTkButton(button_frame, text="Seçili Kaydı Sil", command=delete_selected).pack(side="left", padx=10)
     ctk.CTkButton(button_frame, text="Seçili Kaydı Düzenle", command=edit_selected).pack(side="left", padx=10)
 
-    list_filtered_activities()
+    list_filtered()
+
 
 def open_stats_window():
     stats_win = ctk.CTkToplevel()
