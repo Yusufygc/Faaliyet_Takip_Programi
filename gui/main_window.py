@@ -1,89 +1,52 @@
-# main_window.py
+# main_window.py (güncellenmiş)
 import customtkinter as ctk
-import tkinter as tk
-from tkinter import messagebox
-from gui.list_window import open_list_window
-from gui.stats_window import open_stats_window
-from gui.widgets import build_month_year_picker, get_formatted_date_from_picker
-from database import get_connection
-from models import Activity
-from tkinter import messagebox
+from gui.add_page import AddPage
+from gui.list_page import ListPage
+from gui.edit_page import EditPage
+from gui.stats_page import StatsPage
 
-FAALIYET_TURLERI = ["dizi", "film", "kitap", "oyun", "kurs", "şehir"]
+class MainWindow(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Faaliyet Takip Uygulaması")
+        self.geometry("800x700")
 
-def add_activity(type_var, name_entry, date_picker_frame, comment_entry, rating_entry):
-    conn = get_connection()
-    cursor = conn.cursor()
-    try:
-        formatted_date = get_formatted_date_from_picker(date_picker_frame)
+        self.pages = {}
 
-        cursor.execute('''
-            INSERT INTO activities (type, name, date, comment, rating)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (
-            type_var.get(),
-            name_entry.get(),
-            formatted_date,
-            comment_entry.get(),
-            int(rating_entry.get() or 0)
-        ))
-        conn.commit()
-        messagebox.showinfo("Başarılı", "Faaliyet eklendi!")
-    except Exception as e:
-        messagebox.showerror("Hata", f"Bir hata oluştu:\n{e}")
-    finally:
-        conn.close()
+        nav_frame = ctk.CTkFrame(self)
+        nav_frame.pack(side="top", fill="x")
+
+        ctk.CTkButton(nav_frame, text="Ekle", command=self.show_add_page).pack(side="left", padx=5, pady=5)
+        ctk.CTkButton(nav_frame, text="Listele", command=self.show_list_page).pack(side="left", padx=5, pady=5)
+        ctk.CTkButton(nav_frame, text="İstatistik", command=self.show_stats_page).pack(side="left", padx=5, pady=5)
+
+        container = ctk.CTkFrame(self)
+        container.pack(fill="both", expand=True)
+
+        self.pages["add"] = AddPage(container, self)
+        self.pages["list"] = ListPage(container, self)
+        self.pages["edit"] = EditPage(container, self)
+        self.pages["stats"] = StatsPage(container, self)
+
+        for page in self.pages.values():
+            page.grid(row=0, column=0, sticky="nsew")
+
+        self.show_add_page()
+
+    def show_add_page(self):
+        self.pages["add"].tkraise()
+
+    def show_list_page(self):
+        self.pages["list"].list_filtered_activities()
+        self.pages["list"].tkraise()
+
+    def show_edit_page(self, activity):
+        self.pages["edit"].load_activity(activity)
+        self.pages["edit"].tkraise()
+
+    def show_stats_page(self):
+        self.pages["stats"].tkraise()
 
 def run_gui():
-    window = ctk.CTk()
-    window.title("Faaliyet Takip Uygulaması")
-    window.geometry("500x600")
-
-    def ekle_callback():
-        try:
-            date = get_formatted_date_from_picker(date_picker)
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO activities (type, name, date, comment, rating)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                type_var.get(),
-                name_entry.get(),
-                date,
-                comment_textbox.get("0.0", "end").strip(),
-                int(rating_var.get())
-            ))
-            conn.commit()
-            conn.close()
-            messagebox.showinfo("Başarılı", "Faaliyet eklendi!")
-        except Exception as e:
-            messagebox.showerror("Hata", str(e))
-
-    ctk.CTkLabel(window, text="Tür").pack(pady=(10, 2))
-    type_var = ctk.StringVar(value="dizi")
-    type_menu = ctk.CTkOptionMenu(window, variable=type_var, values=["dizi", "film", "kitap", "oyun", "kurs", "şehir"])
-    type_menu.pack(pady=2)
-
-    ctk.CTkLabel(window, text="Adı").pack(pady=2)
-    name_entry = ctk.CTkEntry(window, width=300)
-    name_entry.pack(pady=2)
-
-    ctk.CTkLabel(window, text="Tarih (YYYY-MM)").pack(pady=2)
-    date_picker = build_month_year_picker(window)
-    date_picker.pack(pady=2)
-
-    ctk.CTkLabel(window, text="Yorum").pack(pady=2)
-    comment_textbox = ctk.CTkTextbox(window, width=300, height=100)
-    comment_textbox.pack(pady=2)
-
-    ctk.CTkLabel(window, text="Puan (1-10)").pack(pady=2)
-    rating_var = ctk.StringVar(value="10")
-    rating_menu = ctk.CTkOptionMenu(window, variable=rating_var, values=[str(i) for i in range(1, 11)])
-    rating_menu.pack(pady=2)
-
-    ctk.CTkButton(window, text="Ekle", command=ekle_callback).pack(pady=10)
-    ctk.CTkButton(window, text="Kayıtları Listele", command=open_list_window).pack(pady=5)
-    ctk.CTkButton(window, text="İstatistikler", command=open_stats_window).pack(pady=5)
-
-    window.mainloop()
+    app = MainWindow()
+    app.mainloop()
