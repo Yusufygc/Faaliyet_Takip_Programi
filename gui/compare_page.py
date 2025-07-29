@@ -298,7 +298,8 @@ class ComparePage(ctk.CTkFrame):
         
         self.first_date_var = ctk.StringVar()
         self.first_date_menu = ctk.CTkOptionMenu(first_date_frame, variable=self.first_date_var,
-                                               values=["Tarih seçin..."])
+                                               values=["Tarih seçin..."],
+                                               command=self.on_date_selection_change)
         self.first_date_menu.pack(pady=(0, 10), padx=20, fill="x")
         
         # İkinci tarih seçimi
@@ -310,7 +311,8 @@ class ComparePage(ctk.CTkFrame):
         
         self.second_date_var = ctk.StringVar()
         self.second_date_menu = ctk.CTkOptionMenu(second_date_frame, variable=self.second_date_var,
-                                                values=["Tarih seçin..."])
+                                                values=["Tarih seçin..."],
+                                                command=self.on_date_selection_change)
         self.second_date_menu.pack(pady=(0, 10), padx=20, fill="x")
         
         # Uyarı mesajı alanı
@@ -335,6 +337,10 @@ class ComparePage(ctk.CTkFrame):
         # İlk yükleme
         self.update_date_options()
 
+    def on_date_selection_change(self, selected_value):
+        """Tarih seçimi değiştiğinde uyarıları temizle"""
+        self.warning_label.configure(text="")
+
     def on_type_change(self):
         """Karşılaştırma tipi değiştiğinde çağrılır"""
         self.comparison_type = self.type_var.get()
@@ -356,10 +362,17 @@ class ComparePage(ctk.CTkFrame):
         self.first_date_menu.configure(values=display_options)
         self.second_date_menu.configure(values=display_options)
         
-        # Seçimleri sıfırla
+        # Seçimleri sıfırla - farklı değerler ata
         if display_options and display_options[0] != "Veri bulunamadı":
-            self.first_date_var.set(display_options[0] if len(display_options) > 0 else "")
-            self.second_date_var.set(display_options[1] if len(display_options) > 1 else display_options[0])
+            # İlk dropdown için ilk seçeneği ata
+            self.first_date_var.set(display_options[0])
+            
+            # İkinci dropdown için farklı bir seçenek ata
+            if len(display_options) > 1:
+                self.second_date_var.set(display_options[1])
+            else:
+                # Tek seçenek varsa, kullanıcının manuel seçim yapmasını bekle
+                self.second_date_var.set("Tarih seçin...")
         else:
             self.first_date_var.set("Veri bulunamadı")
             self.second_date_var.set("Veri bulunamadı")
@@ -401,12 +414,30 @@ class ComparePage(ctk.CTkFrame):
             self.warning_label.configure(text="⚠️ Tarih seçiminde hata oluştu.")
             return
         
-        # Verileri çek ve karşılaştır
-        first_data = self.fetch_data_by_date(first_period)
-        second_data = self.fetch_data_by_date(second_period)
+        # Kronolojik sıralama yap (küçük tarih solda, büyük tarih sağda)
+        if self.comparison_type == "month":
+            # Ay karşılaştırması: YYYY-MM formatında karşılaştır
+            if first_period < second_period:
+                left_period, left_display = first_period, first_display
+                right_period, right_display = second_period, second_display
+            else:
+                left_period, left_display = second_period, second_display
+                right_period, right_display = first_period, first_display
+        else:
+            # Yıl karşılaştırması: YYYY formatında karşılaştır
+            if int(first_period) < int(second_period):
+                left_period, left_display = first_period, first_display
+                right_period, right_display = second_period, second_display
+            else:
+                left_period, left_display = second_period, second_display
+                right_period, right_display = first_period, first_display
         
-        # Karşılaştırmayı göster
-        self.display_comparison(second_display, first_display, second_data, first_data)
+        # Verileri çek
+        left_data = self.fetch_data_by_date(left_period)
+        right_data = self.fetch_data_by_date(right_period)
+        
+        # Karşılaştırmayı doğru sırayla göster (sol = eski/küçük, sağ = yeni/büyük)
+        self.display_comparison(right_display, left_display, right_data, left_data)
         
         # Modal'ı kapat
         self.close_date_modal()
