@@ -1,11 +1,10 @@
-import matplotlib
-matplotlib.use('Agg')
+# pdfcreate_page.py
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from datetime import datetime
 import os
 from database import get_connection
-# pdfcreate_page.py
+
 def create_statistics_pdf(pdf_params):
     """
     İstatistik verilerine göre PDF raporu oluşturur
