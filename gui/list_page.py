@@ -1,4 +1,3 @@
-# list_page.py
 import customtkinter as ctk
 from tkinter import messagebox, ttk
 from models import Activity
@@ -14,32 +13,41 @@ class ListPage(ctk.CTkFrame):
         self.controller = controller
 
         self.selected_year_only = ctk.BooleanVar(value=False)
+        self.current_page = 1
+        self.items_per_page = 15  # Her sayfada gösterilecek öğe sayısı
 
-        self.grid_rowconfigure(2, weight=1)
-        self.grid_columnconfigure(0, weight=1)
+        # Ana çerçevenin grid yapılandırması
+        self.grid_rowconfigure(1, weight=1) # Treeview'in dikeyde genişlemesi için
+        self.grid_columnconfigure(0, weight=1) # Tek sütunun yatayda genişlemesi için
+        self.grid_rowconfigure(2, weight=0) # Kontrol butonları satırı dikeyde genişlemesin
 
+        # Genel boşluk değeri
+        padding_value = 12 # Tüm butonlar ve öğeler arası boşluk için
+
+        # --- Filtreleme Çerçevesi ---
         filter_frame = ctk.CTkFrame(self)
         filter_frame.grid(row=0, column=0, pady=10, padx=10, sticky="ew")
 
-        ctk.CTkLabel(filter_frame, text="Tür:").grid(row=0, column=0, padx=5)
-        self.filter_type_var = ctk.StringVar() #value=FAALIYET_TURLERI[0]
+        ctk.CTkLabel(filter_frame, text="Tür:").grid(row=0, column=0, padx=padding_value/2)
+        self.filter_type_var = ctk.StringVar()
         filter_type_dropdown = ctk.CTkOptionMenu(filter_frame, variable=self.filter_type_var, values=FAALIYET_TURLERI)
-        filter_type_dropdown.grid(row=0, column=1, padx=5)
+        filter_type_dropdown.grid(row=0, column=1, padx=padding_value/2)
 
-        ctk.CTkLabel(filter_frame, text="Tarih:").grid(row=0, column=2, padx=5)
+        ctk.CTkLabel(filter_frame, text="Tarih:").grid(row=0, column=2, padx=padding_value/2)
         self.date_picker = build_month_year_picker(filter_frame)
-        self.date_picker.grid(row=0, column=3, padx=5)
+        self.date_picker.grid(row=0, column=3, padx=padding_value/2)
 
         self.year_only_checkbox = ctk.CTkCheckBox(filter_frame, text="Sadece yıla göre", variable=self.selected_year_only)
-        self.year_only_checkbox.grid(row=0, column=4, padx=5)
+        self.year_only_checkbox.grid(row=0, column=4, padx=padding_value/2)
 
-        ctk.CTkLabel(filter_frame, text="İsim:").grid(row=0, column=5, padx=5)
+        ctk.CTkLabel(filter_frame, text="İsim:").grid(row=0, column=5, padx=padding_value/2)
         self.filter_name_entry = ctk.CTkEntry(filter_frame, width=120)
-        self.filter_name_entry.grid(row=0, column=6, padx=5)
+        self.filter_name_entry.grid(row=0, column=6, padx=padding_value/2)
 
-        ctk.CTkButton(filter_frame, text="Filtrele", command=self.list_filtered_activities).grid(row=0, column=7, padx=10)
+        ctk.CTkButton(filter_frame, text="Filtrele", command=self.list_filtered_activities).grid(row=0, column=7, padx=padding_value)
 
-        self.tree = ttk.Treeview(self, columns=("Tür", "Ad", "Tarih", "Yorum", "Puan"), show="headings", height=20)
+        # --- Treeview ---
+        self.tree = ttk.Treeview(self, columns=("Tür", "Ad", "Tarih", "Yorum", "Puan"), show="headings", height=self.items_per_page)
         style = ttk.Style()
         style.configure("Treeview.Heading", font=("Segoe UI", 12, "bold"))
         style.configure("Treeview", font=("Segoe UI", 11), rowheight=28)
@@ -48,12 +56,51 @@ class ListPage(ctk.CTkFrame):
             self.tree.column(col, width=180, anchor="center")
         self.tree.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-        button_frame = ctk.CTkFrame(self)
-        button_frame.grid(row=2, column=0, pady=10)
+        # --- Ana Kontrol Butonları Çerçevesi (Yeni Birleştirilmiş) ---
+        main_control_frame = ctk.CTkFrame(self, fg_color="transparent")
+        main_control_frame.grid(row=2, column=0, pady=padding_value, padx=padding_value, sticky="ew")
+        
+        # main_control_frame içindeki sütun yapılandırması
+        # Ortadaki 'button_group_frame'i merkeze hizalamak için yan sütunlara ağırlık veriyoruz
+        main_control_frame.grid_columnconfigure(0, weight=1) 
+        main_control_frame.grid_columnconfigure(1, weight=0) # İçerik bloğunun bulunduğu sütun (ağırlık 0)
+        main_control_frame.grid_columnconfigure(2, weight=1)
 
-        ctk.CTkButton(button_frame, text="Seçili Kaydı Sil", command=self.delete_selected).pack(side="left", padx=10)
-        ctk.CTkButton(button_frame, text="Düzenle", command=self.edit_selected).pack(side="left", padx=10)
-        ctk.CTkButton(button_frame, text="Yenile", command=self.refresh_all).pack(side="left", padx=10)
+        # Buton gruplarını içeren ana çerçeve
+        button_group_frame = ctk.CTkFrame(main_control_frame, fg_color="transparent")
+        button_group_frame.grid(row=0, column=1, sticky="nsew") # main_control_frame'in ortasında
+        
+        # button_group_frame içindeki sütun yapılandırması (içeriklerin genişlemesi için)
+        button_group_frame.grid_columnconfigure((0, 1, 2), weight=1)
+
+        # --- Sol Dikey Blok: Seçili Kaydı Sil ve Önceki ---
+        left_block_frame = ctk.CTkFrame(button_group_frame, fg_color="transparent")
+        left_block_frame.grid(row=0, column=0, sticky="ew", padx=padding_value/2)
+        left_block_frame.grid_columnconfigure(0, weight=1) 
+
+        ctk.CTkButton(left_block_frame, text="Seçili Kaydı Sil", command=self.delete_selected).grid(row=0, column=0, pady=(0, padding_value/2), padx=padding_value/2)
+        self.prev_button = ctk.CTkButton(left_block_frame, text="Önceki", command=self.go_to_previous_page)
+        self.prev_button.grid(row=1, column=0, pady=(padding_value/2, 0), padx=padding_value/2)
+
+        # --- Orta Dikey Blok: Düzenle ve Sayfa Sayısı ---
+        middle_block_frame = ctk.CTkFrame(button_group_frame, fg_color="transparent")
+        middle_block_frame.grid(row=0, column=1, sticky="ew", padx=padding_value/2)
+        middle_block_frame.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkButton(middle_block_frame, text="Düzenle", command=self.edit_selected).grid(row=0, column=0, pady=(0, padding_value/2), padx=padding_value/2)
+        self.page_info_label = ctk.CTkLabel(middle_block_frame, text="Sayfa 1/1", font=ctk.CTkFont(size=14, weight="bold"))
+        self.page_info_label.grid(row=1, column=0, pady=(padding_value/2, 0), padx=padding_value/2)
+
+
+        # --- Sağ Dikey Blok: Yenile ve Sonraki ---
+        right_block_frame = ctk.CTkFrame(button_group_frame, fg_color="transparent")
+        right_block_frame.grid(row=0, column=2, sticky="ew", padx=padding_value/2)
+        right_block_frame.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkButton(right_block_frame, text="Yenile", command=self.refresh_all).grid(row=0, column=0, pady=(0, padding_value/2), padx=padding_value/2)
+        self.next_button = ctk.CTkButton(right_block_frame, text="Sonraki", command=self.go_to_next_page)
+        self.next_button.grid(row=1, column=0, pady=(padding_value/2, 0), padx=padding_value/2)
+
 
         # Minimum pencere boyutu
         self.controller.wm_minsize(800, 600)
@@ -61,70 +108,131 @@ class ListPage(ctk.CTkFrame):
         self.refresh_all()
 
     def refresh_all(self):
+        self.current_page = 1
         self.list_filtered_activities(ignore_filters=True)
 
     def list_filtered_activities(self, ignore_filters=False):
         conn = get_connection()
         cursor = conn.cursor()
 
-        query = "SELECT * FROM activities WHERE 1=1"
+        where_clauses = ["1=1"]
         params = []
 
         if not ignore_filters:
             if self.filter_type_var.get():
-                query += " AND type = ?"
+                where_clauses.append("type = ?")
                 params.append(self.filter_type_var.get())
 
-            date = get_formatted_date_from_picker(self.date_picker)
+            date_str = get_formatted_date_from_picker(self.date_picker)
             if self.selected_year_only.get():
-                query += " AND date LIKE ?"
-                params.append(date[:4] + "%")
+                if is_valid_yyyy(date_str[:4]):
+                    where_clauses.append("date LIKE ?")
+                    params.append(date_str[:4] + "%")
+                else:
+                    messagebox.showwarning("Geçersiz Yıl", "Lütfen geçerli bir yıl girin (YYYY).")
+                    conn.close()
+                    return
             else:
-                query += " AND date = ?"
-                params.append(date)
+                if is_valid_yyyymm(date_str):
+                    where_clauses.append("date = ?")
+                    params.append(date_str)
+                else:
+                    messagebox.showwarning("Geçersiz Tarih", "Lütfen geçerli bir tarih girin (YYYY-MM).")
+                    conn.close()
+                    return
 
             name = self.filter_name_entry.get().strip()
             if name:
-                query += " AND name LIKE ?"
+                where_clauses.append("name LIKE ?")
                 params.append(f"%{name}%")
 
-        cursor.execute(query, params)
+        full_where_clause = " WHERE " + " AND ".join(where_clauses)
+
+        count_query = f"SELECT COUNT(*) FROM activities {full_where_clause}"
+        cursor.execute(count_query, params)
+        total_activities = cursor.fetchone()[0]
+        self.total_pages = (total_activities + self.items_per_page - 1) // self.items_per_page
+
+        offset = (self.current_page - 1) * self.items_per_page
+        data_query = f"SELECT * FROM activities {full_where_clause} LIMIT ? OFFSET ?"
+        data_params = params + [self.items_per_page, offset]
+
+        cursor.execute(data_query, data_params)
         rows = cursor.fetchall()
         conn.close()
 
         self.tree.delete(*self.tree.get_children())
-        for row in rows:
-            activity = Activity.from_row(row)
-            self.tree.insert("", "end", values=(activity.type, activity.name, activity.date, activity.comment, activity.rating), tags=(activity.id,))
+        if not rows:
+            self.tree.insert("", "end", values=("", "Gösterilecek veri bulunamadı.", "", "", ""), tags=("no_data",))
+            self.page_info_label.configure(text="Sayfa 0/0")
+            self.prev_button.configure(state="disabled")
+            self.next_button.configure(state="disabled")
+        else:
+            for row in rows:
+                activity = Activity.from_row(row)
+                self.tree.insert("", "end", values=(activity.type, activity.name, activity.date, activity.comment, activity.rating), tags=(activity.id,))
+
+            self.page_info_label.configure(text=f"Sayfa {self.current_page}/{self.total_pages}")
+            self.prev_button.configure(state="normal" if self.current_page > 1 else "disabled")
+            self.next_button.configure(state="normal" if self.current_page < self.total_pages else "disabled")
+
+
+    def go_to_previous_page(self):
+        if self.current_page > 1:
+            self.current_page -= 1
+            self.list_filtered_activities()
+            self.reset_scroll_position()
+
+    def go_to_next_page(self):
+        if self.current_page < self.total_pages:
+            self.current_page += 1
+            self.list_filtered_activities()
+            self.reset_scroll_position()
+
+    def reset_scroll_position(self):
+        self.tree.yview_moveto(0)
 
     def delete_selected(self):
         selected = self.tree.selection()
         if not selected:
             messagebox.showwarning("Uyarı", "Lütfen silmek için bir kayıt seçin.")
             return
+        
+        item_tags = self.tree.item(selected[0], "tags")
+        if "no_data" in item_tags:
+            messagebox.showinfo("Bilgi", "Seçilen öğe silinemez.")
+            return
 
         item = self.tree.item(selected[0])
-        name = item["values"][1]
-        date = item["values"][2]
+        activity_id = item["tags"][0]
+
 
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM activities WHERE name = ? AND date = ?", (name, date))
+        cursor.execute("DELETE FROM activities WHERE id = ?", (activity_id,))
         conn.commit()
         conn.close()
 
-        self.tree.delete(selected[0])
         messagebox.showinfo("Başarılı", "Kayıt silindi.")
-        self.refresh_all()
+        if self.current_page > self.total_pages and self.current_page > 1:
+            self.current_page -= 1
+        self.list_filtered_activities()
+
 
     def edit_selected(self):
         selected = self.tree.selection()
         if not selected:
             messagebox.showwarning("Uyarı", "Lütfen düzenlemek için bir kayıt seçin.")
             return
+        
+        item_tags = self.tree.item(selected[0], "tags")
+        if "no_data" in item_tags:
+            messagebox.showinfo("Bilgi", "Seçilen öğe düzenlenemez.")
+            return
 
         item = self.tree.item(selected[0])
         values = item["values"]
         item_id = self.tree.item(selected[0], "tags")[0]
+
         activity = Activity(item_id, *values)
         self.controller.show_edit_page(activity)
