@@ -8,11 +8,13 @@ def build_month_year_picker(parent):
     frame = ctk.CTkFrame(parent, fg_color="transparent")
 
     now = datetime.now()
-    years = [str(y) for y in range(now.year - 10, now.year + 1)]
-    months = [f"{m:02d}" for m in range(1, 13)]
+    # Yıllar ve aylar listesine boş string ("") seçeneği eklendi
+    years = [""] + [str(y) for y in range(now.year - 10, now.year + 1)]
+    months = [""] + [f"{m:02d}" for m in range(1, 13)]
 
-    year_var = ctk.StringVar(value=str(now.year))
-    month_var = ctk.StringVar(value=f"{now.month:02d}")
+    # Varsayılan değerler boş string olarak ayarlandı
+    year_var = ctk.StringVar(value="")
+    month_var = ctk.StringVar(value="")
 
     year_menu = ctk.CTkOptionMenu(frame, variable=year_var, values=years)
     month_menu = ctk.CTkOptionMenu(frame, variable=month_var, values=months)
@@ -29,4 +31,9 @@ def get_formatted_date_from_picker(picker_frame):
     """build_month_year_picker ile oluşturulmuş picker'dan YYYY-MM formatında tarih döndürür."""
     year = picker_frame.year_var.get()
     month = picker_frame.month_var.get()
-    return f"{year}-{month}"
+
+    if year and month:
+        return f"{year}-{month}"
+    elif year: # Sadece yıl seçiliyse
+        return year
+    return "" # Hiçbir şey seçilmemişse boş döndür
