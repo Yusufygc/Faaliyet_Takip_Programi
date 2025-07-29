@@ -4,6 +4,7 @@ from gui.add_page import AddPage
 from gui.list_page import ListPage
 from gui.edit_page import EditPage
 from gui.stats_page import StatsPage
+from gui.compare_page import ComparePage
 
 class MainWindow(ctk.CTk):
     def __init__(self):
@@ -39,7 +40,8 @@ class MainWindow(ctk.CTk):
             "add": AddPage(self.page_container, self),
             "list": ListPage(self.page_container, self),
             "stats": StatsPage(self.page_container, self),
-            "edit": EditPage(self.page_container, self)
+            "edit": EditPage(self.page_container, self),
+            "compare": ComparePage(self.page_container, self)
         }
 
         for page in self.pages.values():
@@ -59,6 +61,10 @@ class MainWindow(ctk.CTk):
     def show_edit_page(self, activity):
         self.pages["edit"].load_activity(activity)
         self.pages["edit"].tkraise()
+
+    def show_compare_page(self):
+        self.pages["compare"].tkraise()
+
 
 def run_gui():
     app = MainWindow()
