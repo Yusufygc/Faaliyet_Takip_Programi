@@ -1,3 +1,6 @@
+# utils.py
+import os
+import sys
 from datetime import datetime
 from collections import Counter
 
@@ -29,3 +32,18 @@ def extract_year_month(date_str):
     elif is_valid_yyyy(date_str):
         return int(date_str), None
     return None, None
+
+
+
+def resource_path(relative_path):
+    """
+    PyInstaller tarafından paketlenmiş uygulamalar için kaynak dosyalarının doğru yolunu döndürür.
+    Geliştirme ortamında ve paketlenmiş ortamda farklı yollar kullanır.
+    """
+    try:
+        # PyInstaller temp klasöründe çalışıyorsa
+        base_path = sys._MEIPASS
+    except Exception:
+        # Normal Python ortamında çalışıyorsa
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
