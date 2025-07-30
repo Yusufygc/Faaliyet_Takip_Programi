@@ -1,8 +1,5 @@
 # main.py
-import os
-import sqlite3
 import customtkinter as ctk 
-import sys
 from database import init_db
 from gui import run_gui
 
