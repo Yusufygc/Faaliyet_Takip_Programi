@@ -1,370 +1,376 @@
 # pdfcreate_page.py
+import customtkinter as ctk
+from tkinter import messagebox, filedialog
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont # TTF fontlarını kaydetmek için
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-from datetime import datetime
 import os
+import datetime
+import io # io modülü eklendi
+
+# Projenizin diğer dosyalarından importlar
 from database import get_connection
+from utils import is_valid_yyyymm, is_valid_yyyy
 
-def create_statistics_pdf(pdf_params):
-    """
-    İstatistik verilerine göre PDF raporu oluşturur
-    
-    Args:
-        pdf_params (dict): PDF oluşturma parametreleri
-            - file_path: PDF dosya yolu
-            - date: Seçilen tarih
-            - year_mode: Yıl modunda mı (bool)
-            - include_monthly_chart: Aylık grafik dahil edilsin mi
-            - include_yearly_chart: Yıllık grafik dahil edilsin mi
-            - current_data: Mevcut istatistik verileri
-    """
-    # Set the font to support Turkish characters
-    plt.rcParams['font.family'] = 'DejaVu Sans'
-    
-    file_path = pdf_params['file_path']
-    date = pdf_params['date']
-    year_mode = pdf_params['year_mode']
-    include_monthly = pdf_params['include_monthly_chart']
-    include_yearly = pdf_params['include_yearly_chart']
-    current_data = pdf_params['current_data']
-    
-    # PDF oluşturma
-    with PdfPages(file_path) as pdf:
-        # Başlık sayfası
-        create_title_page(pdf, date, year_mode)
-        
-        # Veri tablosu sayfası
-        if current_data:
-            create_data_table_page(pdf, current_data, date, year_mode)
-        
-        # Aylık grafik sayfası
-        if include_monthly and not year_mode:
-            create_monthly_chart_page(pdf, date)
-        
-        # Yıllık grafik sayfası  
-        if include_yearly:
-            create_yearly_chart_page(pdf, date[:4] if year_mode else date[:4])
-        
-        # Özet sayfa
-        create_summary_page(pdf, current_data, date, year_mode)
+# Türkçe karakter desteği için font kaydı
+# 'DejaVuSans' font ailesi genellikle Türkçe karakterleri destekler.
+# Font yüklemesinin başarılı olup olmadığını takip etmek için bir bayrak kullanacağız.
+font_registered = False
+try:
+    # Font dosyalarını kaydet
+    pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
+    pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
+    font_registered = True
+except Exception as e:
+    # Font dosyaları bulunamazsa veya yüklenemezse hata mesajı yazdır
+    print(f"Font yükleme hatası: {e}. Lütfen 'DejaVuSans.ttf' ve 'DejaVuSans-Bold.ttf' dosyalarının '{os.getcwd()}' dizininde mevcut olduğundan emin olun veya başka bir font kullanın.")
+    # Fallback olarak ReportLab'ın varsayılan fontlarını kullanmaya devam edecek.
 
-def create_title_page(pdf, date, year_mode):
-    """PDF başlık sayfasını oluşturur"""
-    fig, ax = plt.subplots(figsize=(8.27, 11.69))  # A4 boyutu
-    ax.axis('off')
-    
-    # Başlık
-    ax.text(0.5, 0.8, 'FAALİYET İSTATİSTİKLERİ', 
-            fontsize=24, fontweight='bold', ha='center', va='center')
-    
-    ax.text(0.5, 0.7, 'RAPORU', 
-            fontsize=20, fontweight='bold', ha='center', va='center')
-    
-    # Tarih bilgisi
-    if year_mode:
-        period_text = f"Yıl: {date[:4]}"
-    else:
-        year = date[:4]
-        month = date[5:7]
+# Matplotlib için Türkçe karakter desteği
+# Matplotlib font ayarı, ReportLab'dan bağımsızdır ve burada doğrudan yapılabilir.
+plt.rcParams['font.family'] = 'DejaVu Sans'
+plt.rcParams['axes.unicode_minus'] = False # Negatif işaretlerin düzgün görünmesi için
+
+class PDFCreatePage(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure((0, 1, 2, 3, 4, 5), weight=0) # Sabit yükseklikler
+        self.grid_rowconfigure(6, weight=1) # Alt kısım genişlesin
+
+        # Başlık
+        self.title_label = ctk.CTkLabel(self, text="PDF Raporu Oluştur", font=ctk.CTkFont(size=24, weight="bold"))
+        self.title_label.grid(row=0, column=0, pady=(20, 10))
+
+        # PDF oluşturma seçenekleri (Aya Göre / Yıla Göre)
+        self.pdf_option_frame = ctk.CTkFrame(self)
+        self.pdf_option_frame.grid(row=1, column=0, pady=10, padx=20, sticky="ew")
+        self.pdf_option_frame.grid_columnconfigure((0, 1), weight=1)
+
+        ctk.CTkLabel(self.pdf_option_frame, text="Rapor Oluşturma Seçeneği:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+
+        self.pdf_option_var = ctk.StringVar(value="month") # Varsayılan olarak aya göre
+        self.month_radio = ctk.CTkRadioButton(self.pdf_option_frame, text="Aya Göre Rapor", variable=self.pdf_option_var, value="month", command=self.on_option_change)
+        self.month_radio.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+
+        self.year_radio = ctk.CTkRadioButton(self.pdf_option_frame, text="Yıla Göre Rapor", variable=self.pdf_option_var, value="year", command=self.on_option_change)
+        self.year_radio.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+
+        # Tarih Seçimi
+        self.date_selection_frame = ctk.CTkFrame(self)
+        self.date_selection_frame.grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+        self.date_selection_frame.grid_columnconfigure((0, 1), weight=1)
+
+        self.month_label = ctk.CTkLabel(self.date_selection_frame, text="Ay:")
+        self.month_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        self.month_combobox = ctk.CTkComboBox(self.date_selection_frame, values=[""] + [f"{i:02d}" for i in range(1, 13)])
+        self.month_combobox.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+        self.month_combobox.set("") # Başlangıçta boş
+
+        self.year_label = ctk.CTkLabel(self.date_selection_frame, text="Yıl:")
+        self.year_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+        current_year = datetime.datetime.now().year
+        self.year_combobox = ctk.CTkComboBox(self.date_selection_frame, values=[""] + [str(i) for i in range(current_year - 10, current_year + 2)])
+        self.year_combobox.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
+        self.year_combobox.set("") # Başlangıçta boş
+
+        # Grafik seçeneği
+        self.graph_option_frame = ctk.CTkFrame(self)
+        self.graph_option_frame.grid(row=3, column=0, pady=10, padx=20, sticky="ew")
+        self.graph_option_frame.grid_columnconfigure((0, 1), weight=1)
+
+        self.graph_checkbox = ctk.CTkCheckBox(self.graph_option_frame, text="Grafik Ekle", onvalue=True, offvalue=False)
+        self.graph_checkbox.grid(row=0, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+
+        # PDF Oluştur butonu
+        self.create_pdf_button = ctk.CTkButton(self, text="PDF Oluştur", command=self.create_pdf_report)
+        self.create_pdf_button.grid(row=4, column=0, pady=20, padx=20, sticky="ew")
+
+        # Mesaj etiketi
+        self.message_label = ctk.CTkLabel(self, text="", text_color="red")
+        self.message_label.grid(row=5, column=0, pady=(0, 10))
+
+        # Başlangıçta ay seçeneği aktif, yıl seçeneği de gösterilebilir.
+        self.on_option_change()
+
+    def on_option_change(self):
+        """PDF oluşturma seçeneği değiştiğinde UI güncellemeleri."""
+        selected_option = self.pdf_option_var.get()
+        if selected_option == "month":
+            self.month_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+            self.month_combobox.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+            self.year_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+            self.year_combobox.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
+        elif selected_option == "year":
+            self.month_label.grid_forget()
+            self.month_combobox.grid_forget()
+            self.year_label.grid(row=0, column=0, padx=10, pady=5, sticky="w") # Yıl etiketi yukarı kaydırıldı
+            self.year_combobox.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+
+    def create_pdf_report(self):
+        self.message_label.configure(text="") # Önceki mesajı temizle
+
+        selected_option = self.pdf_option_var.get()
+        selected_month = self.month_combobox.get()
+        selected_year = self.year_combobox.get()
+        include_graph = self.graph_checkbox.get()
+
+        # Tarih kontrolü
+        if selected_option == "month":
+            if not selected_month or not selected_year:
+                self.message_label.configure(text="Lütfen rapor oluşturmak için ay ve yıl seçiniz.")
+                return
+            date_prefix = f"{selected_year}-{selected_month}"
+            if not is_valid_yyyymm(date_prefix):
+                self.message_label.configure(text="Geçersiz tarih formatı. Lütfen YYYY-MM formatında seçiniz.")
+                return
+            report_period_display = f"{self.get_turkish_month_name(selected_month)} {selected_year}"
+            report_title_suffix = f"{report_period_display} Faaliyet Raporu"
+            graph_title_suffix = f"{report_period_display} Faaliyet Grafiği"
+
+        elif selected_option == "year":
+            if not selected_year:
+                self.message_label.configure(text="Lütfen rapor oluşturmak için yıl seçiniz.")
+                return
+            date_prefix = selected_year
+            if not is_valid_yyyy(date_prefix):
+                self.message_label.configure(text="Geçersiz yıl formatı. Lütfen YYYY formatında seçiniz.")
+                return
+            report_period_display = f"{selected_year}"
+            report_title_suffix = f"{report_period_display} Yılı Faaliyet Raporu"
+            graph_title_suffix = f"{report_period_display} Yılı Faaliyet Grafiği"
+
+        # Verileri çek
+        data = self.get_activity_data(date_prefix)
+        if not data:
+            self.message_label.configure(text="Seçilen dönem için faaliyet verisi bulunamadı.")
+            return
+
+        # PDF dosya yolu seçimi
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF dosyaları", "*.pdf")],
+            title="PDF Raporunu Kaydet"
+        )
+
+        if not file_path:
+            return # Kullanıcı iptal etti
+
+        try:
+            doc = SimpleDocTemplate(file_path, pagesize=A4,
+                                    rightMargin=inch/2, leftMargin=inch/2,
+                                    topMargin=inch/2, bottomMargin=inch/2)
+            
+            # Stiller için örnek stil sayfası alın
+            styles = getSampleStyleSheet()
+
+            # Font ismini belirle
+            # Eğer DejaVuSans fontları yüklendiyse onları kullan, aksi takdirde varsayılan Helvetica'yı kullan.
+            if font_registered:
+                font_name_regular = 'DejaVuSans'
+                font_name_bold = 'DejaVuSans-Bold'
+            else:
+                font_name_regular = 'Helvetica'
+                font_name_bold = 'Helvetica-Bold'
+
+
+            styles.add(ParagraphStyle(name='TitleStyle',
+                                      fontSize=24,
+                                      leading=28,
+                                      alignment=TA_CENTER,
+                                      fontName=font_name_bold))
+            styles.add(ParagraphStyle(name='SubtitleStyle',
+                                      fontSize=18,
+                                      leading=22,
+                                      alignment=TA_CENTER,
+                                      fontName=font_name_bold))
+            styles.add(ParagraphStyle(name='Heading3Style',
+                                      fontSize=14,
+                                      leading=18,
+                                      fontName=font_name_bold,
+                                      spaceAfter=6))
+            styles.add(ParagraphStyle(name='NormalStyle',
+                                      fontSize=10,
+                                      leading=12,
+                                      fontName=font_name_regular))
+            styles.add(ParagraphStyle(name='FooterStyle',
+                                      fontSize=8,
+                                      leading=10,
+                                      alignment=TA_RIGHT,
+                                      fontName=font_name_regular))
+
+            story = []
+
+            # Başlık Sayfası
+            story.append(Paragraph("<b>FAALİYET TAKİP SİSTEMİ</b>", styles['TitleStyle']))
+            story.append(Spacer(1, 0.2 * inch))
+            story.append(Paragraph(f"<b>{report_title_suffix}</b>", styles['SubtitleStyle']))
+            story.append(Spacer(1, 0.5 * inch))
+            story.append(Paragraph(f"Hazırlayan: Kullanıcı Adı", styles['NormalStyle'])) # Buraya kullanıcı adı eklenebilir
+            story.append(Paragraph(f"Tarih: {datetime.date.today().strftime('%d.%m.%Y')}", styles['NormalStyle']))
+            story.append(Spacer(1, 2 * inch))
+            story.append(Paragraph("Bu rapor, seçilen dönemdeki faaliyetlerinizi özetlemektedir.", styles['NormalStyle']))
+            story.append(PageBreak()) # Yeni sayfa
+
+            # Veri Tablosu Sayfası
+            story.append(Paragraph("<b>1. Faaliyet Detayları Tablosu</b>", styles['Heading3Style']))
+            story.append(Spacer(1, 0.1 * inch))
+
+            table_data = [['Faaliyet Türü', 'Faaliyet Adı', 'Tarih', 'Yorum', 'Puan']]
+            for activity_type, name, date, comment, rating, _id in self.get_detailed_activity_data(date_prefix):
+                table_data.append([activity_type, name, date, comment, str(rating)])
+
+            table = Table(table_data, colWidths=[1.2*inch, 2*inch, 1*inch, 2*inch, 0.7*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2E7D32')), # Yeşil başlık
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#E8F5E9')), # Açık yeşil satırlar
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTNAME', (0, 1), (-1, -1), font_name_regular),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('LEFTPADDING', (0,0), (-1,-1), 6),
+                ('RIGHTPADDING', (0,0), (-1,-1), 6),
+                ('TOPPADDING', (0,0), (-1,-1), 6),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+            ]))
+            story.append(table)
+            story.append(PageBreak()) # Yeni sayfa
+
+            # Grafik Sayfası (Eğer istenirse)
+            if include_graph:
+                graph_data = self.get_activity_counts_for_graph(date_prefix)
+                if graph_data["types"] and graph_data["counts"]:
+                    try:
+                        # Matplotlib için Türkçe font ayarı
+                        # Bu ayar zaten dosyanın başında yapıldığı için burada tekrar etmeye gerek yok.
+                        # Ancak emin olmak için tekrar edilebilir, bir zararı olmaz.
+                        # plt.rcParams['font.family'] = 'DejaVu Sans'
+                        # plt.rcParams['axes.unicode_minus'] = False 
+
+                        fig, ax = plt.subplots(figsize=(8, 6))
+                        ax.bar(graph_data["types"], graph_data["counts"], color='#1f77b4') # Mavi ton
+                        ax.set_xlabel("Faaliyet Türü")
+                        ax.set_ylabel("Sayı")
+                        ax.set_title(graph_title_suffix)
+                        plt.xticks(rotation=45, ha='right')
+                        plt.tight_layout()
+
+                        # Grafiği bir BytesIO nesnesine kaydet
+                        img_buffer = io.BytesIO()
+                        plt.savefig(img_buffer, format='png')
+                        plt.close(fig) # Grafiği kaydettikten sonra belleği temizle
+                        img_buffer.seek(0) # Başlangıca dön
+
+                        story.append(Paragraph("<b>2. Faaliyet Dağılım Grafiği</b>", styles['Heading3Style']))
+                        story.append(Spacer(1, 0.1 * inch))
+                        # Image objesine BytesIO nesnesini ver
+                        img = Image(img_buffer, width=500, height=375) # A4'e sığacak şekilde ayarlandı
+                        story.append(img)
+                        story.append(Spacer(1, 0.5 * inch))
+
+                        story.append(PageBreak()) # Yeni sayfa
+
+                    except Exception as e:
+                        self.message_label.configure(text=f"Grafik oluşturulurken bir hata oluştu: {e}")
+                        print(f"Grafik oluşturma hatası: {e}")
+                else:
+                    story.append(Paragraph("Grafik oluşturmak için yeterli veri bulunamadı.", styles['NormalStyle']))
+                    story.append(Spacer(1, 0.5 * inch))
+                    story.append(PageBreak())
+
+            # Özet Sayfası
+            story.append(Paragraph("<b>3. Rapor Özeti</b>", styles['Heading3Style']))
+            story.append(Spacer(1, 0.1 * inch))
+
+            total_activities = sum(item[1] for item in data) if data else 0
+            activity_types_count = len(data) if data else 0
+            most_common_activity = ""
+            if data:
+                # data formatı: [(type, count), ...]
+                most_common = max(data, key=lambda x: x[1])
+                most_common_activity = f"{most_common[0]} ({most_common[1]} adet)"
+
+            summary_text = f"""
+            • Toplam Faaliyet Sayısı: {total_activities}
+            • Faaliyet Türü Çeşidi: {activity_types_count}
+            • En Çok Yapılan Faaliyet: {most_common_activity}
+            """
+            story.append(Paragraph(summary_text, styles['NormalStyle']))
+            story.append(Spacer(1, 0.5 * inch))
+            story.append(Paragraph(f"Bu rapor, {report_period_display} dönemindeki faaliyetlerinizin kapsamlı bir özetini sunmaktadır. Detaylı analizler ve eğilimler, gelecekteki faaliyet planlamalarınız için değerli bilgiler sağlayabilir.", styles['NormalStyle']))
+
+
+            doc.build(story, onFirstPage=self.add_page_number, onLaterPages=self.add_page_number)
+            messagebox.showinfo("Başarılı", f"PDF raporu başarıyla oluşturuldu: {file_path}")
+            os.startfile(file_path) # PDF'i otomatik aç
+
+        except Exception as e:
+            messagebox.showerror("Hata", f"PDF oluşturulurken genel bir hata oluştu: {e}")
+            print(f"PDF oluşturulurken genel hata: {e}")
+
+    def add_page_number(self, canvas, doc):
+        """Her sayfaya sayfa numarası ekler."""
+        canvas.saveState()
+        # Sayfa numarası için de Türkçe font kullan
+        if font_registered:
+            canvas.setFont('DejaVuSans', 8)
+        else:
+            canvas.setFont('Helvetica', 8)
+        canvas.drawString(A4[0] - inch, 0.75 * inch, f"Sayfa {doc.page}")
+        canvas.restoreState()
+
+    def get_turkish_month_name(self, month_number_str):
+        """Ay numarasını Türkçe ay adına çevirir."""
         month_names = {
             '01': 'Ocak', '02': 'Şubat', '03': 'Mart', '04': 'Nisan',
             '05': 'Mayıs', '06': 'Haziran', '07': 'Temmuz', '08': 'Ağustos',
             '09': 'Eylül', '10': 'Ekim', '11': 'Kasım', '12': 'Aralık'
         }
-        period_text = f"Dönem: {month_names.get(month, month)} {year}"
-    
-    ax.text(0.5, 0.5, period_text, 
-            fontsize=16, ha='center', va='center')
-    
-    # Oluşturulma tarihi
-    creation_date = datetime.now().strftime("%d.%m.%Y %H:%M")
-    ax.text(0.5, 0.3, f"Oluşturulma Tarihi: {creation_date}", 
-            fontsize=12, ha='center', va='center')
-    
-    # Alt bilgi
-    ax.text(0.5, 0.1, 'Faaliyet Takip Sistemi', 
-            fontsize=10, ha='center', va='center', style='italic')
-    
-    pdf.savefig(fig, bbox_inches='tight')
-    plt.close(fig)
+        return month_names.get(month_number_str, month_number_str)
 
-def create_data_table_page(pdf, data, date, year_mode):
-    """Veri tablosu sayfasını profesyonel A4 formatında oluşturur"""
-    fig, ax = plt.subplots(figsize=(8.27, 11.69))  # A4 boyutu
-    ax.axis('off')
-    
-    # Sayfa başlığı
-    title = f"{date[:4]} YILI FAALİYET İSTATİSTİKLERİ" if year_mode else \
-            f"{format_date_turkish(date).upper()} FAALİYET İSTATİSTİKLERİ"
-    
-    ax.text(0.5, 0.94, title, 
-            fontsize=16, fontweight='bold', ha='center', color='#2E7D32')
-    
-    # Başlık altı çizgisi
-    ax.plot([0.1, 0.9], [0.92, 0.92], color='#2E7D32', linewidth=0.8)
-    
-    # Tablo verisi hazırlama
-    if data:
-        table_data = [['FAALİYET TÜRÜ', 'TOPLAM SAYI']]
-        total_count = 0
-        
-        for row in data:
-            table_data.append([row[0].upper(), str(row[1])])
-            total_count += row[1]
-        
-        # Toplam satırı ekle
-        table_data.append(['TOPLAM', str(total_count)])
-        
-        # Tablo oluşturma
-        table = ax.table(cellText=table_data[1:], 
-                        colLabels=table_data[0],
-                        cellLoc='center',
-                        loc='center',
-                        colWidths=[0.7, 0.2],
-                        bbox=[0.1, 0.1, 0.8, 0.75])  # x, y, width, height
-        
-        # Tablo stil ayarları
-        table.auto_set_font_size(False)
-        table.set_fontsize(11)
-        
-        # Başlık satırı formatı
-        for i in range(len(table_data[0])):
-            table[(0, i)].set_facecolor('#2E7D32')
-            table[(0, i)].set_text_props(weight='bold', color='white')
-        
-        # Toplam satırı formatı
-        last_row = len(table_data) - 1
-        for i in range(len(table_data[0])):
-            table[(last_row, i)].set_facecolor('#E8F5E9')
-            table[(last_row, i)].set_text_props(weight='bold')
-        
-        # Hücre kenarlıkları
-        for key, cell in table.get_celld().items():
-            cell.set_edgecolor('#DDDDDD')
-        
-    else:
-        ax.text(0.5, 0.5, 'BU DÖNEMDE VERİ BULUNAMADI', 
-                fontsize=14, ha='center', va='center', color='#777777')
-    
-    # Sayfa numarası
-    ax.text(0.85, 0.05, "Sayfa 2", 
-            fontsize=9, ha='right', color='#777777')
-    
-    pdf.savefig(fig, bbox_inches='tight')
-    plt.close(fig)
-
-def create_monthly_chart_page(pdf, date):
-    """Aylık grafik sayfasını oluşturur"""
-    # Aylık veri çek
-    monthly_data = get_monthly_data(date)
-    
-    if not monthly_data:
-        return
-    
-    fig = plt.figure(figsize=(8.27, 11.69))  # A4 boyutu
-    
-    # Histogram
-    ax1 = fig.add_subplot(2, 1, 1)
-    types = [row[0] for row in monthly_data]
-    counts = [row[1] for row in monthly_data]
-    ax1.bar(types, counts, color='#2196F3')
-    ax1.set_title(f'Aylık Faaliyet Dağılımı - Histogram ({date[:7]})', fontsize=14, fontweight='bold')
-    ax1.set_xlabel('Faaliyet Türü')
-    ax1.set_ylabel('Sayı')
-    ax1.tick_params(axis='x', rotation=45)
-    
-    # Pasta grafik
-    ax2 = fig.add_subplot(2, 1, 2)
-    ax2.pie(counts, labels=types, autopct='%1.1f%%', startangle=90)
-    ax2.set_title(f'Aylık Faaliyet Dağılımı - Pasta Grafik ({date[:7]})', fontsize=14, fontweight='bold')
-    
-    plt.tight_layout(pad=3.0)
-    pdf.savefig(fig, bbox_inches='tight')
-    plt.close(fig)
-
-def create_yearly_chart_page(pdf, year):
-    """Yıllık grafik sayfasını oluşturur"""
-    # Yıllık veri çek
-    yearly_data = get_yearly_data(year)
-    
-    if not yearly_data:
-        return
-    
-    fig = plt.figure(figsize=(8.27, 11.69))  # A4 boyutu
-    
-    # Histogram
-    ax1 = fig.add_subplot(2, 1, 1)
-    types = [row[0] for row in yearly_data]
-    counts = [row[1] for row in yearly_data]
-    ax1.bar(types, counts, color='#4CAF50')
-    ax1.set_title(f'Yıllık Faaliyet Dağılımı - Histogram ({year})', fontsize=14, fontweight='bold')
-    ax1.set_xlabel('Faaliyet Türü')
-    ax1.set_ylabel('Sayı')
-    ax1.tick_params(axis='x', rotation=45)
-    
-    # Pasta grafik
-    ax2 = fig.add_subplot(2, 1, 2)
-    ax2.pie(counts, labels=types, autopct='%1.1f%%', startangle=90)
-    ax2.set_title(f'Yıllık Faaliyet Dağılımı - Pasta Grafik ({year})', fontsize=14, fontweight='bold')
-    
-    plt.tight_layout(pad=3.0)
-    pdf.savefig(fig, bbox_inches='tight')
-    plt.close(fig)
-
-def create_summary_page(pdf, data, date, year_mode):
-    """Özet sayfasını oluşturur"""
-    fig, ax = plt.subplots(figsize=(8.27, 11.69))  # A4 boyutu
-    ax.axis('off')
-    
-    # Sayfa başlığı
-    ax.text(0.1, 0.9, 'RAPOR ÖZETİ', fontsize=18, fontweight='bold')
-    
-    if data:
-        total_activities = sum(row[1] for row in data)
-        most_common = max(data, key=lambda x: x[1])
-        
-        summary_text = f"""
-GENEL BİLGİLER:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• Toplam Faaliyet Sayısı: {total_activities}
-• Faaliyet Türü Çeşidi: {len(data)}
-• En Çok Yapılan Faaliyet: {most_common[0]} ({most_common[1]} adet)
-
-DETAYLI FAALİYET DAĞILIMI:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-"""
-        
-        # Her faaliyet türü için detay sayısını ekle
-        for activity_type, count in sorted(data, key=lambda x: x[1], reverse=True):
-            percentage = (count / total_activities) * 100
-            details = get_activity_details(activity_type, date, year_mode)
-            unique_dates = len(set(detail[1] for detail in details)) if details else 0
-            
-            summary_text += f"• {activity_type}: {count} adet (%{percentage:.1f})\n"
-            summary_text += f"  └─ {unique_dates} farklı günde gerçekleştirildi\n"
-        
-        summary_text += f"""
-
-RAPOR BİLGİLERİ:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• Rapor Türü: {"Yıllık" if year_mode else "Aylık"} İstatistik
-• Dönem: {date[:4] if year_mode else date[:7]}
-• Oluşturulma: {datetime.now().strftime("%d.%m.%Y %H:%M")}
-• Sayfa Sayısı: {pdf.get_pagecount()}
+    def get_activity_data(self, date_prefix):
         """
-        
-    else:
-        summary_text = """
-Bu dönemde herhangi bir faaliyet kaydı bulunmamaktadır.
-
-• Toplam Faaliyet: 0
-• Faaliyet Türü: 0
+        Veritabanından faaliyet türüne göre sayım verisi çeker.
+        date_prefix: YYYY veya YYYY-MM
         """
-    
-    ax.text(0.1, 0.8, summary_text, fontsize=11, va='top', ha='left', 
-            fontfamily='monospace')
-    
-    # Sayfa numarası
-    ax.text(0.85, 0.05, f"Sayfa {pdf.get_pagecount()}", 
-            fontsize=9, ha='right', color='#777777')
-    
-    pdf.savefig(fig, bbox_inches='tight')
-    plt.close(fig)
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = "SELECT type, COUNT(*) FROM activities WHERE date LIKE ? GROUP BY type"
+        cursor.execute(query, (f"{date_prefix}%",))
+        data = cursor.fetchall()
+        conn.close()
+        return data
 
-def get_monthly_data(date):
-    """Belirtilen aya ait verileri getirir"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT type, COUNT(*) FROM activities WHERE date LIKE ? GROUP BY type",
-        (date[:7] + "%",)
-    )
-    
-    data = cursor.fetchall()
-    conn.close()
-    return data
+    def get_detailed_activity_data(self, date_prefix):
+        """
+        Veritabanından tüm faaliyet detaylarını çeker.
+        date_prefix: YYYY veya YYYY-MM
+        """
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = "SELECT type, name, date, comment, rating, id FROM activities WHERE date LIKE ? ORDER BY date, type, name"
+        cursor.execute(query, (f"{date_prefix}%",))
+        data = cursor.fetchall()
+        conn.close()
+        return data
 
-def get_yearly_data(year):
-    """Belirtilen yıla ait verileri getirir"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT type, COUNT(*) FROM activities WHERE date LIKE ? GROUP BY type",
-        (year + "%",)
-    )
-    
-    data = cursor.fetchall()
-    conn.close()
-    return data
+    def get_activity_counts_for_graph(self, date_prefix):
+        """
+        Grafik için faaliyet türü ve sayılarını çeker.
+        """
+        data = self.get_activity_data(date_prefix) # get_activity_data zaten sayım yapıyor
+        types = [row[0] for row in data]
+        counts = [row[1] for row in data]
+        return {"types": types, "counts": counts}
 
-def get_activity_details(activity_type, date, year_mode):
-    """Belirli bir faaliyet türünün detaylarını getirir"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    if year_mode:
-        cursor.execute(
-            "SELECT name, date FROM activities WHERE type = ? AND date LIKE ? ORDER BY date",
-            (activity_type, date[:4] + "%")
-        )
-    else:
-        cursor.execute(
-            "SELECT name, date FROM activities WHERE type = ? AND date LIKE ? ORDER BY date",
-            (activity_type, date[:7] + "%")
-        )
-    
-    data = cursor.fetchall()
-    conn.close()
-    return data
-
-def format_date_turkish(date_str):
-    """Tarihi Türkçe ay formatında döndürür (2024-01 -> OCAK 2024)"""
-    month_names = {
-        '01': 'OCAK', '02': 'ŞUBAT', '03': 'MART', '04': 'NİSAN',
-        '05': 'MAYIS', '06': 'HAZİRAN', '07': 'TEMMUZ', '08': 'AĞUSTOS',
-        '09': 'EYLÜL', '10': 'EKİM', '11': 'KASIM', '12': 'ARALIK'
-    }
-    if len(date_str) == 7:  # YYYY-MM formatı
-        return f"{month_names.get(date_str[5:7])} {date_str[:4]}"
-    return date_str
-
-def format_full_date(date_str):
-    """Tam tarih string'ini Türkçe formatta döndürür (YYYY-MM-DD -> DD Ay YYYY)"""
-    try:
-        if len(date_str) >= 10:  # YYYY-MM-DD formatı
-            year = date_str[:4]
-            month = date_str[5:7]
-            day = date_str[8:10]
-            month_names = {
-                '01': 'Ocak', '02': 'Şubat', '03': 'Mart', '04': 'Nisan',
-                '05': 'Mayıs', '06': 'Haziran', '07': 'Temmuz', '08': 'Ağustos',
-                '09': 'Eylül', '10': 'Ekim', '11': 'Kasım', '12': 'Aralık'
-            }
-            return f"{int(day)} {month_names.get(month, month)} {year}"
-        else:
-            return date_str
-    except:
-        return date_str
-
-# Ana test fonksiyonu
-if __name__ == "__main__":
-    # Test parametreleri
-    test_params = {
-        'file_path': 'test_report.pdf',
-        'date': '2024-01',
-        'year_mode': False,
-        'include_monthly_chart': True,
-        'include_yearly_chart': True,
-        'current_data': [('Spor', 15), ('Okuma', 10), ('Müzik', 8)]
-    }
-    
-    try:
-        create_statistics_pdf(test_params)
-        print("Test PDF başarıyla oluşturuldu!")
-    except Exception as e:
-        print(f"Test hatası: {e}")

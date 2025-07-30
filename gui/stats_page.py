@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import os
 from database import get_connection
 from gui.widgets import build_month_year_picker, get_formatted_date_from_picker
+# PDF oluşturma sayfasını import et
+from gui.pdfcreate_page import PDFCreatePage 
+from utils import is_valid_yyyymm, is_valid_yyyy # is_valid_yyyymm ve is_valid_yyyy import edildi
 
 class StatsPage(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -58,19 +61,35 @@ class StatsPage(ctk.CTkFrame):
         self.graph_frame = ctk.CTkFrame(self)
         self.graph_frame.grid(row=3, column=0, padx=10, pady=10, sticky="nsew")
 
-        self.show_statistics()
+        # Program başlangıcında uyarı vermeden istatistikleri göster
+        self.show_statistics(initial_load=True)
 
-    def show_statistics(self):
+    def show_statistics(self, initial_load=False):
         date = get_formatted_date_from_picker(self.date_picker)
         year_mode = self.selected_year_only.get()
 
         query = "SELECT type, COUNT(*) FROM activities"
         params = []
 
+        # Tarih seçilmemişse veya geçersizse uyarı ver (initial_load değilse)
         if year_mode:
+            if not date or not is_valid_yyyy(date[:4]):
+                if not initial_load: # Sadece kullanıcı tetiklediyse uyarı ver
+                    messagebox.showwarning("Uyarı", "Lütfen istatistikleri göstermek için geçerli bir yıl seçiniz.")
+                self.tree.delete(*self.tree.get_children())
+                for widget in self.graph_frame.winfo_children():
+                    widget.destroy()
+                return
             query += " WHERE date LIKE ?"
             params.append(date[:4] + "%")
         else:
+            if not date or not is_valid_yyyymm(date):
+                if not initial_load: # Sadece kullanıcı tetiklediyse uyarı ver
+                    messagebox.showwarning("Uyarı", "Lütfen istatistikleri göstermek için geçerli bir ay ve yıl seçiniz.")
+                self.tree.delete(*self.tree.get_children())
+                for widget in self.graph_frame.winfo_children():
+                    widget.destroy()
+                return
             query += " WHERE date = ?"
             params.append(date)
 
@@ -83,6 +102,13 @@ class StatsPage(ctk.CTkFrame):
         conn.close()
 
         self.tree.delete(*self.tree.get_children())
+        if not rows:
+            if not initial_load: # Sadece kullanıcı tetiklediyse uyarı ver
+                messagebox.showinfo("Bilgi", "Seçilen dönem için istatistik verisi bulunamadı.")
+            for widget in self.graph_frame.winfo_children():
+                widget.destroy()
+            return
+
         for row in rows:
             self.tree.insert("", "end", values=row)
 
@@ -155,195 +181,38 @@ class StatsPage(ctk.CTkFrame):
         self.controller.show_compare_page()
 
     def open_pdf_options(self):
-        """PDF oluşturma seçenekleri için diyalog penceresi açar"""
-        dialog = PDFOptionsDialog(self)
-        self.wait_window(dialog)
-        
-        if hasattr(dialog, 'result') and dialog.result:
-            options = dialog.result
-            self.create_pdf_with_options(options)
+        """PDF oluşturma seçenekleri için yeni bir pencere açar."""
+        # PDFCreatePage'i doğrudan CTkToplevel olarak aç
+        pdf_dialog = ctk.CTkToplevel(self)
+        pdf_dialog.title("PDF Raporu Oluştur")
+        pdf_dialog.geometry("700x600") # Boyutu ayarla
+        pdf_dialog.transient(self.master) # Ana pencereye göre konumlandır
+        pdf_dialog.grab_set() # Ana pencere etkileşimini engelle
 
-    def create_pdf_with_options(self, options):
-        """Seçilen seçeneklere göre PDF oluşturur"""
-        try:
-            # PDF kaydetme konumu seç
-            file_path = filedialog.asksaveasfilename(
-                defaultextension=".pdf",
-                filetypes=[("PDF dosyaları", "*.pdf")],
-                title="PDF'i Kaydet"
-            )
-            
-            if not file_path:
-                return
-            
-            # PDF oluşturma parametrelerini hazırla
-            date = get_formatted_date_from_picker(self.date_picker)
-            year_mode = self.selected_year_only.get()
-            
-            pdf_params = {
-                'file_path': file_path,
-                'date': date,
-                'year_mode': year_mode,
-                'include_monthly_chart': options['monthly_chart'],
-                'include_yearly_chart': options['yearly_chart'],
-                'current_data': self.get_current_statistics_data()
-            }
-            
-            # pdfcreate_page.py'deki PDF oluşturma fonksiyonunu çağır
-            from gui.pdfcreate_page import create_statistics_pdf
-            create_statistics_pdf(pdf_params)
-            
-            # Başarı mesajı
-            result = messagebox.askyesno(
-                "PDF Oluşturuldu", 
-                f"PDF başarıyla oluşturuldu!\n\nDosya konumu: {file_path}\n\nPDF'i şimdi açmak ister misiniz?"
-            )
-            
-            if result:
-                os.startfile(file_path)  # Windows için
-                # Linux/Mac için: os.system(f'xdg-open "{file_path}"') veya os.system(f'open "{file_path}"')
-                
-        except Exception as e:
-            messagebox.showerror("Hata", f"PDF oluşturulurken bir hata oluştu:\n{str(e)}")
+        # PDFCreatePage örneğini oluştur ve yeni pencereye yerleştir
+        pdf_page_instance = PDFCreatePage(pdf_dialog, self.controller)
+        pdf_page_instance.pack(fill="both", expand=True, padx=20, pady=20)
 
-    def get_current_statistics_data(self):
-        """Mevcut istatistik verilerini döndürür"""
-        date = get_formatted_date_from_picker(self.date_picker)
-        year_mode = self.selected_year_only.get()
+        # Pencere kapatıldığında grab_release yap
+        pdf_dialog.protocol("WM_DELETE_WINDOW", lambda: self.on_pdf_dialog_close(pdf_dialog))
+        
+        # PDFCreatePage içindeki tarih seçicilerin varsayılan değerlerini ayarla
+        current_date_prefix = get_formatted_date_from_picker(self.date_picker)
+        if self.selected_year_only.get(): # Eğer istatistik sayfasında sadece yıl seçiliyse
+            pdf_page_instance.pdf_option_var.set("year")
+            pdf_page_instance.year_combobox.set(current_date_prefix[:4])
+            pdf_page_instance.on_option_change() # UI'ı güncelle
+        else: # Ay ve yıl seçiliyse
+            pdf_page_instance.pdf_option_var.set("month")
+            if '-' in current_date_prefix:
+                pdf_page_instance.year_combobox.set(current_date_prefix[:4])
+                pdf_page_instance.month_combobox.set(current_date_prefix[5:7])
+            pdf_page_instance.on_option_change() # UI'ı güncelle
 
-        query = "SELECT type, COUNT(*) FROM activities"
-        params = []
+        self.wait_window(pdf_dialog) # Diyalog kapanana kadar bekle
 
-        if year_mode:
-            query += " WHERE date LIKE ?"
-            params.append(date[:4] + "%")
-        else:
-            query += " WHERE date = ?"
-            params.append(date)
+    def on_pdf_dialog_close(self, dialog):
+        """PDF diyalog penceresi kapatıldığında çağrılır."""
+        dialog.grab_release()
+        dialog.destroy()
 
-        query += " GROUP BY type"
-
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
-        
-        return rows
-
-
-class PDFOptionsDialog(ctk.CTkToplevel):
-    """PDF seçenekleri için diyalog penceresi"""
-    
-    def __init__(self, parent):
-        super().__init__(parent)
-        
-        self.title("PDF Seçenekleri")
-        self.geometry("400x300")
-        self.resizable(False, False)
-        
-        # Ana pencereye göre merkeze konumlandır
-        self.transient(parent)
-        self.grab_set()
-        
-        # Seçenek değişkenleri
-        self.monthly_chart_var = ctk.BooleanVar(value=True)
-        self.yearly_chart_var = ctk.BooleanVar(value=True)
-        
-        self.setup_ui()
-        
-        # Pencereyi merkeze konumlandır
-        self.center_window()
-
-    def setup_ui(self):
-        """UI bileşenlerini oluşturur"""
-        # Başlık
-        title_label = ctk.CTkLabel(
-            self, 
-            text="PDF Oluşturma Seçenekleri", 
-            font=ctk.CTkFont(size=18, weight="bold")
-        )
-        title_label.pack(pady=20)
-        
-        # Seçenekler frame'i
-        options_frame = ctk.CTkFrame(self)
-        options_frame.pack(pady=20, padx=20, fill="both", expand=True)
-        
-        # Açıklama metni
-        info_label = ctk.CTkLabel(
-            options_frame,
-            text="PDF'e eklemek istediğiniz grafikleri seçin:",
-            font=ctk.CTkFont(size=14)
-        )
-        info_label.pack(pady=15)
-        
-        # Aylık grafik seçeneği
-        monthly_checkbox = ctk.CTkCheckBox(
-            options_frame,
-            text="Seçilen ayın verisine göre grafik ekle",
-            variable=self.monthly_chart_var,
-            font=ctk.CTkFont(size=12)
-        )
-        monthly_checkbox.pack(pady=10, padx=20, anchor="w")
-        
-        # Yıllık grafik seçeneği
-        yearly_checkbox = ctk.CTkCheckBox(
-            options_frame,
-            text="Yılın toplam verisine göre grafik ekle", 
-            variable=self.yearly_chart_var,
-            font=ctk.CTkFont(size=12)
-        )
-        yearly_checkbox.pack(pady=10, padx=20, anchor="w")
-        
-        # Butonlar frame'i
-        buttons_frame = ctk.CTkFrame(self)
-        buttons_frame.pack(pady=20, padx=20, fill="x")
-        
-        # İptal butonu
-        cancel_button = ctk.CTkButton(
-            buttons_frame,
-            text="İptal",
-            command=self.cancel,
-            fg_color="gray",
-            hover_color="darkgray"
-        )
-        cancel_button.pack(side="left", padx=10)
-        
-        # Oluştur butonu
-        create_button = ctk.CTkButton(
-            buttons_frame,
-            text="PDF Oluştur",
-            command=self.create_pdf
-        )
-        create_button.pack(side="right", padx=10)
-
-    def center_window(self):
-        """Pencereyi ekranın merkezine konumlandırır"""
-        self.update_idletasks()
-        width = self.winfo_width()
-        height = self.winfo_height()
-        x = (self.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.winfo_screenheight() // 2) - (height // 2)
-        self.geometry(f"{width}x{height}+{x}+{y}")
-
-    def create_pdf(self):
-        """PDF oluşturma seçeneklerini onaylar"""
-        # En az bir seçenek seçilmeli
-        if not self.monthly_chart_var.get() and not self.yearly_chart_var.get():
-            messagebox.showwarning(
-                "Uyarı", 
-                "Lütfen en az bir grafik seçeneği işaretleyin!"
-            )
-            return
-        
-        # Sonuçları kaydet
-        self.result = {
-            'monthly_chart': self.monthly_chart_var.get(),
-            'yearly_chart': self.yearly_chart_var.get()
-        }
-        
-        self.destroy()
-
-    def cancel(self):
-        """Diyalogu iptal eder"""
-        self.destroy()
