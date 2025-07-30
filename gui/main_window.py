@@ -54,6 +54,8 @@ class MainWindow(ctk.CTk):
 
     def show_list_page(self):
         self.pages["list"].tkraise()
+        # ListPage'e geçildiğinde listeyi yenile
+        self.pages["list"].list_filtered_activities() # Mevcut filtrelerle listeyi yenile
 
     def show_stats_page(self):
         self.pages["stats"].tkraise()
@@ -65,7 +67,7 @@ class MainWindow(ctk.CTk):
     def show_compare_page(self):
         self.pages["compare"].tkraise()
 
-
-def run_gui():
-    app = MainWindow()
-    app.mainloop()
+    def refresh_list_page(self):
+        """ListPage'i yenilemek için çağrılır."""
+        if "list" in self.pages and hasattr(self.pages["list"], 'list_filtered_activities'):
+            self.pages["list"].list_filtered_activities()
