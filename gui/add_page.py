@@ -1,8 +1,10 @@
 # add_page.py
 import customtkinter as ctk
-from datetime import datetime
 from database import get_connection
 from gui.widgets import build_month_year_picker, get_formatted_date_from_picker
+from tkinter import messagebox
+from utils import is_valid_yyyymm
+from datetime import datetime
 
 FAALIYET_TURLERI = ["dizi", "film", "kitap", "oyun", "kurs", "şehir"]
 
@@ -39,8 +41,8 @@ class AddPage(ctk.CTkFrame):
         self.comment_text.grid(row=4, column=1, sticky="w", padx=10, pady=5)
 
         ctk.CTkLabel(content_frame, text="Puan:").grid(row=5, column=0, sticky="e", padx=10, pady=5)
-        self.rating_var = ctk.StringVar(value="")
-        self.rating_menu = ctk.CTkOptionMenu(content_frame, variable=self.rating_var, values=[str(i) for i in range(1, 11)])
+        self.rating_var = ctk.StringVar(value="Seçiniz")
+        self.rating_menu = ctk.CTkOptionMenu(content_frame, variable=self.rating_var, values=["Seçiniz"] + [str(i) for i in range(1, 11)])
         self.rating_menu.grid(row=5, column=1, sticky="w", padx=10, pady=5)
 
         self.message_label = ctk.CTkLabel(content_frame, text="")
@@ -48,28 +50,95 @@ class AddPage(ctk.CTkFrame):
 
         ctk.CTkButton(content_frame, text="Ekle", command=self.add_activity).grid(row=7, column=0, columnspan=2, pady=15)
 
-        controller.wm_minsize(1000, 600)
-
 
     def add_activity(self):
+        activity_name = self.name_entry.get().strip()
+        date_value = get_formatted_date_from_picker(self.date_picker)
+        activity_type = self.type_var.get()
+        comment = self.comment_text.get("1.0", "end").strip()
+        rating_str = self.rating_var.get()
+
+        # Hata ayıklama çıktıları
+        #print(f"DEBUG: Faaliyet Adı: '{activity_name}'")
+        #print(f"DEBUG: Tarih Değeri: '{date_value}'")
+        #print(f"DEBUG: Puan String: '{rating_str}'")
+
+
+        # Giriş Doğrulamaları
+        if not activity_name:
+            self.show_message("Faaliyet adı boş bırakılamaz.", "red")
+            return
+
+        if not date_value:
+            self.show_message("Tarih seçimi zorunludur.", "red")
+            return
+        
+        if not is_valid_yyyymm(date_value):
+            self.show_message("Geçersiz tarih formatı. Lütfen YYYY-MM formatında seçiniz.", "red")
+            return
+
+        # Gelecek tarih kontrolü
+        try:
+            selected_year, selected_month = map(int, date_value.split('-'))
+            current_date = datetime.now()
+            # Ayın ilk günü olarak kabul et (gün ve saat bilgisi olmadan karşılaştırma için)
+            selected_date = datetime(selected_year, selected_month, 1) 
+
+            # Seçilen tarih, mevcut ayın ilk gününden daha ileride mi kontrol et
+            if selected_date > current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0):
+                self.show_message("Gelecekteki bir tarihi seçemezsiniz.", "red")
+                return
+        except ValueError:
+            # is_valid_yyyymm bu hatayı yakalamalı, ancak bir güvenlik önlemi olarak tutuldu.
+            self.show_message("Tarih formatı hatası. Lütfen YYYY-MM formatında seçiniz.", "red")
+            return
+
+
+        if rating_str == "Seçiniz" or not rating_str:
+            rating = 0
+            # show_message yerine messagebox.showinfo kullanıldı
+            messagebox.showinfo("Bilgi", "Puan seçilmedi, 0 olarak kaydedildi.")
+        else:
+            try:
+                rating = int(rating_str)
+            except ValueError:
+                self.show_message("Geçersiz puan değeri.", "red")
+                return
+
         conn = get_connection()
         cursor = conn.cursor()
         try:
-            date_value = get_formatted_date_from_picker(self.date_picker)
             cursor.execute('''
                 INSERT INTO activities (type, name, date, comment, rating)
                 VALUES (?, ?, ?, ?, ?)
             ''', (
-                self.type_var.get(),
-                self.name_entry.get(),
+                activity_type,
+                activity_name,
                 date_value,
-                self.comment_text.get("1.0", "end").strip(),
-                int(self.rating_var.get()) if self.rating_var.get() else 0
+                comment,
+                rating
             ))
             conn.commit()
-            self.message_label.configure(text="✅ Eklendi!", text_color="green")
-            self.after(3000, lambda: self.message_label.configure(text=""))
+            self.show_message("✅ Faaliyet başarıyla eklendi!", "green")
+            self.clear_inputs()
+            # Faaliyet eklendikten sonra list_page'i yenile
+            self.controller.refresh_list_page() 
         except Exception as e:
-            self.message_label.configure(text=f"Hata: {e}", text_color="red")
+            self.show_message(f"Hata oluştu: {e}", "red")
         finally:
             conn.close()
+
+    def show_message(self, message, color):
+        """Kullanıcıya mesaj gösterir ve belirli bir süre sonra temizler."""
+        self.message_label.configure(text=message, text_color=color)
+        self.after(3000, lambda: self.message_label.configure(text=""))
+
+    def clear_inputs(self):
+        """Giriş alanlarını temizler ve varsayılan değerlere döndürür."""
+        self.name_entry.delete(0, ctk.END)
+        self.comment_text.delete("1.0", ctk.END)
+        self.type_var.set(FAALIYET_TURLERI[0])
+        self.rating_var.set("Seçiniz")
+        self.date_picker.year_var.set("")
+        self.date_picker.month_var.set("")
+        self.name_entry.focus_set()
