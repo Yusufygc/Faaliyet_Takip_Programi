@@ -9,7 +9,7 @@ def build_month_year_picker(parent):
 
     now = datetime.now()
     # Yıllar ve aylar listesine boş string ("") seçeneği eklendi
-    years = [""] + [str(y) for y in range(now.year - 10, now.year + 1)]
+    years = [""] + [str(y) for y in range(2020, now.year + 1)]
     months = [""] + [f"{m:02d}" for m in range(1, 13)]
 
     # Varsayılan değerler boş string olarak ayarlandı
