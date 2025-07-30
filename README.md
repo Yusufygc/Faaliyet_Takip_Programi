@@ -14,10 +14,10 @@
   - **Dinamik Filtreleme**: Türe, ada (arama çubuğu ile) veya belirli bir tarihe (yıl veya ay) göre anında filtreleyin.
   - **Sayfalama Sistemi**: Sayfa başına 5, 10, 20 veya 50 kayıt seçeneği ile büyük veri setlerinde kolay gezinim.
   - **Detay Görüntüleme**: Liste üzerinden çift tık ile detayları (yorum ve puan dahil) içeren diyalog penceresi.
-  - **Hızlı Düzenleme/Silme**: Seçili kaydı kolayca güncelleyin veya onay ile silin.
+  - **Hızlı Düzenleme/Silme**: Liste üzerinden çift tık ile seçtiğiniz kaydı kolayca güncelleyin veya onay ile silin.
 
 ### 📊 İstatistik ve Karşılaştırma
-
+- 📋**Listelenmiş Veri**: Filtre ile istediğiniz zamandaki veya tüm verinizi listeleyerek veriye çift tıklayıp içeriğini inceleyin
 - 📈 **Görsel İstatistikler**: Belirli bir yıl veya ay için faaliyet türlerine göre dağılımı gösteren interaktif histogram ve pasta grafikler.
 - 🔄 **Dönem Karşılaştırma**: İki farklı yıl veya ay arasındaki faaliyet verilerini kıyaslayarak eğilimleri analiz edin.
 - 📄 **Profesyonel PDF Raporları**: Seçilen döneme ait faaliyet verilerinin özet ve detaylı PDF raporlarını oluşturun ve dışa aktarın.
