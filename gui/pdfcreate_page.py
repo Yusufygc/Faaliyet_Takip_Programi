@@ -10,31 +10,31 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont # TTF fontlarını kaydetmek için
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm # Matplotlib için Türkçe karakter desteği
 import os
 import datetime
 import io # io modülü eklendi
 
 # Projenizin diğer dosyalarından importlar
 from database import get_connection
-from utils import is_valid_yyyymm, is_valid_yyyy
-
-# Türkçe karakter desteği için font kaydı
-# 'DejaVuSans' font ailesi genellikle Türkçe karakterleri destekler.
-# Font yüklemesinin başarılı olup olmadığını takip etmek için bir bayrak kullanacağız.
-font_registered = False
-try:
-    # Font dosyalarını kaydet
-    pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
-    pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
-    font_registered = True
-except Exception as e:
-    # Font dosyaları bulunamazsa veya yüklenemezse hata mesajı yazdır
-    print(f"Font yükleme hatası: {e}. Lütfen 'DejaVuSans.ttf' ve 'DejaVuSans-Bold.ttf' dosyalarının '{os.getcwd()}' dizininde mevcut olduğundan emin olun veya başka bir font kullanın.")
-    # Fallback olarak ReportLab'ın varsayılan fontlarını kullanmaya devam edecek.
+from utils import is_valid_yyyymm, is_valid_yyyy,resource_path
 
 # Matplotlib için Türkçe karakter desteği
-# Matplotlib font ayarı, ReportLab'dan bağımsızdır ve burada doğrudan yapılabilir.
-plt.rcParams['font.family'] = 'DejaVu Sans'
+# Eğer matplotlib fontun yolunu doğrudan belirtmek istiyorsanız:
+font_path_regular = resource_path('fonts/DejaVuSans.ttf')
+font_path_bold = resource_path('fonts/DejaVuSans-Bold.ttf')
+
+if os.path.exists(font_path_regular):
+    fm.fontManager.addfont(font_path_regular)
+    plt.rcParams['font.family'] = 'DejaVu Sans' # Bu isim ReportLab'e kaydettiğiniz isimle aynı olmalı
+
+if os.path.exists(font_path_bold):
+    fm.fontManager.addfont(font_path_bold)
+    # Eğer Matplotlib'de kalın fontu ayrıca kullanıyorsanız, buraya ek ayar yapabilirsiniz.
+    # Genellikle tek bir font ailesi belirtmek yeterlidir ve Matplotlib kalın versiyonu kendi bulur.
+    # plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'DejaVu Sans Bold'] # Örnek
+    # plt.rcParams['font.weight'] = 'bold' # Matplotlib'e kalın font kullanmasını söylemek için
+
 plt.rcParams['axes.unicode_minus'] = False # Negatif işaretlerin düzgün görünmesi için
 
 class PDFCreatePage(ctk.CTkFrame):
@@ -42,126 +42,203 @@ class PDFCreatePage(ctk.CTkFrame):
         super().__init__(parent)
         self.controller = controller
 
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure((0, 1, 2, 3, 4, 5), weight=0) # Sabit yükseklikler
-        self.grid_rowconfigure(6, weight=1) # Alt kısım genişlesin
+        self.font_registered = False # Font yükleme durumunu takip eden bayrak
 
-        # Başlık
-        self.title_label = ctk.CTkLabel(self, text="PDF Raporu Oluştur", font=ctk.CTkFont(size=24, weight="bold"))
-        self.title_label.grid(row=0, column=0, pady=(20, 10))
+        # Fontları burada yükle
+        self._load_fonts()
 
-        # PDF oluşturma seçenekleri (Aya Göre / Yıla Göre)
-        self.pdf_option_frame = ctk.CTkFrame(self)
-        self.pdf_option_frame.grid(row=1, column=0, pady=10, padx=20, sticky="ew")
-        self.pdf_option_frame.grid_columnconfigure((0, 1), weight=1)
+        # Ana çerçevenin grid yapılandırması
+        self.grid_rowconfigure(0, weight=1) # content_frame'in dikeyde ortalanması için
+        self.grid_columnconfigure(0, weight=1) # content_frame'in yatayda ortalanması için
 
-        ctk.CTkLabel(self.pdf_option_frame, text="Rapor Oluşturma Seçeneği:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        # İçerik kapsayıcı çerçeme - Daha kompakt boyutlandırma
+        content_frame = ctk.CTkFrame(self)
+        content_frame.grid(row=0, column=0, sticky="", padx=40, pady=30)  # sticky="" ile tam ortalanır
+        content_frame.grid_columnconfigure(0, weight=1) # Tek sütunun genişlemesi için
 
+        # Başlık - Daha az padding
+        ctk.CTkLabel(content_frame, text="PDF Raporu Oluştur", 
+                    font=ctk.CTkFont(size=24, weight="bold")).grid(row=0, column=0, pady=(10, 15))
+
+        # PDF oluşturma seçenekleri (Aya Göre / Yıla Göre) - Kompakt tasarım
+        option_select_frame = ctk.CTkFrame(content_frame)
+        option_select_frame.grid(row=1, column=0, pady=(0, 8), sticky="ew", padx=20)
+        option_select_frame.grid_columnconfigure(0, weight=0) # "Rapor Tipi:" etiketi sabit kalsın
+        option_select_frame.grid_columnconfigure((1, 2), weight=1) # Radio butonları eşit genişlesin
+
+        ctk.CTkLabel(option_select_frame, text="Rapor Tipi:", 
+                    font=ctk.CTkFont(size=12, weight="bold")).grid(row=0, column=0, padx=10, pady=8, sticky="w")
+        
         self.pdf_option_var = ctk.StringVar(value="month") # Varsayılan olarak aya göre
-        self.month_radio = ctk.CTkRadioButton(self.pdf_option_frame, text="Aya Göre Rapor", variable=self.pdf_option_var, value="month", command=self.on_option_change)
-        self.month_radio.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+        self.month_radio = ctk.CTkRadioButton(option_select_frame, text="Aylık Rapor", 
+                                            variable=self.pdf_option_var, value="month", 
+                                            command=self.on_option_change)
+        self.month_radio.grid(row=0, column=1, padx=10, pady=8, sticky="w")
 
-        self.year_radio = ctk.CTkRadioButton(self.pdf_option_frame, text="Yıla Göre Rapor", variable=self.pdf_option_var, value="year", command=self.on_option_change)
-        self.year_radio.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+        self.year_radio = ctk.CTkRadioButton(option_select_frame, text="Yıllık Rapor", 
+                                           variable=self.pdf_option_var, value="year", 
+                                           command=self.on_option_change)
+        self.year_radio.grid(row=0, column=2, padx=10, pady=8, sticky="w")
 
-        # Tarih Seçimi
-        self.date_selection_frame = ctk.CTkFrame(self)
-        self.date_selection_frame.grid(row=2, column=0, pady=10, padx=20, sticky="ew")
-        self.date_selection_frame.grid_columnconfigure((0, 1), weight=1)
+        # Tarih Seçimi - Daha kompakt
+        date_selection_frame = ctk.CTkFrame(content_frame)
+        date_selection_frame.grid(row=2, column=0, pady=(0, 8), sticky="ew", padx=20)
+        date_selection_frame.grid_columnconfigure((0, 2), weight=0) # Etiketler sabit
+        date_selection_frame.grid_columnconfigure((1, 3), weight=1) # Combobox'lar genişlesin
 
-        self.month_label = ctk.CTkLabel(self.date_selection_frame, text="Ay:")
-        self.month_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
-        self.month_combobox = ctk.CTkComboBox(self.date_selection_frame, values=[""] + [f"{i:02d}" for i in range(1, 13)])
-        self.month_combobox.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
-        self.month_combobox.set("") # Başlangıçta boş
-
-        self.year_label = ctk.CTkLabel(self.date_selection_frame, text="Yıl:")
-        self.year_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+        ctk.CTkLabel(date_selection_frame, text="Yıl:", 
+                    font=ctk.CTkFont(size=12, weight="bold")).grid(row=0, column=0, padx=10, pady=8, sticky="w")
         current_year = datetime.datetime.now().year
-        self.year_combobox = ctk.CTkComboBox(self.date_selection_frame, values=[""] + [str(i) for i in range(current_year - 10, current_year + 2)])
-        self.year_combobox.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
-        self.year_combobox.set("") # Başlangıçta boş
+        self.year_combobox = ctk.CTkComboBox(date_selection_frame, 
+                                           values=[str(i) for i in range(2020, current_year + 2)],
+                                           width=120)
+        self.year_combobox.grid(row=0, column=1, padx=(5, 15), pady=8, sticky="w")
+        self.year_combobox.set(str(current_year)) # Varsayılan olarak mevcut yıl
 
-        # Grafik seçeneği
-        self.graph_option_frame = ctk.CTkFrame(self)
-        self.graph_option_frame.grid(row=3, column=0, pady=10, padx=20, sticky="ew")
-        self.graph_option_frame.grid_columnconfigure((0, 1), weight=1)
+        self.month_label = ctk.CTkLabel(date_selection_frame, text="Ay:", 
+                                       font=ctk.CTkFont(size=12, weight="bold"))
+        self.month_label.grid(row=0, column=2, padx=10, pady=8, sticky="w")
+        self.month_combobox = ctk.CTkComboBox(date_selection_frame, 
+                                            values=[f"{i:02d}" for i in range(1, 13)],
+                                            width=80)
+        self.month_combobox.grid(row=0, column=3, padx=(5, 10), pady=8, sticky="w")
+        self.month_combobox.set(f"{datetime.datetime.now().month:02d}") # Varsayılan olarak mevcut ay
 
-        self.graph_checkbox = ctk.CTkCheckBox(self.graph_option_frame, text="Grafik Ekle", onvalue=True, offvalue=False)
-        self.graph_checkbox.grid(row=0, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+        # Grafik seçeneği - Kompakt tasarım
+        graph_option_frame = ctk.CTkFrame(content_frame)
+        graph_option_frame.grid(row=3, column=0, pady=(0, 8), sticky="ew", padx=20)
+        graph_option_frame.grid_columnconfigure(0, weight=1)
 
-        # PDF Oluştur butonu
-        self.create_pdf_button = ctk.CTkButton(self, text="PDF Oluştur", command=self.create_pdf_report)
-        self.create_pdf_button.grid(row=4, column=0, pady=20, padx=20, sticky="ew")
+        self.graph_checkbox = ctk.CTkCheckBox(graph_option_frame, text="Grafik Ekle", 
+                                            font=ctk.CTkFont(size=12, weight="bold"),
+                                            onvalue=True, offvalue=False, 
+                                            command=self.on_graph_checkbox_change)
+        self.graph_checkbox.grid(row=0, column=0, padx=15, pady=10, sticky="w")
+        self.graph_checkbox.select() # Varsayılan olarak seçili gelsin
 
-        # Mesaj etiketi
-        self.message_label = ctk.CTkLabel(self, text="", text_color="red")
-        self.message_label.grid(row=5, column=0, pady=(0, 10))
+        # Mesaj etiketi - Kompakt
+        self.message_label = ctk.CTkLabel(content_frame, text="", text_color="red", 
+                                        font=ctk.CTkFont(size=11))
+        self.message_label.grid(row=4, column=0, pady=(0, 5), sticky="ew", padx=20)
+
+        # PDF Oluştur butonu - Daha az üst boşluk
+        self.create_pdf_button = ctk.CTkButton(content_frame, text="PDF Oluştur", 
+                                             command=self.create_pdf_report,
+                                             font=ctk.CTkFont(size=14, weight="bold"),
+                                             height=40)
+        self.create_pdf_button.grid(row=5, column=0, pady=(5, 15), sticky="ew", padx=20)
 
         # Başlangıçta ay seçeneği aktif, yıl seçeneği de gösterilebilir.
         self.on_option_change()
 
+    def _load_fonts(self):
+        if self.font_registered:
+            return
+
+        try:
+            # Fonts
+            font_path_regular = resource_path('fonts/DejaVuSans.ttf')
+            font_path_bold = resource_path('fonts/DejaVuSans-Bold.ttf')
+
+            # ReportLab için fontları kaydet
+            pdfmetrics.registerFont(TTFont('DejaVu Sans', font_path_regular))
+            pdfmetrics.registerFont(TTFont('DejaVu Sans Bold', font_path_bold))
+
+            self.font_registered = True
+        except Exception as e:
+            messagebox.showerror("Font Hatası", f"Fontlar yüklenirken bir hata oluştu: {e}")
+            print(f"Font yükleme hatası: {e}") # Konsol çıktısı için
+
     def on_option_change(self):
-        """PDF oluşturma seçeneği değiştiğinde UI güncellemeleri."""
+        """PDF oluşturma seçeneği (aylık/yıllık) değiştiğinde UI güncellemeleri."""
         selected_option = self.pdf_option_var.get()
         if selected_option == "month":
-            self.month_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
-            self.month_combobox.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
-            self.year_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
-            self.year_combobox.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
+            self.month_label.grid(row=0, column=2, padx=10, pady=8, sticky="w")
+            self.month_combobox.grid(row=0, column=3, padx=(5, 10), pady=8, sticky="w")
+            self.month_combobox.configure(state="normal")
+            self.month_combobox.set(f"{datetime.datetime.now().month:02d}") # Mevcut ay varsayılan
         elif selected_option == "year":
             self.month_label.grid_forget()
             self.month_combobox.grid_forget()
-            self.year_label.grid(row=0, column=0, padx=10, pady=5, sticky="w") # Yıl etiketi yukarı kaydırıldı
-            self.year_combobox.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+            self.month_combobox.configure(state="disabled")
+            self.month_combobox.set("") # Ay seçimini temizle
+        
+        self.year_combobox.set(str(datetime.datetime.now().year)) # Mevcut yıl varsayılan
+        self.show_message("") # Mesajı temizle
+
+    def on_graph_checkbox_change(self):
+        """Grafik ekle checkbox durumu değiştiğinde mesajı temizler."""
+        self.show_message("")
+
+    def show_message(self, message, color="red"):
+        """Kullanıcıya mesaj gösterir ve belirli bir süre sonra temizler."""
+        self.message_label.configure(text=message, text_color=color)
+        if message: # Sadece mesaj varsa temizleme zamanlayıcısını başlat
+            self.after(3000, lambda: self.message_label.configure(text=""))
 
     def create_pdf_report(self):
-        self.message_label.configure(text="") # Önceki mesajı temizle
+        self.show_message("") # Önceki mesajı temizle
+
+        # Fontlar yüklenmediyse uyarı ver ve çık
+        if not self.font_registered:
+            self.show_message("PDF fontları yüklenemedi. Raporlarda Türkçe karakter sorunları olabilir.", "orange")
+            # Ancak yine de PDF oluşturmaya devam et, sadece uyarı ver.
+            # Kullanıcı yine de PDF'i görmek isteyebilir.
 
         selected_option = self.pdf_option_var.get()
         selected_month = self.month_combobox.get()
         selected_year = self.year_combobox.get()
         include_graph = self.graph_checkbox.get()
 
-        # Tarih kontrolü
+        date_prefix = ""
+        report_period_display = ""
+        report_title_suffix = ""
+        graph_title_suffix = ""
+        default_filename = "FaaliyetRaporu"
+
+        # Tarih kontrolü ve rapor başlıklarının ayarlanması
         if selected_option == "month":
             if not selected_month or not selected_year:
-                self.message_label.configure(text="Lütfen rapor oluşturmak için ay ve yıl seçiniz.")
+                self.show_message("Lütfen rapor oluşturmak için ay ve yıl seçiniz.")
                 return
             date_prefix = f"{selected_year}-{selected_month}"
             if not is_valid_yyyymm(date_prefix):
-                self.message_label.configure(text="Geçersiz tarih formatı. Lütfen YYYY-MM formatında seçiniz.")
+                self.show_message("Geçersiz tarih formatı. Lütfen YYYY-MM formatında seçiniz.", "red")
                 return
             report_period_display = f"{self.get_turkish_month_name(selected_month)} {selected_year}"
             report_title_suffix = f"{report_period_display} Faaliyet Raporu"
             graph_title_suffix = f"{report_period_display} Faaliyet Grafiği"
+            default_filename = f"FaaliyetRaporu_{selected_year}_{selected_month}"
 
         elif selected_option == "year":
             if not selected_year:
-                self.message_label.configure(text="Lütfen rapor oluşturmak için yıl seçiniz.")
+                self.show_message("Lütfen rapor oluşturmak için yıl seçiniz.", "red")
                 return
             date_prefix = selected_year
             if not is_valid_yyyy(date_prefix):
-                self.message_label.configure(text="Geçersiz yıl formatı. Lütfen YYYY formatında seçiniz.")
+                self.show_message("Geçersiz yıl formatı. Lütfen YYYY formatında seçiniz.", "red")
                 return
             report_period_display = f"{selected_year}"
             report_title_suffix = f"{report_period_display} Yılı Faaliyet Raporu"
             graph_title_suffix = f"{report_period_display} Yılı Faaliyet Grafiği"
+            default_filename = f"FaaliyetRaporu_{selected_year}"
 
         # Verileri çek
         data = self.get_activity_data(date_prefix)
         if not data:
-            self.message_label.configure(text="Seçilen dönem için faaliyet verisi bulunamadı.")
+            self.show_message("Seçilen dönem için faaliyet verisi bulunamadı.", "red")
             return
 
         # PDF dosya yolu seçimi
         file_path = filedialog.asksaveasfilename(
             defaultextension=".pdf",
-            filetypes=[("PDF dosyaları", "*.pdf")],
-            title="PDF Raporunu Kaydet"
+            filetypes=[("PDF dosyaları", "*.pdf"), ("Tüm Dosyalar", "*.*")],
+            title="PDF Raporunu Kaydet",
+            initialfile=default_filename
         )
 
         if not file_path:
+            self.show_message("PDF kaydetme işlemi iptal edildi.", "red")
             return # Kullanıcı iptal etti
 
         try:
@@ -174,7 +251,7 @@ class PDFCreatePage(ctk.CTkFrame):
 
             # Font ismini belirle
             # Eğer DejaVuSans fontları yüklendiyse onları kullan, aksi takdirde varsayılan Helvetica'yı kullan.
-            if font_registered:
+            if self.font_registered: # Kendi font_registered bayrağını kullan
                 font_name_regular = 'DejaVuSans'
                 font_name_bold = 'DejaVuSans-Bold'
             else:
@@ -252,12 +329,6 @@ class PDFCreatePage(ctk.CTkFrame):
                 graph_data = self.get_activity_counts_for_graph(date_prefix)
                 if graph_data["types"] and graph_data["counts"]:
                     try:
-                        # Matplotlib için Türkçe font ayarı
-                        # Bu ayar zaten dosyanın başında yapıldığı için burada tekrar etmeye gerek yok.
-                        # Ancak emin olmak için tekrar edilebilir, bir zararı olmaz.
-                        # plt.rcParams['font.family'] = 'DejaVu Sans'
-                        # plt.rcParams['axes.unicode_minus'] = False 
-
                         fig, ax = plt.subplots(figsize=(8, 6))
                         ax.bar(graph_data["types"], graph_data["counts"], color='#1f77b4') # Mavi ton
                         ax.set_xlabel("Faaliyet Türü")
@@ -282,7 +353,7 @@ class PDFCreatePage(ctk.CTkFrame):
                         story.append(PageBreak()) # Yeni sayfa
 
                     except Exception as e:
-                        self.message_label.configure(text=f"Grafik oluşturulurken bir hata oluştu: {e}")
+                        self.show_message(f"Grafik oluşturulurken bir hata oluştu: {e}")
                         print(f"Grafik oluşturma hatası: {e}")
                 else:
                     story.append(Paragraph("Grafik oluşturmak için yeterli veri bulunamadı.", styles['NormalStyle']))
@@ -312,18 +383,18 @@ class PDFCreatePage(ctk.CTkFrame):
 
 
             doc.build(story, onFirstPage=self.add_page_number, onLaterPages=self.add_page_number)
-            messagebox.showinfo("Başarılı", f"PDF raporu başarıyla oluşturuldu: {file_path}")
+            self.show_message(f"✅ PDF raporu başarıyla oluşturuldu: {file_path}", "green")
             os.startfile(file_path) # PDF'i otomatik aç
 
         except Exception as e:
-            messagebox.showerror("Hata", f"PDF oluşturulurken genel bir hata oluştu: {e}")
+            self.show_message(f"PDF oluşturulurken genel bir hata oluştu: {e}")
             print(f"PDF oluşturulurken genel hata: {e}")
 
     def add_page_number(self, canvas, doc):
         """Her sayfaya sayfa numarası ekler."""
         canvas.saveState()
         # Sayfa numarası için de Türkçe font kullan
-        if font_registered:
+        if self.font_registered: # Kendi font_registered bayrağını kullan
             canvas.setFont('DejaVuSans', 8)
         else:
             canvas.setFont('Helvetica', 8)
@@ -373,4 +444,3 @@ class PDFCreatePage(ctk.CTkFrame):
         types = [row[0] for row in data]
         counts = [row[1] for row in data]
         return {"types": types, "counts": counts}
-
