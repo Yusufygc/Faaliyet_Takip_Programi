@@ -6,14 +6,26 @@
 
 ## 🚀 Özellikler
 
-- 🎮 **Faaliyet Ekleme**: Dizi, film, kitap vb. faaliyetleri ad, tarih, yorum ve puan ile kaydedin.
-- 📋 **Faaliyet Listeleme**: Tüm faaliyetleri görüntüleyin, tür, ad veya tarihe göre filtreleyin.
-- ✏️ **Düzenleme / Silme**: Listelenmiş verileri kayıtlarını güncelleyin veya kaldırın.
-- 📈 **İstatistik Görüntüleme**: Grafiklerle yıllık veya aylık analizler.Listelenmiş verilere tıklayarak veri içeriğini görüntüleyin
-- 🔄 **Dönem Karşılaştırma**: İki farklı yıl veya ay arasındaki faaliyetleri karşılaştırın.
-- 📄 **PDF Raporu Oluşturma**: Belirli dönemlere ait grafik ve özet içeren PDF raporları üretin.
-- 🎨 **Kullanıcı Dostu Arayüz**: CustomTkinter ile modern ve sezgisel kullanım.
-- 🗂️ **Yerel Veritabanı**: Tüm veriler güvenli şekilde SQLite veritabanında saklanır.
+### ✨ Temel Fonksiyonlar
+
+- 🎮 **Sezgisel Faaliyet Ekleme**: Yeni faaliyetleri tür, ad, tarih (YYYY-MM), detaylı yorum ve 1-10 aralığında puanlama ile kolayca kaydedin.
+- 📋 **Gelişmiş Faaliyet Listeleme ve Yönetimi**:
+  - Tüm kayıtlı faaliyetleri tablo formatında görüntüleyin.
+  - **Dinamik Filtreleme**: Türe, ada (arama çubuğu ile) veya belirli bir tarihe (yıl veya ay) göre anında filtreleyin.
+  - **Sayfalama Sistemi**: Sayfa başına 5, 10, 20 veya 50 kayıt seçeneği ile büyük veri setlerinde kolay gezinim.
+  - **Detay Görüntüleme**: Liste üzerinden çift tık ile detayları (yorum ve puan dahil) içeren diyalog penceresi.
+  - **Hızlı Düzenleme/Silme**: Seçili kaydı kolayca güncelleyin veya onay ile silin.
+
+### 📊 İstatistik ve Karşılaştırma
+
+- 📈 **Görsel İstatistikler**: Belirli bir yıl veya ay için faaliyet türlerine göre dağılımı gösteren interaktif histogram ve pasta grafikler.
+- 🔄 **Dönem Karşılaştırma**: İki farklı yıl veya ay arasındaki faaliyet verilerini kıyaslayarak eğilimleri analiz edin.
+- 📄 **Profesyonel PDF Raporları**: Seçilen döneme ait faaliyet verilerinin özet ve detaylı PDF raporlarını oluşturun ve dışa aktarın.
+
+### 🎨 Arayüz ve Veri Yapısı
+
+- 🌟 **Kullanıcı Dostu Arayüz (UI)**: CustomTkinter ile tasarlanmış modern, temiz ve sezgisel grafik arayüz.
+- 🗂️ **Yerel Veri Depolama**: Tüm veriler, hafif ve güvenilir bir SQLite veritabanında yerel olarak saklanır.
 
 ---
 
