@@ -1,11 +1,14 @@
 # database.py
 import sqlite3
 import os
-
-DB_PATH = "data/faaliyetler.db"
+from utils import resource_path
+DB_PATH = resource_path("data/faaliyetler.db")
 
 def init_db():
-    os.makedirs("data", exist_ok=True)
+    db_dir = os.path.dirname(DB_PATH)
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
