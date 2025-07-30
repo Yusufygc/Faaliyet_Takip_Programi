@@ -8,8 +8,8 @@
 
 - 🎮 **Faaliyet Ekleme**: Dizi, film, kitap vb. faaliyetleri ad, tarih, yorum ve puan ile kaydedin.
 - 📋 **Faaliyet Listeleme**: Tüm faaliyetleri görüntüleyin, tür, ad veya tarihe göre filtreleyin.
-- ✏️ **Düzenleme / Silme**: Kayıtları güncelleyin veya kaldırın.
-- 📈 **İstatistik Görüntüleme**: Grafiklerle yıllık veya aylık analizler.
+- ✏️ **Düzenleme / Silme**: Listelenmiş verileri kayıtlarını güncelleyin veya kaldırın.
+- 📈 **İstatistik Görüntüleme**: Grafiklerle yıllık veya aylık analizler.Listelenmiş verilere tıklayarak veri içeriğini görüntüleyin
 - 🔄 **Dönem Karşılaştırma**: İki farklı yıl veya ay arasındaki faaliyetleri karşılaştırın.
 - 📄 **PDF Raporu Oluşturma**: Belirli dönemlere ait grafik ve özet içeren PDF raporları üretin.
 - 🎨 **Kullanıcı Dostu Arayüz**: CustomTkinter ile modern ve sezgisel kullanım.
