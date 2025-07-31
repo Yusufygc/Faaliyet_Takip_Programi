@@ -1,6 +1,10 @@
+
+
+ANACONDA ENV ICIN
+------------------------------------------------------------------
 Sadece dist klasoru icinde calisan
 ------------------------------------------------------------------
-pyinstaller --noconfirm --windowed --icon=icons/iconn.ico --name "AktiviteTakip" ^
+pyinstaller --noconfirm --windowed --icon=icons/icon.ico --name "AktiviteTakip" ^
 --add-data "data;data" ^
 --add-data "gui;gui" ^
 --add-data "fonts;fonts" ^
