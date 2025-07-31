@@ -98,7 +98,7 @@ pip install pyinstaller
 ```
 
 ### 2. Yürütülebilir Dosya Oluşturma
-
+Anaconda env icin
 ```bash
 pyinstaller --noconfirm --windowed --icon=icons/icon.ico --name "AktiviteTakip" ^
 --add-data "data;data" ^
