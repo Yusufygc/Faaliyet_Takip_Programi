@@ -132,22 +132,37 @@ class PDFCreatePage(ctk.CTkFrame):
         self.on_option_change()
 
     def _load_fonts(self):
+        """
+        PDF oluşturma için gerekli fontları yükler ve ReportLab'e tanıtır.
+        """
         if self.font_registered:
             return
 
         try:
-            # Fonts
+            # Font dosyalarının yollarını resource_path ile al
             font_path_regular = resource_path('fonts/DejaVuSans.ttf')
             font_path_bold = resource_path('fonts/DejaVuSans-Bold.ttf')
 
-            # ReportLab için fontları kaydet
-            pdfmetrics.registerFont(TTFont('DejaVu Sans', font_path_regular))
-            pdfmetrics.registerFont(TTFont('DejaVu Sans Bold', font_path_bold))
+            # Font dosyalarının varlığını kontrol et
+            if not os.path.exists(font_path_regular):
+                raise FileNotFoundError(f"Font dosyası bulunamadı: {font_path_regular}")
+            if not os.path.exists(font_path_bold):
+                raise FileNotFoundError(f"Font dosyası bulunamadı: {font_path_bold}")
 
+            # ReportLab için fontları kaydet
+            # ReportLab'in yeni versiyonlarında addMapping'e gerek kalmamış olabilir.
+            # Sadece registerFont yeterli olmalı.
+            pdfmetrics.registerFont(TTFont('DejaVuSans', font_path_regular))
+            pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', font_path_bold))
+            
             self.font_registered = True
+            print("PDF fontları başarıyla yüklendi.")
         except Exception as e:
-            messagebox.showerror("Font Hatası", f"Fontlar yüklenirken bir hata oluştu: {e}")
-            print(f"Font yükleme hatası: {e}") # Konsol çıktısı için
+            print(f"PDF font yükleme hatası: {e}. Lütfen 'fonts' klasöründeki 'DejaVuSans.ttf' ve 'DejaVuSans-Bold.ttf' dosyalarının uygulama dizininde mevcut olduğundan emin olun.")
+            self.font_registered = False
+            # Hata mesajını show_message ile GUI'de göster
+            #self.after(100, lambda: self.show_message(f"Font yükleme hatası: {e}. Raporlarda Türkçe karakter sorunları olabilir.", "orange"))
+            # Yukarıdaki satırı yorum satırı yaptım çünkü _load_fonts, __init__ içinde çağrıldığı için
 
     def on_option_change(self):
         """PDF oluşturma seçeneği (aylık/yıllık) değiştiğinde UI güncellemeleri."""
