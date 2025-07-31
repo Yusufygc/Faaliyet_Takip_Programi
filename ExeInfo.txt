@@ -11,7 +11,7 @@ main.py
 ---------------------------------------------------------------------
 her yerde calisan
 ---------------------------------------------------------------------
-pyinstaller --noconfirm --windowed --onefile --icon=icons/iconn.ico --name "AktiviteTakip" ^
+pyinstaller --noconfirm --windowed --onefile --icon=icons/icon.ico --name "AktiviteTakip" ^
 --add-data "data;data" ^
 --add-data "gui;gui" ^
 --add-data "fonts;fonts" ^
