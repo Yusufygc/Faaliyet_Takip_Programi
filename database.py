@@ -1,8 +1,21 @@
 # database.py
 import sqlite3
 import os
-from utils import resource_path
-DB_PATH = resource_path("data/faaliyetler.db")
+import sys
+
+# Windows, macOS ve Linux sistemlerinde uyumlu bir yol bulur
+def get_db_path():
+    if sys.platform == "win32":
+        # Windows'ta AppData/Local klasörünü kullan
+        app_data_path = os.environ.get('LOCALAPPDATA')
+        if app_data_path:
+            return os.path.join(app_data_path, "FaaliyetTakip", "faaliyetler.db")
+    
+    # Diğer sistemler için kullanıcının ana dizinini kullan
+    home_path = os.path.expanduser("~")
+    return os.path.join(home_path, "FaaliyetTakip", "faaliyetler.db")
+
+DB_PATH = get_db_path()
 
 def init_db():
     db_dir = os.path.dirname(DB_PATH)
