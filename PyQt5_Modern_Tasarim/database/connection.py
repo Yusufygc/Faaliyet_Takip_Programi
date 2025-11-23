@@ -1,0 +1,58 @@
+# database/connection.py
+import sqlite3
+import os
+import sys
+
+def get_db_path():
+    """İşletim sistemine uyumlu veritabanı yolunu döndürür."""
+    if sys.platform == "win32":
+        app_data_path = os.environ.get('LOCALAPPDATA')
+        if app_data_path:
+            db_dir = os.path.join(app_data_path, "FaaliyetTakip")
+        else:
+            # Alternatif bir yol (eğer LOCALAPPDATA yoksa)
+            home_path = os.path.expanduser("~")
+            db_dir = os.path.join(home_path, "FaaliyetTakip")
+    else:
+        # macOS ve Linux için
+        home_path = os.path.expanduser("~")
+        db_dir = os.path.join(home_path, ".config", "FaaliyetTakip")
+
+    # Klasörün var olduğundan emin ol
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
+        
+    return os.path.join(db_dir, "faaliyetler.db")
+
+DB_PATH = get_db_path()
+
+def init_db():
+    """Veritabanını ve 'activities' tablosunu oluşturur (eğer yoksa)."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS activities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL,         -- dizi, film, kitap, vs.
+            name TEXT NOT NULL,
+            date TEXT NOT NULL,         -- YYYY-MM formatında
+            comment TEXT,
+            rating INTEGER             -- 1-10 arasında
+        )
+        ''')
+        conn.commit()
+    except Exception as e:
+        print(f"Veritabanı başlatılırken hata oluştu: {e}")
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+
+def get_connection():
+    """Veritabanına yeni bir bağlantı döndürür."""
+    try:
+        return sqlite3.connect(DB_PATH)
+    except Exception as e:
+        print(f"Veritabanı bağlantısı alınırken hata oluştu: {e}")
+        return None
