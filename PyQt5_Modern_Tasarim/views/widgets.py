@@ -18,7 +18,7 @@ class MonthYearWidget(QWidget):
         
         # YENİ: Tüm Yıllar seçeneği en başa eklendi
         self.combo_year.addItem("Tüm Yıllar") 
-        self.combo_year.addItems([str(y) for y in range(2020, current_year + 2)])
+        self.combo_year.addItems([str(y) for y in range(2023, current_year + 2)])
         
         # Varsayılan olarak "Tüm Yıllar" mı yoksa "Mevcut Yıl" mı gelsin?
         # Kullanıcı genelde günceli görmek ister, o yüzden mevcut yılı seçelim.

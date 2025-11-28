@@ -2,7 +2,7 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QComboBox, QPushButton, QTableWidget, 
                              QTableWidgetItem, QHeaderView, QMessageBox, QFrame,
-                             QMenu, QDialog)
+                             QMenu, QDialog, QGridLayout) # QGridLayout eklendi
 from PyQt5.QtCore import Qt, QTimer
 import math
 
@@ -96,7 +96,6 @@ class ListPage(QWidget):
         # --- Tablo (Liste) ---
         self.table = QTableWidget()
         
-        # GÜNCELLEME: ID sütunu gizlendiği için toplam 5 sütun oluşturuyoruz
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["Tür", "Ad", "Tarih", "Yorum", "Puan"])
         
@@ -120,32 +119,51 @@ class ListPage(QWidget):
         
         layout.addWidget(self.table)
 
-        # --- Sayfalama (Pagination) Alanı ---
-        pagination_layout = QHBoxLayout()
+        # --- Sayfalama (Pagination) Alanı - GÜNCELLENDİ (Grid Layout) ---
+        pagination_widget = QWidget()
+        pagination_layout = QGridLayout(pagination_widget)
+        pagination_layout.setContentsMargins(0, 10, 0, 0) # Üstten biraz boşluk
         
-        # Sayfa Başına Gösterim Seçimi
-        pagination_layout.addWidget(QLabel("Sayfa başına:"))
+        # 1. SOL PARÇA: Sayfa Başına Gösterim (Kendi içinde yatay layout)
+        left_container = QWidget()
+        left_layout = QHBoxLayout(left_container)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        
+        left_layout.addWidget(QLabel("Sayfa başına:"))
         self.combo_per_page = QComboBox()
         self.combo_per_page.addItems(["15", "30", "50", "100"])
         self.combo_per_page.currentTextChanged.connect(self.on_per_page_changed)
-        pagination_layout.addWidget(self.combo_per_page)
+        left_layout.addWidget(self.combo_per_page)
         
-        pagination_layout.addStretch()
+        # 2. ORTA PARÇA: Navigasyon Butonları (Kendi içinde yatay layout)
+        center_container = QWidget()
+        center_layout = QHBoxLayout(center_container)
+        center_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Navigasyon Butonları
         self.btn_prev = QPushButton("◄ Önceki")
         self.btn_prev.clicked.connect(self.prev_page)
-        pagination_layout.addWidget(self.btn_prev)
+        center_layout.addWidget(self.btn_prev)
 
         self.lbl_page_info = QLabel("Sayfa 1 / 1")
         self.lbl_page_info.setStyleSheet("font-weight: bold; margin: 0 10px;")
-        pagination_layout.addWidget(self.lbl_page_info)
+        center_layout.addWidget(self.lbl_page_info)
 
         self.btn_next = QPushButton("Sonraki ►")
         self.btn_next.clicked.connect(self.next_page)
-        pagination_layout.addWidget(self.btn_next)
+        center_layout.addWidget(self.btn_next)
 
-        layout.addLayout(pagination_layout)
+        # 3. GRİD YERLEŞİMİ (3 Sütunlu Mantık)
+        # (Widget, Satır, Sütun, Hizalama)
+        pagination_layout.addWidget(left_container, 0, 0, Qt.AlignLeft)   # Sol: Sola yasla
+        pagination_layout.addWidget(center_container, 0, 1, Qt.AlignCenter) # Orta: Ortaya yasla
+        pagination_layout.addWidget(QWidget(), 0, 2)                      # Sağ: Boş widget (Denge için)
+
+        # Sütun Genişlik Ayarları (Sol ve Sağ eşit esneyerek ortayı sıkıştırır ve ortalar)
+        pagination_layout.setColumnStretch(0, 1) # Sol taraf esnesin
+        pagination_layout.setColumnStretch(1, 0) # Orta taraf sadece içeriği kadar olsun
+        pagination_layout.setColumnStretch(2, 1) # Sağ taraf esnesin (Soldaki kadar)
+
+        layout.addWidget(pagination_widget)
 
         # İlk Yükleme
         self.refresh_data()

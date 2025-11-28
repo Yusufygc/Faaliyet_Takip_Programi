@@ -1,7 +1,7 @@
 # views/pages/stats_page.py
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QTableWidget, QTableWidgetItem, QHeaderView, 
-                             QCheckBox, QFrame, QSplitter, QDialog, QListWidget)
+                             QFrame, QSplitter, QDialog, QListWidget) # QCheckBox kaldırıldı
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from views.widgets import MonthYearWidget
 
-# --- Detay Dialog (Aynı kalıyor) ---
+# --- Detay Dialog Penceresi ---
 class DetailDialog(QDialog):
     def __init__(self, title, details_list, parent=None):
         super().__init__(parent)
@@ -19,12 +19,12 @@ class DetailDialog(QDialog):
         list_widget = QListWidget()
         if details_list:
             for item in details_list:
+                # item: (name, date)
                 list_widget.addItem(f"• {item[0]} ({item[1]})")
         else:
             list_widget.addItem("Kayıt bulunamadı.")
         layout.addWidget(list_widget)
-        btn = QListWidget() # Hata olmasın diye dummy, aslında gerek yok
-        
+
 # --- İstatistik Sayfası ---
 class StatsPage(QWidget):
     def __init__(self, controller):
@@ -46,37 +46,30 @@ class StatsPage(QWidget):
         filter_frame.setStyleSheet("""
             QFrame { background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; }
             QLabel { border: none; font-weight: bold; color: #555; }
-            QCheckBox { font-weight: bold; color: #555; spacing: 8px; }
         """)
         filter_layout = QHBoxLayout(filter_frame)
         filter_layout.setContentsMargins(15, 15, 15, 15)
 
-        # 1. Tüm Zamanlar
-        self.chk_all_time = QCheckBox("Tüm Zamanlar")
-        self.chk_all_time.toggled.connect(self.on_all_time_toggled)
-        filter_layout.addWidget(self.chk_all_time)
-
-        line = QFrame()
-        line.setFrameShape(QFrame.VLine)
-        line.setFrameShadow(QFrame.Sunken)
-        filter_layout.addWidget(line)
-
-        # 2. Tarih Seçici (Artık Checkbox YOK)
-        self.lbl_date = QLabel("Tarih:")
+        # GÜNCELLEME: "Tüm Zamanlar" Checkbox'ı ve ayırıcı çizgi kaldırıldı.
+        
+        # Tarih Seçici
+        self.lbl_date = QLabel("Tarih Aralığı:")
         filter_layout.addWidget(self.lbl_date)
         
         self.date_picker = MonthYearWidget()
         self.date_picker.dateChanged.connect(self.refresh_statistics)
         filter_layout.addWidget(self.date_picker)
         
+        # Sağa yasla (Tarih seçici sola dayalı, kalan boşluk sağda olsun)
         filter_layout.addStretch()
+        
         main_layout.addWidget(filter_frame)
 
-        # --- Veri Yok Uyarısı (YENİ) ---
+        # --- Veri Yok Uyarısı ---
         self.lbl_no_data = QLabel("⚠️ Seçilen kriterlere uygun veri bulunamadı.")
         self.lbl_no_data.setAlignment(Qt.AlignCenter)
         self.lbl_no_data.setStyleSheet("font-size: 16px; color: #7f8c8d; margin-top: 50px;")
-        self.lbl_no_data.hide() # Başlangıçta gizli
+        self.lbl_no_data.hide()
         main_layout.addWidget(self.lbl_no_data)
 
         # --- İçerik Alanı (Splitter) ---
@@ -91,7 +84,10 @@ class StatsPage(QWidget):
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setAlternatingRowColors(True)
         self.table.setShowGrid(False)
-        self.table.setStyleSheet("QTableWidget { border: none; } QHeaderView::section { background-color: #f0f0f0; border: none; padding: 5px; }")
+        self.table.setStyleSheet("""
+            QTableWidget { border: none; } 
+            QHeaderView::section { background-color: #f0f0f0; border: none; padding: 5px; }
+        """)
         self.table.doubleClicked.connect(self.open_details)
         self.splitter.addWidget(self.table)
 
@@ -106,43 +102,63 @@ class StatsPage(QWidget):
         # İlk yükleme
         self.refresh_statistics()
 
-    def on_all_time_toggled(self, checked):
-        """'Tüm Zamanlar' seçildiğinde tarih seçimini devre dışı bırak."""
-        self.date_picker.set_enabled(not checked)
-        self.lbl_date.setEnabled(not checked)
-        self.refresh_statistics()
-
     def refresh_statistics(self):
-        """Verileri çeker ve ekranı günceller."""
-        ignore_dates = self.chk_all_time.isChecked()
+        """Verileri çeker, BİRLEŞTİRİR ve ekranı günceller."""
         date_str = self.date_picker.get_date_str()
         
-        # OTOMATİK MOD ALGILAMA:
-        # Eğer string uzunluğu 4 ise (örn: "2024") -> Yıl modudur.
-        # Eğer string uzunluğu 7 ise (örn: "2024-05") -> Ay modudur.
+        # MANTIK GÜNCELLEMESİ:
+        # Eğer date_str boşsa (""), "Tüm Yıllar" seçilidir -> ignore_dates = True
+        # Eğer doluysa (örn "2025" veya "2025-05") -> ignore_dates = False
+        ignore_dates = (date_str == "")
+        
+        # Yıl modu kontrolü: "2025" (4 karakter) -> True, "2025-05" (7 karakter) -> False
         year_only = (len(date_str) == 4) 
 
-        # Controller'dan veriyi al
-        data = self.controller.get_dashboard_stats(date_str, year_only, ignore_dates)
+        # Controller'dan ham veriyi al
+        raw_data = self.controller.get_dashboard_stats(date_str, year_only, ignore_dates)
         
+        # --- VERİ BİRLEŞTİRME VE DÜZENLEME ---
+        processed_dict = {}
+        
+        for category, count in raw_data:
+            # Baş harfi büyüt (Örn: "dizi" -> "Dizi", "film" -> "Film")
+            clean_cat = category.title() if category else "Diğer"
+            
+            if clean_cat in processed_dict:
+                processed_dict[clean_cat] += count
+            else:
+                processed_dict[clean_cat] = count
+                
+        # Sayıya göre sırala (Çoktan aza)
+        final_data = sorted(processed_dict.items(), key=lambda x: x[1], reverse=True)
+
         # VERİ YOK KONTROLÜ
-        if not data:
-            self.splitter.hide()      # Tablo ve grafiği gizle
-            self.lbl_no_data.show()   # Uyarıyı göster
+        if not final_data:
+            self.splitter.hide()
+            self.lbl_no_data.show()
         else:
-            self.splitter.show()      # Tablo ve grafiği göster
-            self.lbl_no_data.hide()   # Uyarıyı gizle
+            self.splitter.show()
+            self.lbl_no_data.hide()
             
             # Güncelle
-            self.update_table(data)
-            self.update_graphs(data)
+            self.update_table(final_data)
+            self.update_graphs(final_data)
 
     def update_table(self, data):
+        """Tabloyu günceller ve verileri ortalar."""
         self.table.setRowCount(0)
         for row_idx, (activity_type, count) in enumerate(data):
             self.table.insertRow(row_idx)
-            self.table.setItem(row_idx, 0, QTableWidgetItem(activity_type))
-            self.table.setItem(row_idx, 1, QTableWidgetItem(str(count)))
+            
+            # 1. Kategori (Ortalı ve Baş harfi büyük)
+            item_type = QTableWidgetItem(activity_type)
+            item_type.setTextAlignment(Qt.AlignCenter) 
+            self.table.setItem(row_idx, 0, item_type)
+            
+            # 2. Sayı (Ortalı)
+            item_count = QTableWidgetItem(str(count))
+            item_count.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(row_idx, 1, item_count)
 
     def update_graphs(self, data):
         self.figure.clear()
@@ -176,19 +192,26 @@ class StatsPage(QWidget):
         self.canvas.draw()
 
     def open_details(self):
-        """Detayları açarken de aynı otomatik mantığı kullanıyoruz."""
+        """Detayları açar."""
         selected_items = self.table.selectedItems()
         if not selected_items: return
             
-        activity_type = self.table.item(selected_items[0].row(), 0).text()
+        activity_type_display = self.table.item(selected_items[0].row(), 0).text()
         
-        ignore_dates = self.chk_all_time.isChecked()
+        # Filtre mantığını burada da tekrar kuruyoruz
         date_str = self.date_picker.get_date_str()
+        ignore_dates = (date_str == "")
         year_only = (len(date_str) == 4) 
         
+        # Önce tam eşleşme ara (Veritabanında "Dizi" olarak kayıtlıysa)
         details = self.controller.get_activity_details_by_type(
-            activity_type, date_str, year_only, ignore_dates
+            activity_type_display, date_str, year_only, ignore_dates
         )
+        # Bulamazsa küçük harfle ara ("dizi" olarak kayıtlıysa)
+        if not details:
+             details = self.controller.get_activity_details_by_type(
+                activity_type_display.lower(), date_str, year_only, ignore_dates
+            )
         
-        dialog = DetailDialog(f"{activity_type} Detayları", details, self)
+        dialog = DetailDialog(f"{activity_type_display} Detayları", details, self)
         dialog.exec_()
