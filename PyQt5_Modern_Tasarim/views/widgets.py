@@ -10,18 +10,18 @@ class MonthYearWidget(QWidget):
         super().__init__(parent)
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(5) # Elemanlar arası boşluk
+        self.layout.setSpacing(5)
+        
+        # Bu flag, dışarıdan (örneğin PDF sayfasındaki checkbox ile) 
+        # ay seçiminin zorla kapatılıp kapatılmadığını takip eder.
+        self._year_only_forced = False 
         
         # Yıl Seçimi
         self.combo_year = QComboBox()
         current_year = datetime.now().year
         
-        # YENİ: Tüm Yıllar seçeneği en başa eklendi
         self.combo_year.addItem("Tüm Yıllar") 
-        self.combo_year.addItems([str(y) for y in range(2023, current_year + 2)])
-        
-        # Varsayılan olarak "Tüm Yıllar" mı yoksa "Mevcut Yıl" mı gelsin?
-        # Kullanıcı genelde günceli görmek ister, o yüzden mevcut yılı seçelim.
+        self.combo_year.addItems([str(y) for y in range(2020, current_year + 2)])
         self.combo_year.setCurrentText(str(current_year))
         
         # Ay Seçimi
@@ -33,15 +33,18 @@ class MonthYearWidget(QWidget):
         self.layout.addWidget(self.combo_month)
 
         # Sinyal Bağlantıları
-        self.combo_year.currentIndexChanged.connect(self.on_year_changed) # Özel slot
+        self.combo_year.currentIndexChanged.connect(self.on_year_changed)
         self.combo_month.currentIndexChanged.connect(self.emit_signal)
 
     def on_year_changed(self):
         """Yıl değiştiğinde ay kutusunun durumunu güncelle."""
         is_all_years = (self.combo_year.currentIndex() == 0) # "Tüm Yıllar" seçili mi?
         
-        # Eğer Tüm Yıllar seçiliyse, Ay seçimi mantıksız olur, pasif yapalım
-        self.combo_month.setEnabled(not is_all_years)
+        # Eğer dışarıdan "Sadece Yıl" modu zorlanmadıysa,
+        # "Tüm Yıllar" seçimine göre ay kutusunu aç/kapat.
+        if not self._year_only_forced:
+            self.combo_month.setEnabled(not is_all_years)
+        
         if is_all_years:
             self.combo_month.setCurrentIndex(0) # Ayı sıfırla
             
@@ -55,23 +58,24 @@ class MonthYearWidget(QWidget):
         month_idx = self.combo_month.currentIndex()
         month_text = self.combo_month.currentText()
         
-        # "Tüm Yıllar" seçiliyse (index 0) boş döndür -> Filtre Yok
-        if self.combo_year.currentIndex() == 0:
+        if self.combo_year.currentIndex() == 0: # "Tüm Yıllar"
             return ""
             
-        if month_idx == 0: # "Tüm Aylar" seçili
+        if month_idx == 0: # "Tüm Aylar"
             return year
         else:
             return f"{year}-{month_text}"
 
     def clear_filters(self):
-        """Seçimleri varsayılan değerlere döndürür."""
         current_year = datetime.now().year
         self.combo_year.blockSignals(True)
         self.combo_month.blockSignals(True)
         
         self.combo_year.setCurrentText(str(current_year))
         self.combo_month.setCurrentIndex(0)
+        
+        # Dış zorlamayı kaldır
+        self._year_only_forced = False
         self.combo_month.setEnabled(True)
         
         self.combo_year.blockSignals(False)
@@ -80,6 +84,22 @@ class MonthYearWidget(QWidget):
     
     def set_enabled(self, enabled):
         self.combo_year.setEnabled(enabled)
-        # Ay kutusu sadece yıl seçiliyse aktif olmalı
         is_all_years = (self.combo_year.currentIndex() == 0)
-        self.combo_month.setEnabled(enabled and not is_all_years)
+        # Eğer dışarıdan zorlanmadıysa durumu koru
+        if not self._year_only_forced:
+            self.combo_month.setEnabled(enabled and not is_all_years)
+        else:
+            self.combo_month.setEnabled(False)
+
+    # --- EKSİK OLAN METOD BURAYA EKLENDİ ---
+    def set_year_only_mode(self, enabled: bool):
+        """Dışarıdan (örn: Checkbox) sadece yıl modunu zorlamak için."""
+        self._year_only_forced = enabled
+        
+        if enabled:
+            self.combo_month.setCurrentIndex(0) # Tüm Aylar'a getir
+            self.combo_month.setEnabled(False)  # Kutuyu kilitle
+        else:
+            # Kilidi aç, ama "Tüm Yıllar" seçiliyse hala kapalı kalsın
+            is_all_years = (self.combo_year.currentIndex() == 0)
+            self.combo_month.setEnabled(not is_all_years)

@@ -14,29 +14,35 @@ class MainController:
         # Repository nesnesini başlatıyoruz
         self.repository = ActivityRepository()
 
-    def get_all_activities(self, type_filter="Hepsi", search_term="", date_filter=""):
-        """Filtrelenmiş aktivite listesini döndürür."""
-        return self.repository.get_all_filtered(type_filter, search_term, date_filter)
+    def get_all_activities(self, type_filter="Hepsi", search_term="", date_filter="", page=1, items_per_page=15):
+        """Filtrelenmiş aktivite listesini ve toplam sayıyı döndürür (Pagination destekli)."""
+        return self.repository.get_all_filtered(type_filter, search_term, date_filter, page, items_per_page)
+
+    def get_all_activity_names(self):
+        """Otomatik tamamlama için benzersiz isim listesini döndürür."""
+        return self.repository.get_unique_names()
+
+    def get_activity(self, activity_id):
+        """ID'ye göre tek bir aktivite getirir."""
+        return self.repository.get_by_id(activity_id)
 
     def add_activity(self, type_val, name, date_val, comment, rating_val):
         """
         Yeni bir aktivite ekler. Önce verileri doğrular.
         Dönüş: (Başarı Durumu: bool, Mesaj: str)
         """
-        # 1. Doğrulamalar (Validations) - Eskiden add_page.py içindeydi
+        # Doğrulamalar
         if not name or not name.strip():
             return False, "Faaliyet adı boş bırakılamaz."
 
         if not date_val:
             return False, "Tarih seçimi zorunludur."
 
-        if not is_valid_yyyymm(date_val):
-            return False, "Geçersiz tarih formatı (YYYY-MM olmalı)."
-
-        # Gelecek tarih kontrolü
+        # Tarih kontrolü
         try:
             year, month = map(int, date_val.split('-'))
             selected_date = datetime(year, month, 1)
+            # Ayın ilk gününe göre kontrol (saat/dakika sıfırlanarak)
             current_date = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             
             if selected_date > current_date:
@@ -50,11 +56,10 @@ class MainController:
         except ValueError:
             return False, "Geçersiz puan değeri."
 
-        # 2. Nesne Oluşturma
-        # ID veritabanında otomatik atanacak, o yüzden None gönderiyoruz
+        # Nesne Oluşturma (ID None, veritabanı atayacak)
         new_activity = Activity(None, type_val, name.strip(), date_val, comment.strip(), rating)
 
-        # 3. Veritabanına Kayıt
+        # Veritabanına Kayıt
         success = self.repository.add(new_activity)
         
         if success:
@@ -66,7 +71,6 @@ class MainController:
         """
         Mevcut bir aktiviteyi günceller.
         """
-        # Basit doğrulamalar (Ekleme ile benzer)
         if not name or not name.strip():
             return False, "Faaliyet adı boş bırakılamaz."
             
@@ -75,7 +79,7 @@ class MainController:
         except ValueError:
             return False, "Geçersiz puan değeri."
 
-        # Değişiklik Kontrolü (Opsiyonel ama iyi bir pratik)
+        # Değişiklik Kontrolü
         if original_activity:
             is_same = (
                 original_activity.type == type_val and
@@ -87,7 +91,6 @@ class MainController:
             if is_same:
                 return False, "Herhangi bir değişiklik yapılmadı."
 
-        # Güncelleme işlemi
         updated_activity = Activity(activity_id, type_val, name.strip(), date_val, comment.strip(), rating)
         success = self.repository.update(updated_activity)
 
@@ -119,17 +122,7 @@ class MainController:
     def get_activity_details_by_type(self, activity_type, date_prefix="", year_only=False, ignore_dates=False):
         """İstatistik detayları için liste döndürür."""
         return self.repository.get_details_for_type(activity_type, date_prefix, year_only, ignore_dates)
-    
-    def get_activity(self, activity_id):
-        """ID'ye göre tek bir aktivite getirir."""
-        return self.repository.get_by_id(activity_id)
-    
-    def get_all_activities(self, type_filter="Hepsi", search_term="", date_filter="", page=1, items_per_page=15):
-        """
-        Filtrelenmiş aktivite listesini ve toplam sayıyı döndürür.
-        """
-        return self.repository.get_all_filtered(type_filter, search_term, date_filter, page, items_per_page)
-    
-    def get_all_activity_names(self):
-        """Otomatik tamamlama için isim listesini döndürür."""
-        return self.repository.get_unique_names()
+
+    def get_pdf_data(self, date_prefix):
+        """PDF raporu için gerekli detaylı veriyi çeker."""
+        return self.repository.get_detailed_data_for_pdf(date_prefix)
