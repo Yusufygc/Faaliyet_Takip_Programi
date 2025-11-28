@@ -185,22 +185,23 @@ class ActivityRepository:
     def get_stats_by_type(self, date_prefix: str = "", year_only: bool = False, ignore_dates: bool = False) -> list[tuple]:
         """
         StatsPage için gruplanmış istatistikleri çeker.
-        (stats_page.py'deki show_statistics mantığı)
+        Dönüş: (type, count, average_rating)
         """
-        query = "SELECT type, COUNT(*) FROM activities"
+        # Puanı 0'dan büyük olanların ortalamasını al (NULLIF veya CASE kullanımı)
+        query = "SELECT type, COUNT(*), AVG(CASE WHEN rating > 0 THEN rating END) FROM activities"
         params = []
 
         if not ignore_dates:
             if year_only:
-                if not date_prefix or not is_valid_yyyy(date_prefix): return [] # Geçersiz yıl
+                if not date_prefix or not is_valid_yyyy(date_prefix): return []
                 query += " WHERE date LIKE ?"
                 params.append(date_prefix + "%")
             else:
-                if not date_prefix or not is_valid_yyyymm(date_prefix): return [] # Geçersiz ay
+                if not date_prefix or not is_valid_yyyymm(date_prefix): return []
                 query += " WHERE date = ?"
                 params.append(date_prefix)
         
-        query += " GROUP BY type ORDER BY type"
+        query += " GROUP BY type ORDER BY COUNT(*) DESC" # Sayıya göre çoktan aza sırala
         
         try:
             conn = get_connection()
