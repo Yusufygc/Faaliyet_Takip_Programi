@@ -275,13 +275,10 @@ class StatsPage(QWidget):
         ignore_dates = (date_str == "")
         year_only = (len(date_str) == 4) 
         
+        # Repository artık büyük/küçük harf ayrımını kendi içinde hallediyor.
         details = self.controller.get_activity_details_by_type(
             activity_type_display, date_str, year_only, ignore_dates
         )
-        if not details:
-             details = self.controller.get_activity_details_by_type(
-                activity_type_display.lower(), date_str, year_only, ignore_dates
-            )
         
         dialog = DetailDialog(f"{activity_type_display} Detayları", details, self)
         dialog.exec_()

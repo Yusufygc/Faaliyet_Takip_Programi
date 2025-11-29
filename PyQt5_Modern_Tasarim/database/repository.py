@@ -218,10 +218,13 @@ class ActivityRepository:
     def get_details_for_type(self, activity_type: str, date_prefix: str = "", year_only: bool = False, ignore_dates: bool = False) -> list[tuple]:
         """
         StatsPage detayları için (isim, tarih) listesini çeker.
-        (stats_page.py'deki show_details_for_type mantığı)
+        Büyük/küçük harf ayrımı yapmadan tüm varyasyonları getirir.
         """
-        query = "SELECT name, date FROM activities WHERE type = ?"
-        params = [activity_type]
+        # DEĞİŞİKLİK BURADA: 'type = ?' yerine 'lower(type) = ?' kullanıyoruz.
+        query = "SELECT name, date FROM activities WHERE lower(type) = ?"
+        
+        # Gelen parametreyi de küçük harfe çevirerek eşleştiriyoruz.
+        params = [activity_type.lower()]
 
         if not ignore_dates:
             if year_only:
