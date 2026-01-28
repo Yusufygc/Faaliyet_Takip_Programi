@@ -3,7 +3,6 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QLabel, QLineEdit,
                              QTextEdit, QComboBox, QPushButton, QMessageBox, 
                              QFormLayout, QDateEdit)
 from PyQt5.QtCore import QDate, Qt
-from constants import FAALIYET_TURLERI
 
 class EditDialog(QDialog):
     def __init__(self, controller, activity, parent=None):
@@ -13,7 +12,21 @@ class EditDialog(QDialog):
         self.setWindowTitle(f"Düzenle: {activity.name}")
         self.setFixedSize(400, 500)
         self.init_ui()
-        self.load_data() # Mevcut verileri forma doldur
+        self.load_types() # Türleri yükle
+        # self.load_data() # Bunu load_types bittikten sonra çağırmalıyız ki combo dolu olsun
+
+    def load_types(self):
+        """Veritabanından türleri çeker."""
+        if hasattr(self.controller, 'get_all_activity_types'):
+            self.controller.get_all_activity_types(self.on_types_loaded)
+
+    def on_types_loaded(self, types):
+        self.combo_type.clear()
+        if types:
+            self.combo_type.addItems(types)
+        
+        # Türler yüklendikten sonra veriyi doldur
+        self.load_data()
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -29,7 +42,7 @@ class EditDialog(QDialog):
         
         # Tür
         self.combo_type = QComboBox()
-        self.combo_type.addItems(FAALIYET_TURLERI)
+        # self.combo_type.addItems(FAALIYET_TURLERI) # Artık dinamik
         form_layout.addRow("Tür:", self.combo_type)
 
         # Ad

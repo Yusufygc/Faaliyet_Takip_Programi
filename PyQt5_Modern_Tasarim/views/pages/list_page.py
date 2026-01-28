@@ -6,7 +6,6 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QTimer
 import math
 
-from constants import LIST_PAGE_FILTRE_SECENEKLERI
 from views.widgets import MonthYearWidget
 from views.pages.edit_dialog import EditDialog
 
@@ -60,9 +59,11 @@ class ListPage(QWidget):
         # 1. Tür Filtresi
         filter_layout.addWidget(QLabel("Tür:"))
         self.combo_filter_type = QComboBox()
-        self.combo_filter_type.addItems(LIST_PAGE_FILTRE_SECENEKLERI)
+        self.combo_filter_type.addItem("Hepsi") # Varsayılan
         self.combo_filter_type.currentIndexChanged.connect(self.on_filter_changed)
         filter_layout.addWidget(self.combo_filter_type)
+        
+        self.load_types() # Türleri yükle
 
         # 2. Tarih Filtresi (Widget)
         filter_layout.addWidget(QLabel("Tarih:"))
@@ -168,6 +169,27 @@ class ListPage(QWidget):
         # İlk Yükleme
         self.refresh_data()
 
+    def load_types(self):
+        """Filtre için türleri yükler."""
+        if hasattr(self.controller, 'get_all_activity_types'):
+            self.controller.get_all_activity_types(self.on_types_loaded)
+
+    def on_types_loaded(self, types):
+        # "Hepsi" her zaman en başta kalsın
+        current_text = self.combo_filter_type.currentText()
+        
+        self.combo_filter_type.blockSignals(True) # Sinyali geçici durdur
+        self.combo_filter_type.clear()
+        self.combo_filter_type.addItem("Hepsi")
+        if types:
+            self.combo_filter_type.addItems(types)
+            
+        # Eski seçimi koru
+        index = self.combo_filter_type.findText(current_text)
+        if index >= 0:
+            self.combo_filter_type.setCurrentIndex(index)
+        self.combo_filter_type.blockSignals(False)
+
     def on_filter_changed(self):
         """Filtre değiştiğinde (veya arama yapıldığında) sayfayı 1'e al ve yenile."""
         self.current_page = 1
@@ -200,10 +222,12 @@ class ListPage(QWidget):
         date_filter = self.date_widget.get_date_str()
 
         # Loading göstergesi (Opsiyonel: status bar)
-        # Loading göstergesi (Opsiyonel: status bar)
         window = self.window()
         if window and hasattr(window, 'statusBar') and window.statusBar():
             window.statusBar().showMessage("Veriler yükleniyor...", 1000)
+
+        # Türleri de yenile (Eğer yeni tür eklendiyse listeye gelsin)
+        self.load_types()
 
         # Controller'dan veriyi asenkron iste
         self.controller.get_all_activities(

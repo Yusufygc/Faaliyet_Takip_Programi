@@ -17,6 +17,9 @@ class MainController:
         # Repository nesnesini başlatıyoruz
         self.repository = ActivityRepository()
         self.workers = set() # Aktif worker'ları takip etmek için
+        
+        # Başlangıçta türleri senkronize et
+        self.synchronize_types()
 
     def _run_async(self, func, callback, *args, **kwargs):
         """Yardımcı metod: Verilen fonksiyonu asenkron çalıştırır."""
@@ -165,3 +168,35 @@ class MainController:
     def get_pdf_data(self, callback, date_prefix):
         """PDF verisini asenkron çeker."""
         self._run_async(self.repository.get_detailed_data_for_pdf, callback, date_prefix)
+
+    # --- Ayarlar / Tür Yönetimi ---
+
+    def get_all_activity_types(self, callback):
+        """Tüm türleri asenkron getirir."""
+        self._run_async(self.repository.get_all_types, callback)
+
+    def add_activity_type(self, name, callback):
+        """Yeni tür ekleme (Asenkron)."""
+        if not name or not name.strip():
+            callback((False, "Tür adı boş olamaz."))
+            return
+        self._run_async(self.repository.add_type, callback, name.strip())
+
+    def update_activity_type(self, old_name, new_name, callback):
+        """Tür güncelleme (Asenkron)."""
+        if not new_name or not new_name.strip():
+            callback((False, "Yeni tür adı boş olamaz."))
+            return
+        if old_name == new_name:
+            callback((False, "Herhangi bir değişiklik yapılmadı."))
+            return
+            
+        self._run_async(self.repository.update_type, callback, old_name, new_name.strip())
+
+    def delete_activity_type(self, name, callback):
+        """Tür silme (Asenkron)."""
+        self._run_async(self.repository.delete_type, callback, name)
+
+    def synchronize_types(self):
+        """Eksik türleri senkronize et (Arka planda çalışır, callback gerekmez)."""
+        self._run_async(self.repository.synchronize_types, None)

@@ -120,7 +120,9 @@ class ActivityRepository:
         params = []
 
         if activity_type_filter != "Hepsi":
-            base_query += " AND type = ?"
+            # SQLite'da varsayılan LIKE case-insensitive çalışır (ASCII için)
+            # UTF-8 karakterler için lower() kullanımı daha garantidir.
+            base_query += " AND lower(type) = lower(?)"
             params.append(activity_type_filter)
 
         if search_term:
@@ -308,6 +310,236 @@ class ActivityRepository:
         except Exception as e:
             logger.error(f"Hata (Repository.get_detailed_data_for_pdf): {e}")
             return []
+            if conn:
+                conn.close()
+
+    # --- Ayarlar / Tür Yönetimi ---
+
+    def ensure_types_table_exists(self):
+        """activity_types tablosunun varlığını kontrol eder ve oluşturur."""
+        sql_create = '''
+            CREATE TABLE IF NOT EXISTS activity_types (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE
+            )
+        '''
+        # Varsayılan türleri ekle (Eğer tablo boşsa)
+        sql_check_empty = "SELECT COUNT(*) FROM activity_types"
+        sql_insert_default = "INSERT INTO activity_types (name) VALUES (?)"
+        
+        from constants import FAALIYET_TURLERI # Circular import riskine karşı burada import
+
+        try:
+            conn = get_connection()
+            if not conn: return
+            cursor = conn.cursor()
+            cursor.execute(sql_create)
+            
+            cursor.execute(sql_check_empty)
+            count = cursor.fetchone()[0]
+            
+            if count == 0:
+                for t in FAALIYET_TURLERI:
+                    try:
+                        cursor.execute(sql_insert_default, (t,))
+                    except:
+                        pass # Duplicate hatası olursa geç
+                conn.commit()
+                logger.info("Varsayılan faaliyet türleri eklendi.")
+                
+        except Exception as e:
+            logger.error(f"Hata (Repository.ensure_types_table_exists): {e}")
+        finally:
+            if conn:
+                conn.close()
+
+    def normalize_activity_types(self):
+        """
+        Veritabanındaki tüm tür isimlerini 'Başlık Düzeni'ne (Title Case) çevirir.
+        Örn: 'dizi' -> 'Dizi', 'FILM' -> 'Film'.
+        Bu işlem hem activities hem de activity_types tablolarını düzeltir.
+        """
+        conn = get_connection()
+        if not conn: return
+        
+        try:
+            cursor = conn.cursor()
+            
+            # 1. Activities tablosundaki benzersiz türleri çek
+            cursor.execute("SELECT DISTINCT type FROM activities")
+            unique_types = [row[0] for row in cursor.fetchall() if row[0]]
+            
+            for old_type in unique_types:
+                new_type = old_type.strip().title() # "dizi " -> "Dizi"
+                
+                if old_type != new_type:
+                    # Eski türü yeni türe güncelle
+                    logger.info(f"Normalizasyon: '{old_type}' -> '{new_type}' çevriliyor...")
+                    cursor.execute("UPDATE activities SET type = ? WHERE type = ?", (new_type, old_type))
+            
+            # 2. Activity_types tablosundaki türleri çek ve düzelt
+            cursor.execute("SELECT name FROM activity_types")
+            registered_types = [row[0] for row in cursor.fetchall()]
+            
+            for old_name in registered_types:
+                new_name = old_name.strip().title()
+                
+                if old_name != new_name:
+                    # Yeni isim zaten var mı?
+                    cursor.execute("SELECT COUNT(*) FROM activity_types WHERE name = ?", (new_name,))
+                    exists = cursor.fetchone()[0] > 0
+                    
+                    if exists:
+                        # Zaten doğrusu varsa, eskisini sil
+                        cursor.execute("DELETE FROM activity_types WHERE name = ?", (old_name,))
+                    else:
+                        # Yoksa yeniden adlandır
+                        cursor.execute("UPDATE activity_types SET name = ? WHERE name = ?", (new_name, old_name))
+            
+            conn.commit()
+        except Exception as e:
+            logger.error(f"Hata (Repository.normalize_activity_types): {e}")
+        finally:
+            if conn:
+                conn.close()
+
+    def synchronize_types(self):
+        """
+        Activities tablosunda olup Activity_types tablosunda olmayan türleri senkronize eder.
+        Data tutarlılığı için kullanılır.
+        """
+        # Önce veriyi normalize et (Küçük harf/büyük harf karmaşasını çöz)
+        self.normalize_activity_types()
+
+        sql_find_missing = '''
+            SELECT DISTINCT type FROM activities 
+            WHERE type NOT IN (SELECT name FROM activity_types)
+        '''
+        sql_insert = "INSERT INTO activity_types (name) VALUES (?)"
+        
+        try:
+            conn = get_connection()
+            if not conn: return
+            cursor = conn.cursor()
+            
+            # Eksik türleri bul
+            cursor.execute(sql_find_missing)
+            missing_types = [row[0] for row in cursor.fetchall() if row[0] and row[0].strip()]
+            
+            if missing_types:
+                count = 0
+                for t in missing_types:
+                   try:
+                       cursor.execute(sql_insert, (t,))
+                       count += 1
+                   except:
+                       pass # Zaten varsa geç
+                conn.commit()
+                # logger.info(f"{count} adet eksik tür senkronize edildi: {missing_types}")
+                
+        except Exception as e:
+            logger.error(f"Hata (Repository.synchronize_types): {e}")
+        finally:
+            if conn:
+                conn.close()
+
+    def get_all_types(self) -> list[str]:
+        """Tüm aktif türleri alfabetik sırayla döndürür."""
+        # Tablo yoksa oluştur (Güvenlik için)
+        self.ensure_types_table_exists()
+        
+        sql = "SELECT name FROM activity_types ORDER BY name ASC"
+        try:
+            conn = get_connection()
+            if not conn: return []
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            return [row[0] for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Hata (Repository.get_all_types): {e}")
+            return []
+        finally:
+            if conn:
+                conn.close()
+
+    def add_type(self, name: str) -> tuple[bool, str]:
+        """Yeni bir tür ekler."""
+        sql = "INSERT INTO activity_types (name) VALUES (?)"
+        try:
+            conn = get_connection()
+            if not conn: return False, "Veritabanı bağlantısı yok."
+            cursor = conn.cursor()
+            cursor.execute(sql, (name,))
+            conn.commit()
+            return True, "Tür başarıyla eklendi."
+        except Exception as e:
+            logger.error(f"Hata (Repository.add_type): {e}")
+            if "UNIQUE constraint failed" in str(e):
+                return False, "Bu tür zaten mevcut."
+            return False, f"Hata: {e}"
+        finally:
+            if conn:
+                conn.close()
+
+    def update_type(self, old_name: str, new_name: str) -> tuple[bool, str]:
+        """
+        Bir türü yeniden adlandırır ve activities tablosundaki eski kayıtları günceller.
+        Eğer yeni isim zaten varsa, iki türü BİRLEŞTİRİR (Merge).
+        """
+        sql_update_type = "UPDATE activity_types SET name = ? WHERE name = ?"
+        sql_update_activities = "UPDATE activities SET type = ? WHERE type = ?"
+        sql_delete_old_type = "DELETE FROM activity_types WHERE name = ?"
+        sql_check_exists = "SELECT COUNT(*) FROM activity_types WHERE name = ?"
+        
+        conn = get_connection()
+        if not conn: return False, "Veritabanı bağlantısı yok."
+        
+        try:
+            cursor = conn.cursor()
+            conn.execute("BEGIN TRANSACTION") # Atomik işlem başlat
+            
+            # Hedef isim (new_name) zaten var mı?
+            cursor.execute(sql_check_exists, (new_name,))
+            target_exists = cursor.fetchone()[0] > 0
+            
+            if target_exists:
+                # BİRLEŞTİRME SENARYOSU (Merge)
+                # 1. Eski kayıtları yeni isme taşı
+                cursor.execute(sql_update_activities, (new_name, old_name))
+                # 2. Eski türü tablodan sil (Çünkü artık kullanıcı sadece yeni ismi görecek)
+                cursor.execute(sql_delete_old_type, (old_name,))
+                conn.commit()
+                return True, f"'{old_name}' türü mevcut '{new_name}' türü ile birleştirildi."
+            else:
+                # YENİDEN ADLANDIRMA SENARYOSU (Rename)
+                # 1. Tür tablosunu güncelle
+                cursor.execute(sql_update_type, (new_name, old_name))
+                # 2. Etkilenen kayıtları güncelle
+                cursor.execute(sql_update_activities, (new_name, old_name))
+                conn.commit()
+                return True, f"'{old_name}' ismi '{new_name}' olarak değiştirildi."
+                
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Hata (Repository.update_type): {e}")
+            return False, f"Hata: {e}"
+        finally:
+            if conn:
+                conn.close()
+
+    def delete_type(self, name: str) -> tuple[bool, str]:
+        """Bir türü siler. (Kullanımdaki kayıtlara dokunmaz, sadece listeden kaldırır)"""
+        sql = "DELETE FROM activity_types WHERE name = ?"
+        try:
+            conn = get_connection()
+            if not conn: return False, "Veritabanı bağlantısı yok."
+            cursor = conn.cursor()
+            cursor.execute(sql, (name,))
+            conn.commit()
+            return True, "Tür silindi."
+        except Exception as e:
+            logger.error(f"Hata (Repository.delete_type): {e}")
+            return False, f"Hata: {e}"
         finally:
             if conn:
                 conn.close()

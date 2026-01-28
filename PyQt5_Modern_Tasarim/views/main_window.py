@@ -11,6 +11,7 @@ from views.pages.list_page import ListPage
 from views.pages.stats_page import StatsPage
 from views.pages.compare_page import ComparePage
 from views.pages.pdf_page import PdfPage
+from views.pages.settings_page import SettingsPage
 from views.styles import STYLESHEET # Stilleri import et
 
 class MainWindow(QMainWindow):
@@ -78,6 +79,7 @@ class MainWindow(QMainWindow):
         self.add_sidebar_btn("📊  İstatistik", 2, sidebar_layout)
         self.add_sidebar_btn("🆚  Karşılaştır", 3, sidebar_layout)
         self.add_sidebar_btn("📄  PDF Rapor", 4, sidebar_layout)
+        self.add_sidebar_btn("⚙️  Ayarlar", 5, sidebar_layout)
 
         sidebar_layout.addStretch() # Butonları yukarı it
 
@@ -112,6 +114,9 @@ class MainWindow(QMainWindow):
         
         self.pdf_page = PdfPage(self.controller)
         self.stacked_widget.addWidget(self.pdf_page)
+
+        self.settings_page = SettingsPage(self.controller)
+        self.stacked_widget.addWidget(self.settings_page)
 
     def switch_page(self, index):
         self.stacked_widget.setCurrentIndex(index)

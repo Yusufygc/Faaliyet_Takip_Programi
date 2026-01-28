@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit,
                              QDateEdit, QFormLayout, QFrame, QShortcut, QCompleter)
 from PyQt5.QtCore import QDate, Qt, QLocale, QTimer
 from PyQt5.QtGui import QKeySequence
-from constants import FAALIYET_TURLERI
+
 
 class AddPage(QWidget):
     def __init__(self, controller):
@@ -61,8 +61,9 @@ class AddPage(QWidget):
 
         # 1. Tür
         self.combo_type = QComboBox()
-        self.combo_type.addItems(FAALIYET_TURLERI)
         self.combo_type.setMinimumHeight(35)
+        # Türleri yükle
+        self.load_types() 
         form_layout.addRow("<b>Tür:</b>", self.combo_type)
 
         # 2. Ad
@@ -177,3 +178,26 @@ class AddPage(QWidget):
         self.combo_rating.setCurrentIndex(0)
         self.combo_type.setCurrentIndex(0)
         self.input_date.setDate(QDate.currentDate())
+
+    def load_types(self):
+        """Veritabanından türleri çeker."""
+        if hasattr(self.controller, 'get_all_activity_types'):
+            self.controller.get_all_activity_types(self.on_types_loaded)
+
+    def on_types_loaded(self, types):
+        current_text = self.combo_type.currentText()
+        self.combo_type.clear()
+        if types:
+            self.combo_type.addItems(types)
+        
+        # Eğer eski seçili metin hala varsa onu seç
+        index = self.combo_type.findText(current_text)
+        if index >= 0:
+            self.combo_type.setCurrentIndex(index)
+        elif self.combo_type.count() > 0:
+            self.combo_type.setCurrentIndex(0)
+
+    def refresh_data(self):
+        """Sayfa her görüntülendiğinde verileri (özellikle türleri) yenile"""
+        self.load_types()
+        self.setup_autocomplete()

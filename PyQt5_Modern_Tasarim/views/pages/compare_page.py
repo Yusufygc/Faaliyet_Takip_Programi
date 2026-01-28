@@ -6,12 +6,13 @@ from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve
 from PyQt5.QtGui import QFont
 from datetime import datetime, timedelta
 from views.dialogs.compare_selection_dialog import CompareSelectionDialog
-from constants import FAALIYET_TURLERI
+
 
 class ComparePage(QWidget):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.activity_types = [] # Türleri burada tutacağız
         self.init_ui()
 
     def init_ui(self):
@@ -51,7 +52,34 @@ class ComparePage(QWidget):
         scroll1.valueChanged.connect(scroll2.setValue)
         scroll2.valueChanged.connect(scroll1.setValue)
 
+
         layout.addWidget(self.splitter, 1)
+
+        # İlk açılışta türleri yükle
+        self.refresh_statistics()
+
+    def refresh_statistics(self):
+        """Sayfa açıldığında veya yenilendiğinde çalışır (İsim uyumu için refresh_statistics dedik)."""
+        if hasattr(self.controller, 'get_all_activity_types'):
+            self.controller.get_all_activity_types(self.on_types_loaded)
+
+    def on_types_loaded(self, types):
+        self.activity_types = types if types else []
+        # Tablo başlıklarını yenilemek gerekebilir ama 
+        # şimdilik create_modern_table_panel içinde dinamik yapacağız.
+        # Panelleri temizleyip yeniden oluşturmak yerine, tabloların yapısını güncellemek daha doğru.
+        # Ancak init_ui'de paneller bir kez oluşturuluyor.
+        # Basit çözüm: Tablo başlıklarını güncelleme metodu ekle.
+        self.update_table_structure(self.left_panel['table'])
+        self.update_table_structure(self.right_panel['table'])
+
+    def update_table_structure(self, table):
+        """Tablonun sütunlarını güncel tür listesine göre ayarlar."""
+        if not self.activity_types: return
+        
+        table.setColumnCount(len(self.activity_types))
+        table.setHorizontalHeaderLabels(self.activity_types)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
     def create_top_section(self):
         """Üst bölüm: Başlık, Butonlar ve Filtreler"""
@@ -167,8 +195,8 @@ class ComparePage(QWidget):
 
         # Tablo
         table = QTableWidget()
-        table.setColumnCount(len(FAALIYET_TURLERI))
-        table.setHorizontalHeaderLabels([t.title() for t in FAALIYET_TURLERI])
+        table.setColumnCount(0) # Başlangıçta boş, load_types ile dolacak
+        # table.setHorizontalHeaderLabels(...) 
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         table.verticalHeader().setVisible(False)
         table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -315,29 +343,38 @@ class ComparePage(QWidget):
         table = panel['table']
         table.setRowCount(0)
         
-        grouped_data = {t: [] for t in FAALIYET_TURLERI}
+        grouped_data = {t: [] for t in self.activity_types}
         if data:
             for cat, name in data:
-                cat_clean = cat.lower() if cat else ""
-                for main_cat in FAALIYET_TURLERI:
-                    if main_cat.lower() == cat_clean:
-                        grouped_data[main_cat].append(name)
+                # Gelen kategori veritabanındakiyle eşleşiyor mu kontrol et
+                # (Büyük/küçük harf duyarlılığı veya boşluklar için normalize edilebilir)
+                matched_cat = None
+                for known_type in self.activity_types:
+                    if known_type.lower() == cat.lower():
+                        matched_cat = known_type
                         break
+                
+                if matched_cat:
+                    grouped_data[matched_cat].append(name)
+                else:
+                    # Bilinmeyen tür gelirse (Eski kayıt vs.) ne yapmalı?
+                    # Şimdilik görmezden geliyoruz veya "Diğer" diye bir kategori açılabilir.
+                    pass
         
         max_rows = max(len(items) for items in grouped_data.values()) if grouped_data and item_count > 0 else 0
         table.setRowCount(max_rows)
 
         # Dinamik Başlıklar
         headers = []
-        for col_idx, main_cat in enumerate(FAALIYET_TURLERI):
-            items = grouped_data[main_cat]
+        for col_idx, main_cat in enumerate(self.activity_types):
+            items = grouped_data.get(main_cat, [])
             count = len(items)
-            headers.append(f"{main_cat.title()} ({count})")
+            headers.append(f"{main_cat} ({count})")
             
             for row_idx, name in enumerate(items):
                 item = QTableWidgetItem(name)
                 # Tooltip: Fare ile üzerine gelindiğinde tam adı göster
-                item.setToolTip(f"📌 {name}\n🏷️ Kategori: {main_cat.title()}")
+                item.setToolTip(f"📌 {name}\n🏷️ Kategori: {main_cat}")
                 # Uzun metinleri kısalt
                 display_name = name if len(name) <= 20 else name[:17] + "..."
                 item.setText(display_name)
