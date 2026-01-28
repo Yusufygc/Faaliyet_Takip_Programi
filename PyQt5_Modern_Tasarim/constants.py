@@ -11,3 +11,12 @@ LIST_PAGE_FILTRE_SECENEKLERI = ["Hepsi"] + FAALIYET_TURLERI
 
 # ComparePage için sabit sıralama
 COMPARE_PAGE_DATA_ORDER = ["DIZI", "FILM", "KITAP", "KURS", "OYUN", "ŞEHIR"]
+
+# --- Konfigürasyon ve Sabitler ---
+APP_NAME = "FaaliyetTakip"
+DB_FILENAME = "faaliyetler.db"
+LOG_FILENAME = "app.log"
+THEME_NAME = "Fusion"
+
+# Dizin Adları
+DATA_DIR_NAME = "FaaliyetTakip"

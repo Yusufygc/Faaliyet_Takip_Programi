@@ -69,14 +69,6 @@ class PdfPage(QWidget):
         # 1. Tarihi Al
         date_prefix = self.date_picker.get_date_str()
         
-        # Eğer tarih seçilmediyse (Tüm Yıllar) kullanıcıyı uyarabiliriz 
-        # veya tüm veriyi basabiliriz. Şimdilik uyaralım ki çok büyük PDF çıkmasın.
-        if not date_prefix:
-            # Kullanıcı "Tüm Yıllar"ı seçtiyse (get_date_str boş döner)
-            # Yıl seçmesi için zorlayabiliriz veya mevcut yılı baz alabiliriz.
-            # Ancak çökmeyi önlemek için boş string ile de çalışmalı.
-            pass 
-
         # 2. Dosya Kayıt Yeri
         default_name = f"Rapor_{date_prefix if date_prefix else 'TumZamanlar'}.pdf"
         file_path, _ = QFileDialog.getSaveFileName(self, "PDF Kaydet", default_name, "PDF Files (*.pdf)")
@@ -84,14 +76,24 @@ class PdfPage(QWidget):
         if not file_path:
             return # İptal edildi
 
-        # 3. Verileri Çek (Controller üzerinden)
-        # Eğer controller'da get_pdf_data yoksa eklediğinizden emin olun.
-        if hasattr(self.controller, 'get_pdf_data'):
-            raw_data = self.controller.get_pdf_data(date_prefix)
-        else:
-            # Fallback (Eğer controller güncellenmediyse)
-            raw_data = self.controller.repository.get_detailed_data_for_pdf(date_prefix)
+        # Buton durumu
+        sender = self.sender()
+        if sender: sender.setEnabled(False)
         
+        # Safe StatusBar Access
+        window = self.window()
+        if window and hasattr(window, 'statusBar') and window.statusBar():
+            window.statusBar().showMessage("PDF hazırlanıyor...", 1000)
+
+        # 3. Verileri Çek (Asenkron)
+        self.controller.get_pdf_data(
+            lambda data: self.on_pdf_data_loaded(data, file_path, date_prefix, sender),
+            date_prefix
+        )
+
+    def on_pdf_data_loaded(self, raw_data, file_path, date_prefix, btn_sender):
+        if btn_sender: btn_sender.setEnabled(True)
+
         if not raw_data:
             QMessageBox.warning(self, "Uyarı", "Seçilen dönem için kayıtlı veri bulunamadı.")
             return
@@ -104,18 +106,26 @@ class PdfPage(QWidget):
         }
 
         # 5. Servisi Çağır
-        success, message = self.pdf_service.create_report(
-            file_path, 
-            f"{date_prefix} Dönemi Faaliyet Raporu", 
-            summary, 
-            raw_data
-        )
-        
-        if success:
-            QMessageBox.information(self, "Başarılı", message)
-            try:
-                os.startfile(file_path) # Windows'ta dosyayı aç
-            except:
-                pass
-        else:
-            QMessageBox.critical(self, "Hata", message)
+        try:
+             success, message = self.pdf_service.create_report(
+                file_path, 
+                f"{date_prefix} Dönemi Faaliyet Raporu", 
+                summary, 
+                raw_data
+            )
+             if success:
+                QMessageBox.information(self, "Başarılı", message)
+                try:
+                    os.startfile(file_path) # Windows'ta dosyayı aç
+                except:
+                    pass
+             else:
+                QMessageBox.critical(self, "Hata", message)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"PDF oluşturulamadı: {e}")
+            
+        # Safe StatusBar Access
+        window = self.window()
+        if window and hasattr(window, 'statusBar') and window.statusBar():
+            window.statusBar().showMessage("İşlem tamamlandı.", 2000)

@@ -1,7 +1,8 @@
 # database/repository.py
 from .connection import get_connection, init_db
 from models import Activity
-from utils import is_valid_yyyymm, is_valid_yyyy # utils.py dosyanızdan import ediyoruz
+from utils import is_valid_yyyymm, is_valid_yyyy
+from logger_setup import logger
 
 class ActivityRepository:
     """
@@ -31,9 +32,10 @@ class ActivityRepository:
                 activity.rating
             ))
             conn.commit()
+            logger.info(f"Yeni faaliyet eklendi: {activity.name} ({activity.type})")
             return True
         except Exception as e:
-            print(f"Hata (Repository.add): {e}")
+            logger.error(f"Hata (Repository.add): {e}")
             return False
         finally:
             if conn:
@@ -59,9 +61,10 @@ class ActivityRepository:
                 activity.id
             ))
             conn.commit()
+            logger.info(f"Faaliyet güncellendi: ID {activity.id} - {activity.name}")
             return True
         except Exception as e:
-            print(f"Hata (Repository.update): {e}")
+            logger.error(f"Hata (Repository.update): {e}")
             return False
         finally:
             if conn:
@@ -76,9 +79,10 @@ class ActivityRepository:
             cursor = conn.cursor()
             cursor.execute(sql, (activity_id,))
             conn.commit()
+            logger.info(f"Faaliyet silindi: ID {activity_id}")
             return True
         except Exception as e:
-            print(f"Hata (Repository.delete): {e}")
+            logger.error(f"Hata (Repository.delete): {e}")
             return False
         finally:
             if conn:
@@ -95,7 +99,7 @@ class ActivityRepository:
             row = cursor.fetchone()
             return Activity.from_row(row) if row else None
         except Exception as e:
-            print(f"Hata (Repository.get_by_id): {e}")
+            logger.error(f"Hata (Repository.get_by_id): {e}")
             return None
         finally:
             if conn:
@@ -157,7 +161,7 @@ class ActivityRepository:
             return activities, total_count
 
         except Exception as e:
-            print(f"Hata (Repository.get_all_filtered): {e}")
+            logger.error(f"Hata (Repository.get_all_filtered): {e}")
             return [], 0
         finally:
             if conn:
@@ -174,7 +178,7 @@ class ActivityRepository:
             # [(name1,), (name2,), ...] formatından düz listeye çevir: [name1, name2]
             return [row[0] for row in cursor.fetchall()]
         except Exception as e:
-            print(f"Hata (Repository.get_unique_names): {e}")
+            logger.error(f"Hata (Repository.get_unique_names): {e}")
             return []
         finally:
             if conn:
@@ -209,7 +213,7 @@ class ActivityRepository:
             cursor.execute(query, params)
             return cursor.fetchall()
         except Exception as e:
-            print(f"Hata (Repository.get_stats_by_type): {e}")
+            logger.error(f"Hata (Repository.get_stats_by_type): {e}")
             return []
         finally:
             if conn:
@@ -244,7 +248,7 @@ class ActivityRepository:
             cursor.execute(query, params)
             return cursor.fetchall()
         except Exception as e:
-            print(f"Hata (Repository.get_details_for_type): {e}")
+            logger.error(f"Hata (Repository.get_details_for_type): {e}")
             return []
         finally:
             if conn:
@@ -262,7 +266,7 @@ class ActivityRepository:
             cursor.execute(query, (f"{date_prefix}%",))
             return cursor.fetchall()
         except Exception as e:
-            print(f"Hata (Repository.get_comparison_data): {e}")
+            logger.error(f"Hata (Repository.get_comparison_data): {e}")
             return []
         finally:
             if conn:
@@ -284,7 +288,7 @@ class ActivityRepository:
             cursor.execute(query)
             return [row[0] for row in cursor.fetchall()]
         except Exception as e:
-            print(f"Hata (Repository.get_available_periods): {e}")
+            logger.error(f"Hata (Repository.get_available_periods): {e}")
             return []
         finally:
             if conn:
@@ -302,7 +306,7 @@ class ActivityRepository:
             cursor.execute(query, (f"{date_prefix}%",))
             return cursor.fetchall()
         except Exception as e:
-            print(f"Hata (Repository.get_detailed_data_for_pdf): {e}")
+            logger.error(f"Hata (Repository.get_detailed_data_for_pdf): {e}")
             return []
         finally:
             if conn:

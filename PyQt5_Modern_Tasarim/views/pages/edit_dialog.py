@@ -100,13 +100,24 @@ class EditDialog(QDialog):
         comment_val = self.input_comment.toPlainText()
         rating_val = self.combo_rating.currentText()
 
+        # Butonu deaktif et
+        self.btn_save.setEnabled(False)
+        self.btn_save.setText("Kaydediliyor...")
+
         # Controller'a güncelleme isteği gönder
         # self.activity parametresi, değişiklik kontrolü için gönderiliyor
-        success, message = self.controller.update_activity(
+        self.controller.update_activity(
             self.activity.id, 
             type_val, name_val, date_val, comment_val, rating_val,
+            self.on_update_finished,
             original_activity=self.activity 
         )
+
+    def on_update_finished(self, result):
+        self.btn_save.setEnabled(True)
+        self.btn_save.setText("Değişiklikleri Kaydet")
+        
+        success, message = result
 
         if success:
             QMessageBox.information(self, "Başarılı", message)

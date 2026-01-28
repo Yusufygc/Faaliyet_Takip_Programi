@@ -199,12 +199,26 @@ class ListPage(QWidget):
         search_term = self.input_search.text()
         date_filter = self.date_widget.get_date_str()
 
-        # Controller'dan veriyi ve toplam sayıyı al (Pagination destekli metod)
-        activities, total_count = self.controller.get_all_activities(
+        # Loading göstergesi (Opsiyonel: status bar)
+        # Loading göstergesi (Opsiyonel: status bar)
+        window = self.window()
+        if window and hasattr(window, 'statusBar') and window.statusBar():
+            window.statusBar().showMessage("Veriler yükleniyor...", 1000)
+
+        # Controller'dan veriyi asenkron iste
+        self.controller.get_all_activities(
+            self.on_data_loaded,
             type_filter, search_term, date_filter, 
             page=self.current_page, 
             items_per_page=self.items_per_page
         )
+
+    def on_data_loaded(self, result):
+        """Asenkron veri yükleme tamamlandığında çağrılır."""
+        if not result:
+            return
+
+        activities, total_count = result
         
         # Toplam Kayıt Bilgisini Güncelle
         self.lbl_total_count.setText(f"Toplam: {total_count}")
@@ -226,10 +240,8 @@ class ListPage(QWidget):
             self.table.insertRow(row_idx)
             
             # 1. TÜR SÜTUNU
-            # Baş harfi büyüt (dizi -> Dizi)
             type_text = activity.type.title() if activity.type else ""
             item_type = QTableWidgetItem(type_text)
-            # ID'yi bu hücreye GİZLİ VERİ (UserRole) olarak saklıyoruz
             item_type.setData(Qt.UserRole, activity.id)
             self.table.setItem(row_idx, 0, item_type)
             
@@ -254,6 +266,10 @@ class ListPage(QWidget):
 
         # Sıralamayı tekrar aç
         self.table.setSortingEnabled(True)
+        
+        window = self.window()
+        if window and hasattr(window, 'statusBar') and window.statusBar():
+            window.statusBar().showMessage("Veriler yüklendi.", 2000)
 
     def reset_filters(self):
         """Filtreleri varsayılan değerlere döndürür."""
@@ -267,24 +283,20 @@ class ListPage(QWidget):
         """Seçili satırı düzenlemek için pencere açar."""
         selected_rows = self.table.selectionModel().selectedRows()
         if not selected_rows: return
-
         row_index = selected_rows[0].row()
-        
-        # ID'yi GİZLİ VERİ (UserRole)'den çekiyoruz (0. Sütundan)
         activity_id = self.table.item(row_index, 0).data(Qt.UserRole)
 
-        # Güncel veriyi çek
-        activity = self.controller.get_activity(activity_id)
-        
+        # Veriyi asenkron çek
+        self.controller.get_activity(activity_id, self.on_activity_loaded_for_edit)
+
+    def on_activity_loaded_for_edit(self, activity):
         if activity:
             dialog = EditDialog(self.controller, activity, self)
             if dialog.exec_() == QDialog.Accepted:
-                # Düzenleme bittiyse listeyi yenile
                 self.refresh_data()
-                
-                # Status bar güncellemesi
-                if self.window().statusBar():
-                    self.window().statusBar().showMessage(f"✏️ Kayıt güncellendi: {activity.name}", 3000)
+                window = self.window()
+                if window and hasattr(window, 'statusBar') and window.statusBar():
+                    window.statusBar().showMessage(f"✏️ Kayıt güncellendi: {activity.name}", 3000)
 
     def open_context_menu(self, position):
         """Sağ tık menüsünü açar."""
@@ -307,18 +319,20 @@ class ListPage(QWidget):
             return
 
         row_index = selected_rows[0].row()
-        
-        # ID'yi GİZLİ VERİ (UserRole)'den çekiyoruz
         activity_id = self.table.item(row_index, 0).data(Qt.UserRole)
 
         confirm = QMessageBox.question(self, "Onay", "Bu kaydı silmek istediğinize emin misiniz?", 
                                        QMessageBox.Yes | QMessageBox.No)
         
         if confirm == QMessageBox.Yes:
-            success, msg = self.controller.delete_activity(activity_id)
-            if success:
-                if self.window().statusBar():
-                    self.window().statusBar().showMessage(f"🗑️ {msg}", 3000)
-                self.refresh_data()
-            else:
-                QMessageBox.warning(self, "Hata", msg)
+            self.controller.delete_activity(activity_id, self.on_delete_finished)
+
+    def on_delete_finished(self, result):
+        success, msg = result
+        if success:
+            window = self.window()
+            if window and hasattr(window, 'statusBar') and window.statusBar():
+                window.statusBar().showMessage(f"🗑️ {msg}", 3000)
+            self.refresh_data()
+        else:
+            QMessageBox.warning(self, "Hata", msg)

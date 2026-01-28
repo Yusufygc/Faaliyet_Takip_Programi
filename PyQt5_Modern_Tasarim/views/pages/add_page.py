@@ -114,7 +114,10 @@ class AddPage(QWidget):
     def setup_autocomplete(self):
         """Veritabanından isimleri çekip otomatik tamamlayıcıya yükler."""
         if hasattr(self.controller, 'get_all_activity_names'):
-            names_list = self.controller.get_all_activity_names()
+            self.controller.get_all_activity_names(self.on_names_loaded)
+
+    def on_names_loaded(self, names_list):
+        if names_list:
             self.completer = QCompleter(names_list)
             self.completer.setCaseSensitivity(Qt.CaseInsensitive)
             self.completer.setFilterMode(Qt.MatchContains)
@@ -128,17 +131,31 @@ class AddPage(QWidget):
         comment_val = self.input_comment.toPlainText()
         rating_val = self.combo_rating.currentText()
 
-        success, message = self.controller.add_activity(
-            type_val, name_val, date_val, comment_val, rating_val
+        # Butonu deaktif et
+        self.btn_save.setEnabled(False)
+        self.btn_save.setText("Kaydediliyor...")
+
+        self.controller.add_activity(
+            type_val, name_val, date_val, comment_val, rating_val,
+            self.on_save_finished
         )
+
+    def on_save_finished(self, result):
+        self.btn_save.setEnabled(True)
+        self.btn_save.setText("💾 Kaydet (Ctrl+S)")
+        
+        # Validasyon hatası veya başarılı işlem
+        success, message = result
 
         if success:
             # 1. Başarı Mesajını Göster
             self.show_success_message(f"✔ {message}")
             
             # 2. Status Bar'a da yaz (İsteğe bağlı)
-            if self.window().statusBar():
-                self.window().statusBar().showMessage(f"✅ {message}", 3000)
+            # 2. Status Bar'a da yaz (İsteğe bağlı)
+            window = self.window()
+            if window and hasattr(window, 'statusBar') and window.statusBar():
+                window.statusBar().showMessage(f"✅ {message}", 3000)
                 
             self.clear_inputs()
             self.setup_autocomplete() 

@@ -357,24 +357,42 @@ class ComparePage(QWidget):
         last_month = first_of_month - timedelta(days=1)
         prev_str = last_month.strftime("%Y-%m")
 
-        data_current = self.controller.get_comparison_data(current_str)
-        data_prev = self.controller.get_comparison_data(prev_str)
-
-        self.display_comparison(f"{prev_str}", f"{current_str}", data_prev, data_current)
+        self.fetch_and_compare(prev_str, current_str)
 
     def compare_previous_year(self):
         this_year = datetime.today().year
         last_year = this_year - 1
-
-        data_current = self.controller.get_comparison_data(str(this_year))
-        data_prev = self.controller.get_comparison_data(str(last_year))
-
-        self.display_comparison(f"{last_year} Yılı", f"{this_year} Yılı", data_prev, data_current)
+        
+        self.fetch_and_compare(str(last_year), str(this_year), 
+                              f"{last_year} Yılı", f"{this_year} Yılı")
 
     def open_date_selector(self):
         dialog = CompareSelectionDialog(self)
         if dialog.exec_():
             date1, date2 = dialog.get_dates()
-            data1 = self.controller.get_comparison_data(date1)
-            data2 = self.controller.get_comparison_data(date2)
-            self.display_comparison(date1, date2, data1, data2)
+            self.fetch_and_compare(date1, date2)
+
+    def fetch_and_compare(self, date1, date2, title1=None, title2=None):
+        """İki tarih için veriyi sırayla çeker ve karşılaştırır."""
+        
+        # Loading
+        # Loading
+        window = self.window()
+        if window and hasattr(window, 'statusBar') and window.statusBar():
+            window.statusBar().showMessage("Karşılaştırma verileri yükleniyor...", 1000)
+
+        # İç içe callback (Callback Hell'den kaçınmak için ayrı metod kullanılabilir ama basitlik için böyle)
+        def on_data1_loaded(data1):
+            def on_data2_loaded(data2):
+                 self.display_comparison(
+                     title1 if title1 else date1, 
+                     title2 if title2 else date2, 
+                     data1, data2
+                 )
+                 window = self.window()
+                 if window and hasattr(window, 'statusBar') and window.statusBar():
+                    window.statusBar().showMessage("Karşılaştırma tamamlandı.", 2000)
+
+            self.controller.get_comparison_data(on_data2_loaded, date2)
+        
+        self.controller.get_comparison_data(on_data1_loaded, date1)

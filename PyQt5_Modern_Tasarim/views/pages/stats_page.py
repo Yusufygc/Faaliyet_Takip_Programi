@@ -162,8 +162,20 @@ class StatsPage(QWidget):
         ignore_dates = (date_str == "")
         year_only = (len(date_str) == 4) 
 
-        raw_data = self.controller.get_dashboard_stats(date_str, year_only, ignore_dates)
-        
+        # Loading durumu
+        # Loading durumu
+        window = self.window()
+        if window and hasattr(window, 'statusBar') and window.statusBar():
+            window.statusBar().showMessage("İstatistikler hesaplanıyor...", 1000)
+
+        self.controller.get_dashboard_stats(
+            self.on_stats_loaded,
+            date_str, year_only, ignore_dates
+        )
+
+    def on_stats_loaded(self, raw_data):
+        if raw_data is None: return
+
         processed_dict = {}
         for category, count, avg_rating in raw_data:
             clean_cat = category.title() if category else "Diğer"
@@ -210,6 +222,10 @@ class StatsPage(QWidget):
             self.lbl_no_data.hide()
             self.update_table(final_data)
             self.update_graphs(final_data)
+        
+        window = self.window()
+        if window and hasattr(window, 'statusBar') and window.statusBar():
+            window.statusBar().showMessage("İstatistikler güncellendi.", 2000)
 
     def update_table(self, data):
         self.table.setRowCount(0)
@@ -276,9 +292,13 @@ class StatsPage(QWidget):
         year_only = (len(date_str) == 4) 
         
         # Repository artık büyük/küçük harf ayrımını kendi içinde hallediyor.
-        details = self.controller.get_activity_details_by_type(
+        self.activity_type_display = activity_type_display
+        self.controller.get_activity_details_by_type(
+            self.on_details_loaded,
             activity_type_display, date_str, year_only, ignore_dates
         )
-        
-        dialog = DetailDialog(f"{activity_type_display} Detayları", details, self)
-        dialog.exec_()
+
+    def on_details_loaded(self, details):
+        if details is not None:
+             dialog = DetailDialog(f"{self.activity_type_display} Detayları", details, self)
+             dialog.exec_()
