@@ -1,0 +1,25 @@
+
+
+ANACONDA ENV ICIN
+------------------------------------------------------------------
+Sadece dist klasoru icinde calisan
+------------------------------------------------------------------
+pyinstaller --noconfirm --windowed --icon=icons/icon.ico --name "AktiviteTakip" ^
+--add-data "data;data" ^
+--add-data "gui;gui" ^
+--add-data "fonts;fonts" ^
+--add-binary "C:/Users/ysfygc/anaconda3/envs/Ftakip/Library/bin/*;." ^
+--collect-all=numpy ^
+--collect-all=matplotlib ^
+main.py
+---------------------------------------------------------------------
+her yerde calisan
+---------------------------------------------------------------------
+pyinstaller --noconfirm --windowed --onefile --icon=icons/icon.ico --name "AktiviteTakip" ^
+--add-data "data;data" ^
+--add-data "gui;gui" ^
+--add-data "fonts;fonts" ^
+--add-binary "C:/Users/ysfygc/anaconda3/envs/Ftakip/Library/bin/*;." ^
+--collect-all=numpy ^
+--collect-all=matplotlib ^
+main.py
