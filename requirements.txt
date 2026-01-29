@@ -1,5 +1,0 @@
-customtkinter
-Pillow
-tkcalendar
-reportlab
-matplotlib
