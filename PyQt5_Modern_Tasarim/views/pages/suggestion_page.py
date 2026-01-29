@@ -1,16 +1,22 @@
+# -*- coding: utf-8 -*-
+"""
+Keşfet & Öneriler sayfası.
+Film, Dizi, Oyun ve Kitap önerileri sunar.
+"""
+
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QScrollArea, QFrame, QGridLayout, 
-                             QGraphicsDropShadowEffect, QComboBox)
-from PyQt5.QtCore import Qt, QSize, pyqtSignal
-from PyQt5.QtGui import QPixmap, QImage, QFont
+                             QComboBox, QSizePolicy)
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QImage
 from controllers.recommendation_controller import RecommendationController
 import requests
 from controllers.workers import DbWorker
 
+
 class AsyncImage(QLabel):
-    """
-    URL'den resim yükleyen QLabel sınıfı.
-    """
+    """URL'den resim yükleyen QLabel sınıfı."""
+    
     def __init__(self, url, width=100, height=150):
         super().__init__()
         self.setFixedSize(width, height)
@@ -25,11 +31,11 @@ class AsyncImage(QLabel):
         worker = DbWorker(self.fetch_image)
         worker.finished.connect(self.set_image)
         worker.start()
-        self._worker = worker 
+        self._worker = worker
 
     def fetch_image(self):
         try:
-            response = requests.get(self.url, stream=True)
+            response = requests.get(self.url, stream=True, timeout=10)
             if response.status_code == 200:
                 img = QImage()
                 img.loadFromData(response.content)
@@ -45,10 +51,12 @@ class AsyncImage(QLabel):
             ))
             self.setText("")
         else:
-            self.setText("No Image")
+            self.setText("📷")
 
 
 class SuggestionCard(QFrame):
+    """Öneri kartı widget'ı."""
+    
     def __init__(self, data):
         super().__init__()
         self.data = data
@@ -74,15 +82,15 @@ class SuggestionCard(QFrame):
         
         # Image
         img_url = self.data.get('image')
-        self.img_lbl = AsyncImage(img_url, 180, 240)
+        self.img_lbl = AsyncImage(img_url, 180, 220)
         layout.addWidget(self.img_lbl, alignment=Qt.AlignCenter)
         
         # Title
         title = self.data.get('title', 'Başlık Yok')
         title_lbl = QLabel(title)
-        title_lbl.setStyleSheet("color: white; font-weight: bold; font-size: 13px;")
+        title_lbl.setStyleSheet("color: white; font-weight: bold; font-size: 12px;")
         title_lbl.setWordWrap(True)
-        title_lbl.setFixedHeight(40)
+        title_lbl.setFixedHeight(35)
         layout.addWidget(title_lbl)
         
         # Rating & Date
@@ -91,7 +99,7 @@ class SuggestionCard(QFrame):
         rating_lbl = QLabel(f"⭐ {rating:.1f}")
         rating_lbl.setStyleSheet("color: #FFC107; font-size: 11px;")
         
-        date_str = self.data.get('date', '')[:4] if self.data.get('date') else ''
+        date_str = str(self.data.get('date', ''))[:4] if self.data.get('date') else ''
         date_lbl = QLabel(date_str)
         date_lbl.setStyleSheet("color: #888; font-size: 11px;")
         
@@ -102,6 +110,8 @@ class SuggestionCard(QFrame):
 
 
 class SuggestionPage(QWidget):
+    """Keşfet & Öneriler ana sayfası."""
+    
     def __init__(self):
         super().__init__()
         self.controller = RecommendationController()
@@ -115,38 +125,52 @@ class SuggestionPage(QWidget):
     def init_ui(self):
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
         
-        # 1. Header
+        # =====================================================================
+        # 1. HEADER
+        # =====================================================================
         header_layout = QHBoxLayout()
+        
         title = QLabel("🚀 Keşfet & Öneriler")
-        title.setStyleSheet("font-size: 20px; font-weight: bold; color: black;")
+        title.setStyleSheet("font-size: 22px; font-weight: bold; color: #333;")
         header_layout.addWidget(title)
-        
-        # Period Toggle
-        self.btn_this_month = QPushButton("Bu Ayın Trendleri")
-        self.btn_last_year = QPushButton("Geçen Yılın Efsaneleri")
-        
-        for btn in [self.btn_this_month, self.btn_last_year]:
-            btn.setCheckable(True)
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.clicked.connect(self.on_period_changed)
-            
-        self.btn_this_month.setChecked(True)
-        self.update_toggle_styles_period()
-        
-        toggle_period_layout = QHBoxLayout()
-        toggle_period_layout.setSpacing(10)
-        toggle_period_layout.addWidget(self.btn_this_month)
-        toggle_period_layout.addWidget(self.btn_last_year)
-        
         header_layout.addStretch()
-        header_layout.addLayout(toggle_period_layout)
         layout.addLayout(header_layout)
-
-        # 2. Categories and Genre
-        filter_layout = QHBoxLayout()
         
-        # Category Buttons
+        # =====================================================================
+        # 2. FİLTRELER - Periyot, Kategori, Tür
+        # =====================================================================
+        filter_frame = QFrame()
+        filter_frame.setStyleSheet("""
+            QFrame {
+                background-color: #f5f5f5;
+                border-radius: 10px;
+                padding: 10px;
+            }
+        """)
+        filter_layout = QHBoxLayout(filter_frame)
+        filter_layout.setSpacing(15)
+        
+        # -- Periyot Seçimi --
+        period_label = QLabel("📅 Dönem:")
+        period_label.setStyleSheet("font-weight: bold; color: #333;")
+        filter_layout.addWidget(period_label)
+        
+        self.period_combo = QComboBox()
+        self.period_combo.setMinimumWidth(220)
+        self._style_combobox(self.period_combo)
+        
+        # Periyotları ekle
+        for key, name in self.controller.get_all_period_names():
+            self.period_combo.addItem(name, key)
+        
+        self.period_combo.currentIndexChanged.connect(self.on_period_changed)
+        filter_layout.addWidget(self.period_combo)
+        
+        filter_layout.addSpacing(20)
+        
+        # -- Kategori Butonları --
         self.cat_btns = {}
         categories = ["Film", "Dizi", "Oyun", "Kitap"]
         
@@ -154,7 +178,7 @@ class SuggestionPage(QWidget):
             btn = QPushButton(cat)
             btn.setCheckable(True)
             btn.setCursor(Qt.PointingHandCursor)
-            btn.setFixedSize(100, 35)
+            btn.setFixedSize(80, 32)
             btn.clicked.connect(lambda checked, c=cat: self.on_category_changed(c))
             filter_layout.addWidget(btn)
             self.cat_btns[cat] = btn
@@ -162,76 +186,105 @@ class SuggestionPage(QWidget):
         self.cat_btns["Film"].setChecked(True)
         self.update_cat_styles()
         
-        # Genre ComboBox
         filter_layout.addSpacing(20)
-        genre_label = QLabel("Tür:")
-        genre_label.setStyleSheet("color: black; font-weight: bold;")
+        
+        # -- Tür Seçimi --
+        genre_label = QLabel("🎭 Tür:")
+        genre_label.setStyleSheet("font-weight: bold; color: #333;")
         filter_layout.addWidget(genre_label)
         
         self.genre_combo = QComboBox()
-        self.genre_combo.setMinimumWidth(120)
-        self.genre_combo.setStyleSheet("""
-            QComboBox {
-                background-color: white;
-                color: black;
-                border: 1px solid #ccc;
-                padding: 5px;
-                border-radius: 5px;
-            }
-            QComboBox::drop-down { border: none; }
-            QComboBox QAbstractItemView {
-                background-color: white;
-                color: black;
-                selection-background-color: #2196F3;
-            }
-        """)
+        self.genre_combo.setMinimumWidth(130)
+        self._style_combobox(self.genre_combo)
         self.genre_combo.currentIndexChanged.connect(self.on_genre_changed)
         filter_layout.addWidget(self.genre_combo)
         
         filter_layout.addStretch()
-        layout.addLayout(filter_layout)
+        layout.addWidget(filter_frame)
         
-        # 3. Content Grid
+        # =====================================================================
+        # 3. İÇERİK ALANI
+        # =====================================================================
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        self.scroll.setStyleSheet("""
+            QScrollArea { 
+                border: none; 
+                background: transparent; 
+            }
+            QScrollBar:vertical {
+                background: #e0e0e0;
+                width: 10px;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical {
+                background: #888;
+                border-radius: 5px;
+            }
+        """)
         
         self.content_widget = QWidget()
         self.content_widget.setStyleSheet("background: transparent;")
         self.grid = QGridLayout(self.content_widget)
         self.grid.setSpacing(20)
+        self.grid.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         
         self.scroll.setWidget(self.content_widget)
         layout.addWidget(self.scroll)
-        
-    def update_toggle_styles_period(self):
-        base_style = """
-            QPushButton {
-                background-color: #1e1e1e; color: #aaa; border: 1px solid #444;
-                padding: 6px 15px; border-radius: 15px; font-weight: bold;
+
+    def _style_combobox(self, combo):
+        """ComboBox stilini uygular."""
+        combo.setStyleSheet("""
+            QComboBox {
+                background-color: white;
+                color: #333;
+                border: 1px solid #ccc;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 13px;
             }
-            QPushButton:hover { border: 1px solid #666; color: #fff; }
-        """
-        active_style = """
-            QPushButton {
-                background-color: #2196F3; color: white; border: 1px solid #2196F3;
-                padding: 6px 15px; border-radius: 15px; font-weight: bold;
+            QComboBox:hover {
+                border: 1px solid #2196F3;
             }
-        """
-        
-        if self.btn_this_month.isChecked():
-            self.btn_this_month.setStyleSheet(active_style)
-            self.btn_last_year.setStyleSheet(base_style)
-        else:
-            self.btn_this_month.setStyleSheet(base_style)
-            self.btn_last_year.setStyleSheet(active_style)
+            QComboBox::drop-down { 
+                border: none;
+                width: 20px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: white;
+                color: #333;
+                selection-background-color: #2196F3;
+                selection-color: white;
+                border: 1px solid #ccc;
+            }
+        """)
 
     def update_cat_styles(self):
+        """Kategori butonlarının stilini günceller."""
         for cat, btn in self.cat_btns.items():
             if btn.isChecked():
-                btn.setStyleSheet("background-color: #4CAF50; color: white; border: none; border-radius: 5px; font-weight: bold;")
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #2196F3;
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        font-weight: bold;
+                    }
+                """)
             else:
-                btn.setStyleSheet("background-color: #2b2b2b; color: #aaa; border: 1px solid #444; border-radius: 5px;")
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: white;
+                        color: #555;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                    }
+                    QPushButton:hover {
+                        background-color: #e3f2fd;
+                        border: 1px solid #2196F3;
+                    }
+                """)
 
     def update_genre_combo(self):
         """Kategori değişince tür combobox'ını günceller."""
@@ -244,54 +297,47 @@ class SuggestionPage(QWidget):
         self.genre_combo.blockSignals(False)
         self.current_genre = self.controller.get_genre_value(self.current_category, "Tümü")
 
+    def on_period_changed(self, index):
+        """Periyot combobox değişince çağrılır."""
+        self.current_period = self.period_combo.currentData()
+        self.load_data()
+
     def on_genre_changed(self, index):
         """Tür combobox değişince çağrılır."""
         genre_name = self.genre_combo.currentText()
         self.current_genre = self.controller.get_genre_value(self.current_category, genre_name)
         self.load_data()
 
-    def on_period_changed(self):
-        sender = self.sender()
-        if sender == self.btn_this_month:
-            self.current_period = 'this_month'
-            self.btn_last_year.setChecked(False)
-            self.btn_this_month.setChecked(True)
-        else:
-            self.current_period = 'last_year'
-            self.btn_this_month.setChecked(False)
-            self.btn_last_year.setChecked(True)
-            
-        self.update_toggle_styles_period()
-        self.load_data()
-
     def on_category_changed(self, category):
+        """Kategori butonu değişince çağrılır."""
         if not self.cat_btns[category].isChecked():
             self.cat_btns[category].setChecked(True)
             return
 
         self.current_category = category
         for cat, btn in self.cat_btns.items():
-             if cat != category:
-                 btn.setChecked(False)
+            if cat != category:
+                btn.setChecked(False)
         
         self.update_cat_styles()
         self.update_genre_combo()
         self.load_data()
 
     def load_data(self):
-        # Clear Grid
+        """Verileri API'den çeker."""
+        # Grid'i temizle
         while self.grid.count():
             item = self.grid.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
         
-        # Show Loading
-        loading = QLabel("Veriler Çekiliyor...")
-        loading.setStyleSheet("color: white; font-size: 16px;")
+        # Yükleniyor göster
+        loading = QLabel("⏳ Veriler Çekiliyor...")
+        loading.setStyleSheet("color: #666; font-size: 16px; padding: 50px;")
         loading.setAlignment(Qt.AlignCenter)
         self.grid.addWidget(loading, 0, 0)
         
-        # Call API with genre
+        # API çağrısı
         self.controller.get_recommendations(
             self.on_data_loaded, 
             self.current_category, 
@@ -300,21 +346,22 @@ class SuggestionPage(QWidget):
         )
 
     def on_data_loaded(self, results):
-        # Clear Loading
+        """Veriler yüklenince çağrılır."""
+        # Grid'i temizle
         while self.grid.count():
             item = self.grid.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
         
         if not results:
-            lbl = QLabel("Veri bulunamadı veya hata oluştu.")
-            lbl.setStyleSheet("color: #f44336;")
+            lbl = QLabel("❌ Veri bulunamadı veya bir hata oluştu.\n\nAPI anahtarlarınızı kontrol edin.")
+            lbl.setStyleSheet("color: #f44336; font-size: 14px; padding: 50px;")
             lbl.setAlignment(Qt.AlignCenter)
             self.grid.addWidget(lbl, 0, 0)
             return
 
         row, col = 0, 0
-        cols_per_row = 4
+        cols_per_row = 5
         
         for item in results:
             card = SuggestionCard(item)

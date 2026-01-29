@@ -1,11 +1,21 @@
-from services.api_service import ApiService, FILM_GENRES, DIZI_GENRES, OYUN_GENRES, KITAP_GENRES
+# -*- coding: utf-8 -*-
+"""
+Öneri servisi ile UI arasındaki bağlantıyı yönetir.
+"""
+
+from services.api_service import ApiService
+from services.recommendation_config import (
+    PERIODS, PERIOD_ORDER, FILM_GENRES, DIZI_GENRES, OYUN_GENRES, KITAP_GENRES
+)
 from controllers.workers import DbWorker
+
 
 class RecommendationController:
     """
     Öneri servisi ile UI arasındaki bağlantıyı yönetir.
     API çağrılarını asenkron yapar.
     """
+    
     def __init__(self):
         self.api_service = ApiService()
         self.workers = set()
@@ -14,6 +24,30 @@ class RecommendationController:
         if worker in self.workers:
             self.workers.remove(worker)
 
+    # =========================================================================
+    # PERİYOT YÖNETİMİ
+    # =========================================================================
+    
+    def get_periods(self):
+        """Mevcut periyotları döndürür (sıralı liste)."""
+        return PERIOD_ORDER
+    
+    def get_period_info(self, period_key):
+        """Periyot bilgilerini döndürür."""
+        return PERIODS.get(period_key, {})
+    
+    def get_period_name(self, period_key):
+        """Periyodun görünen adını döndürür."""
+        return PERIODS.get(period_key, {}).get('name', period_key)
+    
+    def get_all_period_names(self):
+        """Tüm periyot adlarını sıralı döndürür."""
+        return [(key, PERIODS[key]['name']) for key in PERIOD_ORDER if key in PERIODS]
+
+    # =========================================================================
+    # TÜR YÖNETİMİ
+    # =========================================================================
+    
     def get_genres_for_category(self, category):
         """Kategoriye göre mevcut türleri döndürür."""
         if category == 'Film':
@@ -38,6 +72,10 @@ class RecommendationController:
             return KITAP_GENRES.get(genre_name)
         return None
 
+    # =========================================================================
+    # ÖNERİ ALMA
+    # =========================================================================
+    
     def get_recommendations(self, callback, category, period, genre=None):
         """
         Belirtilen kategori, periyot ve tür için önerileri asenkron getirir.
