@@ -10,6 +10,7 @@ class EditDialog(QDialog):
         self.controller = controller
         self.activity = activity # Düzenlenecek aktivite nesnesi
         self.setWindowTitle(f"Düzenle: {activity.name}")
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setFixedSize(400, 500)
         self.init_ui()
         self.load_types() # Türleri yükle

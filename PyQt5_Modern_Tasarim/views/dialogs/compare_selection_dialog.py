@@ -8,6 +8,7 @@ class CompareSelectionDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Karşılaştırma Dönemlerini Seç")
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setFixedSize(500, 350)
         self.selected_dates = (None, None) # (Tarih1, Tarih2)
         

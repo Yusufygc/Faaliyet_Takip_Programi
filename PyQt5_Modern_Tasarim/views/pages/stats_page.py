@@ -13,6 +13,7 @@ class DetailDialog(QDialog):
     def __init__(self, title, details_list, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.resize(400, 300)
         layout = QVBoxLayout(self)
         list_widget = QListWidget()

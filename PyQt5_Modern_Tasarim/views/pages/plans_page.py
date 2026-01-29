@@ -174,6 +174,7 @@ class PlanDialog(QDialog):
         super().__init__(parent)
         self.plan = plan
         self.setWindowTitle("Plan Ekle" if not plan else "Plan Düzenle")
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setFixedWidth(400)
         self.setStyleSheet("""
             QDialog { background-color: #2b2b2b; color: white; }

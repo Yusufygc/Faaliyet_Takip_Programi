@@ -509,6 +509,7 @@ class SuggestionPage(QWidget):
         
         dialog = QDialog(self)
         dialog.setWindowTitle("Rastgele Öneri")
+        dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         dialog.setFixedSize(450, 550)
         dialog.setStyleSheet("""
             QDialog {
