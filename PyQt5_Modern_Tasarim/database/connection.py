@@ -7,16 +7,6 @@ from logger_setup import logger
 
 def get_db_path():
     """İşletim sistemine uyumlu veritabanı yolunu döndürür."""
-    # 1. Öncelikle uygulamanın kendi klasörüne bakalım (Frozen/Exe modu)
-    if getattr(sys, 'frozen', False):
-        application_path = os.path.dirname(sys.executable)
-        local_db = os.path.join(application_path, 'data', DB_FILENAME)
-        
-        # Eğer 'data' klasörü ve db dosyası exe yanında varsa onu kullan
-        if os.path.exists(os.path.join(application_path, 'data')):
-             # Klasör varsa, yolu burası yap. Dosya yoksa bile burada oluşturulur.
-             return local_db
-
     # 2. Standart Kullanıcı Yolu (AppData veya Home)
     if sys.platform == "win32":
         app_data_path = os.environ.get('LOCALAPPDATA')
