@@ -119,20 +119,23 @@ OYUN_GENRES = {
     "Indie": "indie"
 }
 
-# Open Library Kitap Türleri
+# Google Books Kitap Türleri (subject search)
 KITAP_GENRES = {
     "Tümü": "fiction",
+    "Dünya Klasikleri": "classic literature",
+    "Türk Klasikleri": "turkish literature classics",
     "Gerilim": "thriller",
     "Romantik": "romance",
-    "Bilim Kurgu": "science_fiction",
+    "Bilim Kurgu": "science fiction",
     "Fantastik": "fantasy",
     "Korku": "horror",
     "Tarih": "history",
     "Gizem": "mystery",
-    "Polisiye": "detective",
+    "Polisiye": "detective fiction",
     "Biyografi": "biography",
     "Felsefe": "philosophy",
-    "Psikoloji": "psychology"
+    "Psikoloji": "psychology",
+    "Kişisel Gelişim": "self-help"
 }
 
 # ============================================================================
