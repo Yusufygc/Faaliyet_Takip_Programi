@@ -27,3 +27,6 @@ logs/
 # İşletim sistemi geçici dosyaları
 .DS_Store
 Thumbs.db
+
+# API Key Dosyası
+.env

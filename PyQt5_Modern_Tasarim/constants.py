@@ -18,5 +18,6 @@ DB_FILENAME = "faaliyetler.db"
 LOG_FILENAME = "app.log"
 THEME_NAME = "Fusion"
 
+
 # Dizin Adları
 DATA_DIR_NAME = "FaaliyetTakip"
