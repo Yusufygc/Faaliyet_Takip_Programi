@@ -1,6 +1,6 @@
 # controllers/main_controller.py
 from database.repository import ActivityRepository
-from models import Activity, ActivityFilter
+from models import Activity, ActivityFilter, Plan
 from utils import is_valid_yyyymm, extract_year_month
 from datetime import datetime
 from controllers.workers import DbWorker
@@ -240,3 +240,56 @@ class MainController:
     def synchronize_types(self):
         """Eksik türleri senkronize et (Arka planda çalışır, callback gerekmez)."""
         self._run_async(self.repository.synchronize_types, None)
+
+    # --- Plan / Hedef İşlemleri ---
+
+    def add_plan(self, title, description, scope, year, month, priority, callback):
+        """Yeni plan ekler."""
+        if not title:
+            callback((False, "Başlık boş olamaz."))
+            return
+            
+        created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Yeni plan status='planned', progress=0 başlar
+        plan = Plan(None, title, description, scope, year, month, 'planned', 0, priority, created_at)
+        
+        def op():
+            return self.repository.add_plan(plan), "Plan eklendi."
+            
+        self._run_async(lambda: op(), lambda res: callback((res[0], res[1]) if isinstance(res, tuple) else (res, "")))
+
+    def update_plan(self, plan_id, title, description, status, progress, priority, callback):
+        """Plan günceller."""
+        if not title:
+            callback((False, "Başlık boş olamaz."))
+            return
+
+        # Modeli oluştur (ID ve diğer alanlarla)
+        # Not: Created_at, Scope, Year, Month değişmez varsayıyoruz düzenlemede
+        # Hızlı çözüm: Repository sadece ilgili alanları güncelliyor, o yüzden dummy değerler verebiliriz
+        # ama en doğrusu repository update metoduna uygun nesne yollamak.
+        # Repository update_plan sql: title=?, description=?, status=?, progress=?, priority=? WHERE id=?
+        # Diğer alanlar (scope, year, month) kullanılmıyor.
+        
+        plan = Plan(plan_id, title, description, "", 0, 0, status, progress, priority, "")
+        
+        def op():
+            return self.repository.update_plan(plan), "Plan güncellendi."
+            
+        self._run_async(lambda: op(), lambda res: callback((res[0], res[1])))
+
+    def update_plan_progress(self, plan_id, progress, status, callback):
+        """İlerleme durumu günceller."""
+        def op():
+            return self.repository.update_plan_progress(plan_id, progress, status)
+        self._run_async(op, callback)
+
+    def delete_plan(self, plan_id, callback):
+        """Plan siler."""
+        def op():
+            return self.repository.delete_plan(plan_id), "Plan silindi."
+        self._run_async(lambda: op(), lambda res: callback((res[0], res[1])))
+
+    def get_plans(self, scope, year, month, callback):
+        """Planları getirir."""
+        self._run_async(self.repository.get_plans, callback, scope, year, month)

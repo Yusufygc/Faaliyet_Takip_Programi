@@ -1,7 +1,7 @@
 # database/repository.py
 from .connection import get_connection, init_db
 from .connection import get_connection, init_db
-from models import Activity, ActivityFilter
+from models import Activity, ActivityFilter, Plan
 from utils import is_valid_yyyymm, is_valid_yyyy
 from utils import is_valid_yyyymm, is_valid_yyyy
 from logger_setup import logger
@@ -16,6 +16,7 @@ class ActivityRepository:
         """Repository başlatıldığında veritabanının hazır olduğundan emin olur."""
         init_db()
         self.check_and_migrate_schema()
+        self.ensure_plans_table_exists()
 
     def check_and_migrate_schema(self):
         """Veritabanı şemasını kontrol eder ve eksik kolonları ekler."""
@@ -211,6 +212,138 @@ class ActivityRepository:
             if conn:
                 conn.close()
     
+            if conn:
+                conn.close()
+
+    # --- Plan / Hedef İşlemleri (Smart Planning) ---
+
+    def ensure_plans_table_exists(self):
+        """Plans tablosunu oluşturur."""
+        sql = '''
+            CREATE TABLE IF NOT EXISTS plans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT,
+                scope TEXT NOT NULL, -- 'monthly' or 'yearly'
+                year INTEGER NOT NULL,
+                month INTEGER, -- Nullable for yearly
+                status TEXT DEFAULT 'planned', -- 'planned', 'in_progress', 'completed', 'archived'
+                progress INTEGER DEFAULT 0,
+                priority TEXT DEFAULT 'medium', -- 'low', 'medium', 'high'
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        '''
+        try:
+            conn = get_connection()
+            if not conn: return
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            conn.commit()
+        except Exception as e:
+            logger.error(f"Hata (Repository.ensure_plans_table_exists): {e}")
+        finally:
+            if conn: conn.close()
+            
+    def add_plan(self, plan: Plan) -> bool:
+        """Yeni plan ekler."""
+        sql = '''
+            INSERT INTO plans (title, description, scope, year, month, status, progress, priority, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        '''
+        try:
+            conn = get_connection()
+            if not conn: return False
+            cursor = conn.cursor()
+            cursor.execute(sql, (
+                plan.title, plan.description, plan.scope, plan.year, plan.month, 
+                plan.status, plan.progress, plan.priority, plan.created_at
+            ))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Hata (Repository.add_plan): {e}")
+            return False
+        finally:
+            if conn: conn.close()
+
+    def update_plan(self, plan: Plan) -> bool:
+        """Planı günceller."""
+        sql = '''
+            UPDATE plans 
+            SET title=?, description=?, status=?, progress=?, priority=?
+            WHERE id=?
+        '''
+        try:
+            conn = get_connection()
+            if not conn: return False
+            cursor = conn.cursor()
+            cursor.execute(sql, (
+                plan.title, plan.description, plan.status, plan.progress, plan.priority, plan.id
+            ))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Hata (Repository.update_plan): {e}")
+            return False
+        finally:
+            if conn: conn.close()
+            
+    def update_plan_progress(self, plan_id: int, progress: int, status: str) -> bool:
+        """Sadece ilerleme ve durumu günceller."""
+        sql = "UPDATE plans SET progress=?, status=? WHERE id=?"
+        try:
+            conn = get_connection()
+            if not conn: return False
+            cursor = conn.cursor()
+            cursor.execute(sql, (progress, status, plan_id))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Hata (Repository.update_plan_progress): {e}")
+            return False
+        finally:
+            if conn: conn.close()
+
+    def delete_plan(self, plan_id: int) -> bool:
+        """Planı siler."""
+        sql = "DELETE FROM plans WHERE id=?"
+        try:
+            conn = get_connection()
+            if not conn: return False
+            cursor = conn.cursor()
+            cursor.execute(sql, (plan_id,))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Hata (Repository.delete_plan): {e}")
+            return False
+        finally:
+            if conn: conn.close()
+
+    def get_plans(self, scope: str, year: int, month: int = None) -> list[Plan]:
+        """Filtreye göre planları getirir."""
+        query = "SELECT id, title, description, scope, year, month, status, progress, priority, created_at FROM plans WHERE scope=? AND year=?"
+        params = [scope, year]
+        
+        if scope == 'monthly' and month is not None:
+             query += " AND month=?"
+             params.append(month)
+             
+        query += " ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, id DESC"
+        
+        try:
+            conn = get_connection()
+            if not conn: return []
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            return [Plan.from_row(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Hata (Repository.get_plans): {e}")
+            return []
+        finally:
+            if conn: conn.close()
+
     def get_unique_names(self) -> list[str]:
         """Otomatik tamamlama için benzersiz faaliyet isimlerini getirir."""
         sql = "SELECT DISTINCT name FROM activities ORDER BY name"
