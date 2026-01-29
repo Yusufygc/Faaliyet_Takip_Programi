@@ -5,6 +5,7 @@ dist/
 
 # Sanal ortamlar
 venv/
+venv_build/
 *.venv/
 .env/
 .conda/
