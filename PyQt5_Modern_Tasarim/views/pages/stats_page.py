@@ -3,9 +3,22 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QTableWidget, QTableWidgetItem, QHeaderView, 
                              QFrame, QSplitter, QDialog, QListWidget, QSizePolicy)
 from PyQt5.QtCore import Qt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
+import sys, os
+# Debug: Matplotlib importlarını logla
+try:
+    log_f = "stats_import_debug.txt"
+    if getattr(sys, 'frozen', False):
+        log_f = os.path.join(os.path.dirname(sys.executable), log_f)
+    with open(log_f, "a", encoding="utf-8") as f: f.write("Importing matplotlib modules...\n")
+    
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.figure import Figure
+    from matplotlib.patches import Circle
+    
+    with open(log_f, "a", encoding="utf-8") as f: f.write("Matplotlib imported OK.\n")
+except Exception as e:
+    with open("stats_import_err.txt", "w", encoding="utf-8") as f: f.write(str(e))
+    raise e
 
 from views.widgets import MonthYearWidget
 
@@ -275,7 +288,7 @@ class StatsPage(QWidget):
         ax2 = self.figure.add_subplot(122)
         ax2.pie(counts, labels=types, autopct='%1.1f%%', startangle=90, 
                 colors=colors[:len(types)], pctdistance=0.75, textprops={'fontsize': 8})
-        centre_circle = plt.Circle((0,0),0.60,fc='#F4F7F6')
+        centre_circle = Circle((0,0),0.60,fc='#F4F7F6')
         ax2.add_artist(centre_circle)
         ax2.set_title("Oransal Dağılım", fontsize=9, fontweight='bold', color='#2C3E50')
 
