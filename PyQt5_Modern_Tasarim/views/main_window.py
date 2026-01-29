@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QStackedWidget, QLabel, QFrame, QStatusBar, 
                              QShortcut, QSizePolicy)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QIcon
 
 from controllers.main_controller import MainController
 from views.pages.add_page import AddPage
@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Faaliyet Takip Sistemi")
         self.setGeometry(100, 100, 1100, 700) # Biraz daha geniş başlatalım
-        
+        self.setWindowIcon(QIcon("icons/icon.png"))
         # Stilleri Uygula
         self.setStyleSheet(STYLESHEET)
 

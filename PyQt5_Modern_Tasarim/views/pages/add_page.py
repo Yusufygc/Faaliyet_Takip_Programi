@@ -1,7 +1,7 @@
 # views/pages/add_page.py
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, 
                              QTextEdit, QComboBox, QPushButton, QMessageBox, 
-                             QDateEdit, QFormLayout, QFrame, QShortcut, QCompleter)
+                             QDateEdit, QFormLayout, QFrame, QShortcut, QCompleter, QCheckBox, QHBoxLayout)
 from PyQt5.QtCore import QDate, Qt, QLocale, QTimer
 from PyQt5.QtGui import QKeySequence
 
@@ -75,14 +75,43 @@ class AddPage(QWidget):
         # Otomatik Tamamlamayı Başlat
         self.setup_autocomplete()
 
-        # 3. Tarih (TÜRKÇE AYARLANDI)
+        # 3. Tarih (TÜRKÇE AYARLANDI) - Aralık Seçeneği ile
+        date_layout = QHBoxLayout()
+        date_layout.setContentsMargins(0, 0, 0, 0)
+        
         self.input_date = QDateEdit()
         self.input_date.setCalendarPopup(True)
         self.input_date.setLocale(QLocale(QLocale.Turkish, QLocale.Turkey))
         self.input_date.setDisplayFormat("d MMMM yyyy") 
         self.input_date.setDate(QDate.currentDate())
         self.input_date.setMinimumHeight(35)
-        form_layout.addRow("<b>Tarih:</b>", self.input_date)
+        
+        self.chk_range = QCheckBox("Bitiş Tarihi")
+        self.chk_range.toggled.connect(self.on_range_toggled)
+        
+        date_layout.addWidget(self.input_date)
+        date_layout.addWidget(self.chk_range)
+        
+        form_layout.addRow("<b>Tarih:</b>", date_layout)
+        
+        # 3.1 Bitiş Tarihi (Başlangıçta Gizli)
+        self.input_end_date = QDateEdit()
+        self.input_end_date.setCalendarPopup(True)
+        self.input_end_date.setLocale(QLocale(QLocale.Turkish, QLocale.Turkey))
+        self.input_end_date.setDisplayFormat("d MMMM yyyy") 
+        self.input_end_date.setDate(QDate.currentDate().addDays(1))
+        self.input_end_date.setMinimumHeight(35)
+        
+        # Label ve widget'ı saklamak için referansları tutuyoruz
+        self.lbl_end_date = QLabel("<b>Bitiş:</b>")
+        self.lbl_end_date.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        
+        # Form layout'a ekle ama gizle
+        form_layout.addRow(self.lbl_end_date, self.input_end_date)
+        
+        # İlk başta gizle
+        self.lbl_end_date.hide()
+        self.input_end_date.hide()
 
         # 4. Yorum
         self.input_comment = QTextEdit()
@@ -124,11 +153,28 @@ class AddPage(QWidget):
             self.completer.setFilterMode(Qt.MatchContains)
             self.input_name.setCompleter(self.completer)
 
+    def on_range_toggled(self, checked):
+        """Bitiş tarihi alanını göster/gizle."""
+        if checked:
+            self.lbl_end_date.show()
+            self.input_end_date.show()
+            # Bitiş tarihini başlangıçtan sonraya ayarla (eğer gerideyse)
+            if self.input_end_date.date() <= self.input_date.date():
+                self.input_end_date.setDate(self.input_date.date().addDays(1))
+        else:
+            self.lbl_end_date.hide()
+            self.input_end_date.hide()
+
     def handle_save(self):
         """Kaydetme işlemi."""
         type_val = self.combo_type.currentText()
         name_val = self.input_name.text()
-        date_val = self.input_date.date().toString("yyyy-MM")
+        date_val = self.input_date.date().toString("yyyy-MM-dd") # YYYY-MM-DD formatında tam tarih
+        
+        end_date_val = None
+        if self.chk_range.isChecked():
+            end_date_val = self.input_end_date.date().toString("yyyy-MM-dd")
+            
         comment_val = self.input_comment.toPlainText()
         rating_val = self.combo_rating.currentText()
 
@@ -138,7 +184,8 @@ class AddPage(QWidget):
 
         self.controller.add_activity(
             type_val, name_val, date_val, comment_val, rating_val,
-            self.on_save_finished
+            self.on_save_finished,
+            end_date=end_date_val
         )
 
     def on_save_finished(self, result):
@@ -177,7 +224,15 @@ class AddPage(QWidget):
         self.input_comment.clear()
         self.combo_rating.setCurrentIndex(0)
         self.combo_type.setCurrentIndex(0)
+    def clear_inputs(self):
+        """Formu temizler."""
+        self.input_name.clear()
+        self.input_comment.clear()
+        self.combo_rating.setCurrentIndex(0)
+        self.combo_type.setCurrentIndex(0)
         self.input_date.setDate(QDate.currentDate())
+        self.chk_range.setChecked(False)
+        self.input_end_date.setDate(QDate.currentDate().addDays(1))
 
     def load_types(self):
         """Veritabanından türleri çeker."""

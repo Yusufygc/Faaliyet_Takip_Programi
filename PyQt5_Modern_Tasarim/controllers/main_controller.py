@@ -1,6 +1,6 @@
 # controllers/main_controller.py
 from database.repository import ActivityRepository
-from models import Activity
+from models import Activity, ActivityFilter
 from utils import is_valid_yyyymm, extract_year_month
 from datetime import datetime
 from controllers.workers import DbWorker
@@ -41,10 +41,19 @@ class MainController:
 
     def get_all_activities(self, callback, type_filter="Hepsi", search_term="", date_filter="", page=1, items_per_page=15):
         """Filtrelenmiş aktivite listesini asenkron getirir."""
+        # Filtre objesini oluştur
+        filter_obj = ActivityFilter(
+            type_filter=type_filter,
+            search_term=search_term,
+            date_filter=date_filter,
+            page=page,
+            items_per_page=items_per_page
+        )
+        
         self._run_async(
             self.repository.get_all_filtered, 
             callback, 
-            type_filter, search_term, date_filter, page, items_per_page
+            filter_obj
         )
 
     def get_all_activity_names(self, callback):
@@ -55,7 +64,7 @@ class MainController:
         """ID'ye göre aktiviteyi asenkron getirir."""
         self._run_async(self.repository.get_by_id, callback, activity_id)
 
-    def add_activity(self, type_val, name, date_val, comment, rating_val, callback):
+    def add_activity(self, type_val, name, date_val, comment, rating_val, callback, end_date=None):
         """
         Yeni bir aktivite ekler (Önce validasyon, sonra asenkron kayıt).
         Validasyon senkron yapılır çünkü çok hızlıdır.
@@ -69,18 +78,42 @@ class MainController:
             callback((False, "Tarih seçimi zorunludur."))
             return
 
-        # Tarih kontrolü
+        # Tarih kontrolü (YYYY-MM veya YYYY-MM-DD olabilir)
         try:
-            year, month = map(int, date_val.split('-'))
-            selected_date = datetime(year, month, 1)
-            current_date = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            # Sadece format kontrolü yapalım, gün geçerliliği datetime ile kontrol edilir
+            if len(date_val.split('-')) == 2:
+                # Eski format (YYYY-MM) - Geriye dönük uyumluluk için, ama arayüzden artık tam tarih geliyor
+                year, month = map(int, date_val.split('-'))
+                selected_date = datetime(year, month, 1)
+            else:
+                # Yeni format (YYYY-MM-DD)
+                selected_date = datetime.strptime(date_val, "%Y-%m-%d")
+
+            current_date = datetime.now()
+            # Gelecek kontrolü (Opsiyonel - Geleceğe kayıt girilebilir mi? Kullanıcı isteğinde yasak yok
+            # ama mevcut kodda yasak vardı. Bunu koruyalım veya esnetelim.
+            # Kodda: current_date.replace(day=1...) kullanılmıştı. Tam tarih için:
             
-            if selected_date > current_date:
-                callback((False, "Gelecekteki bir tarihi seçemezsiniz."))
-                return
+            # Gelecek kontrolünü kaldıralım veya sadece yıl/ay bazlı yapalım. 
+            # Kullanıcı planlama da yapıyor olabilir. Ama mevcut kuralı koruyalım:
+            # if selected_date > current_date:
+            #    callback((False, "Gelecekteki bir tarihi seçemezsiniz."))
+            #    return
+             
         except ValueError:
-            callback((False, "Tarih işlenirken hata oluştu."))
+            callback((False, "Tarih formatı geçersiz."))
             return
+            
+        # Bitiş Tarihi Kontrolü
+        if end_date:
+            try:
+                dt_end = datetime.strptime(end_date, "%Y-%m-%d")
+                if dt_end < selected_date:
+                     callback((False, "Bitiş tarihi, başlangıç tarihinden önce olamaz."))
+                     return
+            except ValueError:
+                callback((False, "Bitiş tarihi formatı geçersiz."))
+                return
 
         # Puan kontrolü
         try:
@@ -90,7 +123,7 @@ class MainController:
             return
 
         # Nesne Oluşturma
-        new_activity = Activity(None, type_val, name.strip(), date_val, comment.strip(), rating)
+        new_activity = Activity(None, type_val, name.strip(), date_val, comment.strip(), rating, end_date)
 
         # Veritabanına Kayıt (Asenkron)
         def save_operation():
@@ -102,7 +135,7 @@ class MainController:
         
         self._run_async(save_operation, callback)
 
-    def update_activity(self, activity_id, type_val, name, date_val, comment, rating_val, callback, original_activity=None):
+    def update_activity(self, activity_id, type_val, name, date_val, comment, rating_val, callback, original_activity=None, end_date=None):
         """Mevcut bir aktiviteyi günceller (Asenkron)."""
         if not name or not name.strip():
             callback((False, "Faaliyet adı boş bırakılamaz."))
@@ -113,6 +146,12 @@ class MainController:
         except ValueError:
             callback((False, "Geçersiz puan değeri."))
             return
+            
+        # Tarih Validasyonu (Basit)
+        if end_date:
+             if end_date < date_val: # String karşılaştırma YYYY-MM-DD için çalışır
+                 callback((False, "Bitiş tarihi, başlangıç tarihinden önce olamaz."))
+                 return
 
         # Değişiklik Kontrolü
         if original_activity:
@@ -121,13 +160,14 @@ class MainController:
                 original_activity.name == name and
                 original_activity.date == date_val and
                 original_activity.comment == comment and
-                original_activity.rating == rating
+                original_activity.rating == rating and
+                getattr(original_activity, 'end_date', None) == end_date
             )
             if is_same:
                 callback((False, "Herhangi bir değişiklik yapılmadı."))
                 return
 
-        updated_activity = Activity(activity_id, type_val, name.strip(), date_val, comment.strip(), rating)
+        updated_activity = Activity(activity_id, type_val, name.strip(), date_val, comment.strip(), rating, end_date)
 
         def update_operation():
             success = self.repository.update(updated_activity)

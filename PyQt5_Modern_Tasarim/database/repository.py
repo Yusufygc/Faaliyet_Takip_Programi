@@ -1,6 +1,8 @@
 # database/repository.py
 from .connection import get_connection, init_db
-from models import Activity
+from .connection import get_connection, init_db
+from models import Activity, ActivityFilter
+from utils import is_valid_yyyymm, is_valid_yyyy
 from utils import is_valid_yyyymm, is_valid_yyyy
 from logger_setup import logger
 
@@ -13,12 +15,47 @@ class ActivityRepository:
     def __init__(self):
         """Repository başlatıldığında veritabanının hazır olduğundan emin olur."""
         init_db()
+        self.check_and_migrate_schema()
+
+    def check_and_migrate_schema(self):
+        """Veritabanı şemasını kontrol eder ve eksik kolonları ekler."""
+        try:
+            conn = get_connection()
+            if not conn: return
+            cursor = conn.cursor()
+            
+            # activities tablosundaki kolonları al
+            cursor.execute("PRAGMA table_info(activities)")
+            columns = [row[1] for row in cursor.fetchall()]
+            
+            if "end_date" not in columns:
+                logger.info("Şema güncelleniyor: 'end_date' kolonu ekleniyor...")
+                cursor.execute("ALTER TABLE activities ADD COLUMN end_date TEXT")
+                conn.commit()
+
+            # İndeksleri Kontrol Et ve Ekle (Performans için)
+            cursor.execute("PRAGMA index_list(activities)")
+            indexes = [row[1] for row in cursor.fetchall()]
+            
+            if "idx_activities_date" not in indexes:
+                cursor.execute("CREATE INDEX idx_activities_date ON activities(date)")
+                logger.info("İndeks oluşturuldu: idx_activities_date")
+                
+            if "idx_activities_type" not in indexes:
+                # Type aramalarında COLLATE NOCASE önemli olabilir ama şimdilik standart indeks
+                cursor.execute("CREATE INDEX idx_activities_type ON activities(type)")
+                logger.info("İndeks oluşturuldu: idx_activities_type")
+                
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Hata (Repository.check_and_migrate_schema): {e}")
 
     def add(self, activity: Activity) -> bool:
         """Yeni bir faaliyeti veritabanına ekler."""
         sql = '''
-            INSERT INTO activities (type, name, date, comment, rating)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO activities (type, name, date, comment, rating, end_date)
+            VALUES (?, ?, ?, ?, ?, ?)
         '''
         try:
             conn = get_connection()
@@ -29,7 +66,8 @@ class ActivityRepository:
                 activity.name,
                 activity.date,
                 activity.comment,
-                activity.rating
+                activity.rating,
+                activity.end_date
             ))
             conn.commit()
             logger.info(f"Yeni faaliyet eklendi: {activity.name} ({activity.type})")
@@ -45,7 +83,7 @@ class ActivityRepository:
         """Mevcut bir faaliyeti ID'sine göre günceller."""
         sql = '''
             UPDATE activities
-            SET type = ?, name = ?, date = ?, comment = ?, rating = ?
+            SET type = ?, name = ?, date = ?, comment = ?, rating = ?, end_date = ?
             WHERE id = ?
         '''
         try:
@@ -58,6 +96,7 @@ class ActivityRepository:
                 activity.date,
                 activity.comment,
                 activity.rating,
+                activity.end_date,
                 activity.id
             ))
             conn.commit()
@@ -90,7 +129,7 @@ class ActivityRepository:
 
     def get_by_id(self, activity_id: int) -> Activity | None:
         """ID'ye göre tek bir faaliyet kaydını döndürür."""
-        sql = "SELECT id, type, name, date, comment, rating FROM activities WHERE id = ?"
+        sql = "SELECT id, type, name, date, comment, rating, end_date FROM activities WHERE id = ?"
         try:
             conn = get_connection()
             if not conn: return None
@@ -105,62 +144,65 @@ class ActivityRepository:
             if conn:
                 conn.close()
 
-    def get_all_filtered(self, 
-                         activity_type_filter: str = "Hepsi", 
-                         search_term: str = "", 
-                         date_filter: str = "",
-                         page: int = 1,
-                         items_per_page: int = 15) -> tuple[list[Activity], int]:
+    def get_all_filtered(self, filter_obj: ActivityFilter) -> tuple[list[Activity], int]:
         """
         Filtrelenmiş ve sayfalanmış faaliyet listesini döndürür.
-        Dönüş: (activities_list, total_count)
+        Artık ActivityFilter nesnesi alıyor.
         """
-        # Temel Sorgu (WHERE koşulları için)
-        base_query = "FROM activities WHERE 1=1"
+        base_query_parts = ["FROM activities WHERE 1=1"]
         params = []
 
-        if activity_type_filter != "Hepsi":
-            # SQLite'da varsayılan LIKE case-insensitive çalışır (ASCII için)
-            # UTF-8 karakterler için lower() kullanımı daha garantidir.
-            base_query += " AND lower(type) = lower(?)"
-            params.append(activity_type_filter)
+        # 1. Tür Filtresi
+        if filter_obj.type_filter != "Hepsi":
+            base_query_parts.append("AND lower(type) = lower(?)")
+            params.append(filter_obj.type_filter)
 
-        if search_term:
-            base_query += " AND name LIKE ?"
-            params.append(f"%{search_term}%")
+        # 2. Arama Filtresi
+        if filter_obj.search_term:
+            base_query_parts.append("AND name LIKE ?")
+            params.append(f"%{filter_obj.search_term}%")
 
-        if date_filter:
-            # date_filter boşsa ("") buraya girmez, yani TÜM YILLAR gelir.
-            if is_valid_yyyymm(date_filter):
-                base_query += " AND date = ?"
-                params.append(date_filter)
-            elif is_valid_yyyy(date_filter):
-                base_query += " AND date LIKE ?"
-                params.append(f"{date_filter}%")
+        # 3. Tarih Filtresi
+        if filter_obj.date_filter:
+            date_f = filter_obj.date_filter
+            start_date, end_date = None, None
+
+            if is_valid_yyyymm(date_f):
+                start_date = f"{date_f}" # "YYYY-MM" (DB'deki "YYYY-MM" verisini de kapsamak için -01 eklemiyoruz)
+                end_date = f"{date_f}-31" 
+            elif is_valid_yyyy(date_f):
+                start_date = f"{date_f}" # "YYYY" (DB'deki "YYYY-01" veya "YYYY-MM" verisini kapsamak için -01-01 eklemiyoruz)
+                end_date = f"{date_f}-12-31"
+
+            if start_date and end_date:
+                # Kapsama Mantığı: (Start <= End of Period) AND (End >= Start of Period)
+                base_query_parts.append("AND date <= ? AND COALESCE(end_date, date) >= ?")
+                params.append(end_date)
+                params.append(start_date)
+
+        base_query = " ".join(base_query_parts)
 
         try:
             conn = get_connection()
             if not conn: return [], 0
             cursor = conn.cursor()
 
-            # 1. Toplam Sayıyı Bul (Pagination hesaplaması için gerekli)
+            # A. Toplam Sayı
             count_query = f"SELECT COUNT(*) {base_query}"
             cursor.execute(count_query, params)
             total_count = cursor.fetchone()[0]
 
-            # 2. Sayfalanmış Veriyi Çek
-            # LIMIT ve OFFSET ekle
-            offset = (page - 1) * items_per_page
-            data_query = f"SELECT id, type, name, date, comment, rating {base_query} ORDER BY date DESC, id DESC LIMIT ? OFFSET ?"
+            # B. Veri (Pagination)
+            offset = (filter_obj.page - 1) * filter_obj.items_per_page
+            data_query = f"SELECT id, type, name, date, comment, rating, end_date {base_query} ORDER BY date DESC, id DESC LIMIT ? OFFSET ?"
             
-            # Limit ve Offset parametrelerini ekle
-            current_params = params + [items_per_page, offset]
+            # Parametreleri birleştir
+            current_params = params + [filter_obj.items_per_page, offset]
             
             cursor.execute(data_query, current_params)
             rows = cursor.fetchall()
             
-            activities = [Activity.from_row(row) for row in rows]
-            return activities, total_count
+            return [Activity.from_row(row) for row in rows], total_count
 
         except Exception as e:
             logger.error(f"Hata (Repository.get_all_filtered): {e}")
@@ -301,7 +343,7 @@ class ActivityRepository:
         PDF Raporu için tüm detaylı veriyi çeker.
         (pdfcreate_page.py'deki get_detailed_activity_data mantığı)
         """
-        query = "SELECT type, name, date, comment, rating, id FROM activities WHERE date LIKE ? ORDER BY date, type, name"
+        query = "SELECT type, name, date, comment, rating, id, end_date FROM activities WHERE date LIKE ? ORDER BY date, type, name"
         try:
             conn = get_connection()
             cursor = conn.cursor()

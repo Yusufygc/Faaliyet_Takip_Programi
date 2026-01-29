@@ -1,7 +1,7 @@
 # views/pages/edit_dialog.py
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QLabel, QLineEdit, 
                              QTextEdit, QComboBox, QPushButton, QMessageBox, 
-                             QFormLayout, QDateEdit)
+                             QFormLayout, QDateEdit, QCheckBox, QHBoxLayout)
 from PyQt5.QtCore import QDate, Qt
 
 class EditDialog(QDialog):
@@ -50,10 +50,35 @@ class EditDialog(QDialog):
         form_layout.addRow("Ad:", self.input_name)
 
         # Tarih
+        date_layout = QHBoxLayout()
+        date_layout.setContentsMargins(0, 0, 0, 0)
+        
         self.input_date = QDateEdit()
         self.input_date.setCalendarPopup(True)
-        self.input_date.setDisplayFormat("yyyy-MM")
-        form_layout.addRow("Tarih:", self.input_date)
+        self.input_date.setDisplayFormat("yyyy-MM-dd") # Formatı güncelledik
+        self.input_date.setMinimumHeight(35)
+        
+        self.chk_range = QCheckBox("Bitiş Tarihi")
+        self.chk_range.toggled.connect(self.on_range_toggled)
+        
+        date_layout.addWidget(self.input_date)
+        date_layout.addWidget(self.chk_range)
+        
+        form_layout.addRow("Tarih:", date_layout)
+        
+        # Bitiş Tarihi (Gizli)
+        self.input_end_date = QDateEdit()
+        self.input_end_date.setCalendarPopup(True)
+        self.input_end_date.setDisplayFormat("yyyy-MM-dd")
+        self.input_end_date.setMinimumHeight(35)
+        
+        self.lbl_end_date = QLabel("Bitiş:")
+        
+        form_layout.addRow(self.lbl_end_date, self.input_end_date)
+        
+        # Gizle
+        self.lbl_end_date.hide()
+        self.input_end_date.hide()
 
         # Yorum
         self.input_comment = QTextEdit()
@@ -88,13 +113,32 @@ class EditDialog(QDialog):
         # Adı yaz
         self.input_name.setText(self.activity.name)
         
-        # Tarihi ayarla (String -> QDate çevrimi)
+        # Tarihi ayarla
         try:
-            # activity.date formatı: "YYYY-MM"
-            qdate = QDate.fromString(self.activity.date, "yyyy-MM")
-            self.input_date.setDate(qdate)
+            # Önce tam tarih denemesi
+            if len(self.activity.date.split('-')) == 3:
+                 qdate = QDate.fromString(self.activity.date, "yyyy-MM-dd")
+            else:
+                 qdate = QDate.fromString(self.activity.date, "yyyy-MM")
+            
+            if qdate.isValid():
+                self.input_date.setDate(qdate)
+            else:
+                self.input_date.setDate(QDate.currentDate())
         except:
             self.input_date.setDate(QDate.currentDate())
+            
+        # Bitiş tarihi varsa ayarla
+        if hasattr(self.activity, 'end_date') and self.activity.end_date:
+            self.chk_range.setChecked(True)
+            try:
+                qend = QDate.fromString(self.activity.end_date, "yyyy-MM-dd")
+                if qend.isValid():
+                    self.input_end_date.setDate(qend)
+            except:
+                pass
+        else:
+            self.chk_range.setChecked(False)
 
         # Yorumu yaz
         self.input_comment.setText(self.activity.comment)
@@ -105,11 +149,26 @@ class EditDialog(QDialog):
         else:
             self.combo_rating.setCurrentIndex(0)
 
+    def on_range_toggled(self, checked):
+        if checked:
+            self.lbl_end_date.show()
+            self.input_end_date.show()
+            if self.input_end_date.date() <= self.input_date.date():
+                self.input_end_date.setDate(self.input_date.date().addDays(1))
+        else:
+            self.lbl_end_date.hide()
+            self.input_end_date.hide()
+
     def handle_update(self):
         """Güncelleme işlemini tetikler."""
         type_val = self.combo_type.currentText()
         name_val = self.input_name.text()
-        date_val = self.input_date.date().toString("yyyy-MM")
+        date_val = self.input_date.date().toString("yyyy-MM-dd")
+        
+        end_date_val = None
+        if self.chk_range.isChecked():
+            end_date_val = self.input_end_date.date().toString("yyyy-MM-dd")
+            
         comment_val = self.input_comment.toPlainText()
         rating_val = self.combo_rating.currentText()
 
@@ -118,12 +177,12 @@ class EditDialog(QDialog):
         self.btn_save.setText("Kaydediliyor...")
 
         # Controller'a güncelleme isteği gönder
-        # self.activity parametresi, değişiklik kontrolü için gönderiliyor
         self.controller.update_activity(
             self.activity.id, 
             type_val, name_val, date_val, comment_val, rating_val,
             self.on_update_finished,
-            original_activity=self.activity 
+            original_activity=self.activity,
+            end_date=end_date_val
         )
 
     def on_update_finished(self, result):

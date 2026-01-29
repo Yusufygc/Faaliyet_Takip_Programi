@@ -79,11 +79,20 @@ class PDFService:
                     # None kontrolü ve String çevrimi yapıyoruz
                     cat = item[0] if item[0] else ""
                     name = item[1] if item[1] else ""
-                    date = item[2] if item[2] else ""
+                    start_date = item[2] if item[2] else ""
+                    # item formatı güncellendi: (type, name, date, comment, rating, id, end_date)
+                    end_date = item[6] if len(item) > 6 and item[6] else None
+                    
+                    if end_date:
+                        # Tarih aralığı varsa alt alta göster
+                        date_display = f"{start_date}\n- {end_date}"
+                    else:
+                        date_display = start_date
+                        
                     rating = str(item[4]) if item[4] else "-"
                     
                     # Satırı ekle
-                    table_data.append([cat.title(), name, date, rating])
+                    table_data.append([cat.title(), name, date_display, rating])
 
                 # Tabloyu Oluştur
                 # Sütun genişlikleri (Toplam ~7.2 inch)

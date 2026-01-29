@@ -275,7 +275,12 @@ class ListPage(QWidget):
             self.table.setItem(row_idx, 1, item_name)
             
             # 3. TARİH SÜTUNU (Ortalı)
-            item_date = QTableWidgetItem(activity.date)
+            date_display = activity.date
+            if activity.end_date:
+                # Daha güzel görünüm için " -> " yerine " - " veya " ➜ " kullanılabilir
+                date_display = f"{activity.date} ➜ {activity.end_date}"
+                
+            item_date = QTableWidgetItem(date_display)
             item_date.setTextAlignment(Qt.AlignCenter)
             self.table.setItem(row_idx, 2, item_date)
             
