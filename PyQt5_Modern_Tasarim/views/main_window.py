@@ -133,12 +133,23 @@ class MainWindow(QMainWindow):
     def switch_page(self, index):
         self.stacked_widget.setCurrentIndex(index)
         
+        # Karşılaştırma sayfasından çıkınca sidebar'ı göster
+        if index != 3 and not self.sidebar.isVisible():
+            self.sidebar.show()
+        
         # Aktif sayfa ise listeyi yenile
         current_widget = self.stacked_widget.currentWidget()
         if hasattr(current_widget, 'refresh_data'):
             current_widget.refresh_data()
         elif hasattr(current_widget, 'refresh_statistics'):
             current_widget.refresh_statistics()
+
+    def toggle_sidebar(self):
+        """Sidebar'ı göster/gizle (hamburger menü için)."""
+        if self.sidebar.isVisible():
+            self.sidebar.hide()
+        else:
+            self.sidebar.show()
 
     def setup_shortcuts(self):
         QShortcut(QKeySequence("Ctrl+Tab"), self).activated.connect(self.next_page)

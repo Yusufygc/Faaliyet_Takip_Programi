@@ -58,6 +58,19 @@ class ComparePage(QWidget):
         # İlk açılışta türleri yükle
         self.refresh_statistics()
 
+    def toggle_sidebar(self):
+        """Ana penceredeki sidebar'ı açar/kapar."""
+        main_window = self.window()
+        if main_window and hasattr(main_window, 'toggle_sidebar'):
+            main_window.toggle_sidebar()
+            # Buton ikonunu güncelle
+            if main_window.sidebar.isVisible():
+                self.btn_toggle_sidebar.setText("☰")
+                self.btn_toggle_sidebar.setToolTip("Menüyü Gizle (Daha fazla alan için)")
+            else:
+                self.btn_toggle_sidebar.setText("☰")
+                self.btn_toggle_sidebar.setToolTip("Menüyü Göster")
+
     def refresh_statistics(self):
         """Sayfa açıldığında veya yenilendiğinde çalışır (İsim uyumu için refresh_statistics dedik)."""
         if hasattr(self.controller, 'get_all_activity_types'):
@@ -89,12 +102,41 @@ class ComparePage(QWidget):
         layout.setContentsMargins(20, 15, 20, 15)
         layout.setSpacing(15)
 
+        # Başlık Satırı (Hamburger + Title)
+        header_row = QHBoxLayout()
+        
+        # Hamburger Menü Butonu
+        self.btn_toggle_sidebar = QPushButton("☰")
+        self.btn_toggle_sidebar.setFixedSize(40, 40)
+        self.btn_toggle_sidebar.setCursor(Qt.PointingHandCursor)
+        self.btn_toggle_sidebar.setToolTip("Menüyü Gizle/Göster (Daha fazla alan için)")
+        self.btn_toggle_sidebar.setStyleSheet("""
+            QPushButton {
+                background-color: #667EEA;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #5a6fd6;
+            }
+        """)
+        self.btn_toggle_sidebar.clicked.connect(self.toggle_sidebar)
+        header_row.addWidget(self.btn_toggle_sidebar)
+        
         # Başlık
         title = QLabel("📊 Dönemsel Karşılaştırma")
         title.setFont(QFont("Segoe UI", 20, QFont.Bold))
         title.setStyleSheet("color: #1A1A1A;")
         title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
+        header_row.addWidget(title, 1)
+        
+        # Sağ tarafta boşluk için placeholder
+        header_row.addSpacing(40)
+        
+        layout.addLayout(header_row)
 
         # Butonlar - Üst Sıra
         btn_layout = QVBoxLayout()
@@ -213,7 +255,7 @@ class ComparePage(QWidget):
             QHeaderView::section {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #F8F9FA, stop:1 #E9ECEF);
-                padding: 12px 8px;
+                padding: 10px 6px;
                 border: none;
                 border-bottom: 3px solid #667EEA;
                 font-weight: bold;
@@ -221,21 +263,22 @@ class ComparePage(QWidget):
                 font-size: 11px;
             }
             QTableWidget::item {
-                padding: 10px;
-                margin: 4px;
+                padding: 8px 6px;
+                margin: 3px;
                 background-color: white;
-                border-radius: 8px;
+                border-radius: 6px;
                 border: 1px solid #E8E8E8;
                 color: #2C3E50;
+                font-size: 10px;
             }
             QTableWidget::item:hover {
                 background-color: #EBF5FB;
-                border: 2px solid #3498DB;
+                border: 1px solid #3498DB;
             }
             QTableWidget::item:selected {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #D6EAF8, stop:1 #AED6F1);
-                border: 2px solid #2980B9;
+                border: 1px solid #2980B9;
                 color: #154360;
                 font-weight: bold;
                 outline: none;
@@ -369,15 +412,18 @@ class ComparePage(QWidget):
         for col_idx, main_cat in enumerate(self.activity_types):
             items = grouped_data.get(main_cat, [])
             count = len(items)
-            headers.append(f"{main_cat} ({count})")
+            # Başlık kısalması (10 karakter)
+            cat_display = main_cat if len(main_cat) <= 10 else main_cat[:8] + ".."
+            headers.append(f"{cat_display} ({count})")
             
             for row_idx, name in enumerate(items):
-                item = QTableWidgetItem(name)
+                item = QTableWidgetItem()
                 # Tooltip: Fare ile üzerine gelindiğinde tam adı göster
                 item.setToolTip(f"📌 {name}\n🏷️ Kategori: {main_cat}")
-                # Uzun metinleri kısalt
-                display_name = name if len(name) <= 20 else name[:17] + "..."
+                # Uzun metinleri kısalt (15 karakter - sidebar gizliyken daha fazla alan)
+                display_name = name if len(name) <= 15 else name[:13] + ".."
                 item.setText(display_name)
+                item.setTextAlignment(Qt.AlignCenter)
                 # Orijinal veriyi sakla
                 item.setData(Qt.UserRole, name)
                 table.setItem(row_idx, col_idx, item)
