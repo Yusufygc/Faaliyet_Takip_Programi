@@ -31,3 +31,9 @@ Thumbs.db
 
 # API Key Dosyası
 .env
+
+# hooks
+hooks/
+
+# batch dosyaları
+*.bat
