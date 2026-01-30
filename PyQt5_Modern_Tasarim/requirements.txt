@@ -15,3 +15,5 @@ python-dotenv>=1.0.0
 
 # PDF Oluşturma
 reportlab>=4.0.0
+
+nuitka
