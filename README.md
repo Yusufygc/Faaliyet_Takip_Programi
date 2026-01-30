@@ -90,8 +90,8 @@ Kişisel aktivitelerinizi (Film, Dizi, Oyun, Kitap vb.) takip etmenizi, istatist
 
 ### Adım 1: Repoyu Klonlayın
 ```bash
-git clone https://github.com/kullanici/faaliyet-takip.git
-cd faaliyet-takip/PyQt5_Modern_Tasarim
+https://github.com/Yusufygc/Faaliyet_Takip_Programi.git
+cd Faaliyet_Takip_Programi/PyQt5_Modern_Tasarim
 ```
 
 ### Adım 2: Sanal Ortam Oluşturun (Önerilen)
