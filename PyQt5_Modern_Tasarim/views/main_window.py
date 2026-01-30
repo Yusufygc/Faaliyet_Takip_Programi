@@ -18,13 +18,24 @@ from views.pages.plans_page import PlansPage
 from views.pages.suggestion_page import SuggestionPage
 from views.styles import STYLESHEET # Stilleri import et
 
+import os
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Faaliyet Takip Sistemi")
         self.setGeometry(100, 100, 1100, 700) # Biraz daha geniş başlatalım
-        self.setWindowIcon(QIcon("icons/icon.png"))
+        
+        # Icon Yolu Ayarlama (Robust Path)
+        # Nuitka/PyInstaller çalışma dizinini main.py içinde ayarlıyor, 
+        # ancak garantiye almak için mutlak yol kullanalım.
+        icon_path = os.path.join(os.getcwd(), "icons", "icon.ico")
+        if not os.path.exists(icon_path):
+             # Yedek olarak PNG deneyelim
+             icon_path = os.path.join(os.getcwd(), "icons", "icon.png")
+        
+        self.setWindowIcon(QIcon(icon_path))
         # Stilleri Uygula
         self.setStyleSheet(STYLESHEET)
 

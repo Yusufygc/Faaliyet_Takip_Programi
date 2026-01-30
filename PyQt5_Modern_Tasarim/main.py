@@ -20,9 +20,11 @@ except Exception as e:
     input("Hata olustu. Enter'a basin...")
     sys.exit(1)
 
-# PyInstaller için çalışma dizinini ayarla
+# PyInstaller/Nuitka için çalışma dizinini ayarla
 if getattr(sys, 'frozen', False):
-    application_path = os.path.dirname(sys.executable)
+    # Onefile modunda resources temp dizine çıkarılır.
+    # sys.executable exe'nin olduğu yeri verirken, __file__ temp dizindeki scripti verir.
+    application_path = os.path.dirname(os.path.abspath(__file__))
     os.chdir(application_path)
 
 def main():
