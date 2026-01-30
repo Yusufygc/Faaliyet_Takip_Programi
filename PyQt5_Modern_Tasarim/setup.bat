@@ -1,6 +1,6 @@
 @echo off
 echo Nuitka ile insa islemi baslatiliyor...
-echo Lutfen 'Ftakip' anaconda ortaminin aktif oldugundan emin olun.
+echo Lutfen sanal ortaminin aktif oldugundan emin olun.
 echo.
 
 REM Nuitka var mi kontrol et
@@ -15,6 +15,7 @@ if %errorlevel% equ 0 (
         --windows-icon-from-ico=icons/icon.ico ^
         --include-data-dir=icons=icons ^
         --include-data-dir=fonts=fonts ^
+        --include-data-file=.env=.env ^
         --output-dir=dist ^
         main.py
 ) else (
@@ -27,6 +28,7 @@ if %errorlevel% equ 0 (
         --windows-icon-from-ico=icons/icon.ico ^
         --include-data-dir=icons=icons ^
         --include-data-dir=fonts=fonts ^
+        --include-data-file=.env=.env ^
         --output-dir=dist ^
         main.py
 )
