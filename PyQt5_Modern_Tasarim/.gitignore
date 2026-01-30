@@ -36,4 +36,4 @@ Thumbs.db
 hooks/
 
 # batch dosyaları
-*.bat
+#*.bat
