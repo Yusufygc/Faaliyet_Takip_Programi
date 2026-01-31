@@ -1,39 +1,53 @@
-# PyInstaller derleme çıktıları
+# =========================
+# PyInstaller / Build
+# =========================
 build/
 dist/
 *.spec
 
-# Sanal ortamlar
-venv/
-venv_build/
-*.venv/
-.env/
-.conda/
-envs/
-
-# Python derleme çıktıları
+# =========================
+# Python cache / artifacts
+# =========================
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Veritabanı dosyaları (eğer proje içinde oluşturuluyorsa)
+# =========================
+# Virtual environments
+# =========================
+venv/
+venv_build/
+*.venv/
+.env/
+.conda/
+.envs/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+
+# =========================
+# Databases
+# =========================
 data/*.db
 *.db
 
-# Log dosyaları
+# =========================
+# Logs
+# =========================
 logs/
 *.log
 
-# İşletim sistemi geçici dosyaları
+# =========================
+# OS junk files
+# =========================
 .DS_Store
 Thumbs.db
 
-# API Key Dosyası
-.env
-
-# hooks
-hooks/
-
-# batch dosyaları
-#*.bat
+# =========================
+# Project-specific ignores
+# =========================
+document/conda.txt
+document/Faaliyet_Takip_Eklenebilirler.txt
