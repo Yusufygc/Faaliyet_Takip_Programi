@@ -58,14 +58,39 @@ STYLESHEET = f"""
     /* --- Form Elemanları --- */
     QLineEdit, QComboBox, QDateEdit, QTextEdit {{
         background-color: {COLORS["card"]};
-        border: 1px solid {COLORS["border"]};
-        border-radius: 5px;
-        padding: 8px;
+        border: 2px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 10px;
         font-size: 14px;
+        color: {COLORS["text"]};
     }}
     
-    QLineEdit:focus, QComboBox:focus, QTextEdit:focus {{
-        border: 1px solid {COLORS["primary"]};
+    QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QDateEdit:focus {{
+        border: 2px solid {COLORS["primary"]};
+        background-color: #F8FAFC;
+    }}
+    QLineEdit:hover, QComboBox:hover, QTextEdit:hover, QDateEdit:hover {{
+        border: 2px solid #CBD5E1;
+    }}
+
+    /* --- ComboBox Özel Ok (SVG) --- */
+    QComboBox {{
+        padding-right: 25px;
+    }}
+
+    QComboBox::drop-down {{
+        subcontrol-origin: padding;
+        subcontrol-position: top right;
+        width: 30px;
+        border-left-width: 0px;
+        border-top-right-radius: 5px;
+        border-bottom-right-radius: 5px;
+    }}
+
+    QComboBox::down-arrow {{
+        image: url(icons/down_arrow.svg);
+        width: 14px;
+        height: 14px;
     }}
 
     /* --- Tablo --- */

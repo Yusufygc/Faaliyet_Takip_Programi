@@ -31,7 +31,6 @@ class AddPage(QWidget):
                                           stop:0 #FFFFFF, stop:1 #F8FAFC);
                 border-radius: 16px;
                 border: 3px solid #E2E8F0;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
             }
         """)
         
