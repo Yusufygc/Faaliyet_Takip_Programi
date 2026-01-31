@@ -14,6 +14,7 @@ from views.pages.pdf_page import PdfPage
 from views.pages.settings_page import SettingsPage
 from views.pages.plans_page import PlansPage
 from views.pages.suggestion_page import SuggestionPage
+from views.pages.analysis_page import TrendAnalysisPage
 from views.styles import STYLESHEET 
 
 import os
@@ -216,6 +217,14 @@ class MainWindow(QMainWindow):
 
         self.settings_page = SettingsPage(self.controller)
         self.stacked_widget.addWidget(self.settings_page)
+        
+        # Trend Analysis Page (Stacked navigation - not in sidebar)
+        self.trend_analysis_page = TrendAnalysisPage(self.controller)
+        self.stacked_widget.addWidget(self.trend_analysis_page)
+        
+        # Connect signals
+        self.stats_page.open_trend_analysis.connect(self.open_trend_analysis)
+        self.trend_analysis_page.back_clicked.connect(self.close_trend_analysis)
 
     def switch_page(self, index):
         self.stacked_widget.setCurrentIndex(index)
@@ -247,3 +256,17 @@ class MainWindow(QMainWindow):
     def prev_page(self):
         idx = (self.stacked_widget.currentIndex() - 1 + self.stacked_widget.count()) % self.stacked_widget.count()
         self.switch_page(idx)
+    
+    def open_trend_analysis(self):
+        """İstatistik sayfasından trend analizi sayfasına geç"""
+        self.stacked_widget.setCurrentWidget(self.trend_analysis_page)
+        # Sidebar'ı gizle (daha geniş alan için)
+        # self.sidebar.hide()  # İsterseniz bunu açabilirsiniz
+    
+    def close_trend_analysis(self):
+        """Trend analizi sayfasından istatistik sayfasına geri dön"""
+        self.stacked_widget.setCurrentWidget(self.stats_page)
+        self.update_active_button(2)  # İstatistik butonu index 2
+        # Sidebar'ı göster
+        if not self.sidebar.isVisible():
+            self.sidebar.show()

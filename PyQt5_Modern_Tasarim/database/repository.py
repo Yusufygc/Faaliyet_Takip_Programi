@@ -488,6 +488,66 @@ class ActivityRepository:
             if conn:
                 conn.close()
 
+    def get_monthly_activity_counts(self, year: int, category: str = None) -> list[tuple]:
+        """
+        Trend Analizi için aylık aktivite sayılarını çeker.
+        Dönüş: [(ay_numarası, sayi), ...]
+        Örn: [(1, 5), (2, 8), ...]
+        """
+        # date alanı 'YYYY-MM' veya 'YYYY-MM-DD' formatında olduğu için substr kullanıyoruz
+        query = """
+            SELECT CAST(substr(date, 6, 2) AS INTEGER) as month, COUNT(*) 
+            FROM activities 
+            WHERE substr(date, 1, 4) = ?
+        """
+        params = [str(year)]
+        
+        if category and category != "Hepsi":
+            query += " AND type = ?"
+            params.append(category)
+            
+        query += " GROUP BY month ORDER BY month"
+        
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            return cursor.fetchall()
+        except Exception as e:
+            logger.error(f"Hata (Repository.get_monthly_activity_counts): {e}")
+            return []
+        finally:
+            if conn:
+                conn.close()
+    
+    def get_activity_details_by_month(self, date_str: str, category: str = None) -> list[tuple]:
+        """
+        Belirli bir aydaki aktivitelerin detaylarını getirir.
+        date_str: 'YYYY-MM' formatında ay bilgisi
+        category: Opsiyonel kategori filtresi
+        Dönüş: [(name, date), ...]
+        """
+        query = "SELECT name, date FROM activities WHERE substr(date, 1, 7) = ?"
+        params = [date_str]
+        
+        if category and category != "Hepsi":
+            query += " AND type = ?"
+            params.append(category)
+        
+        query += " ORDER BY date DESC, name ASC"
+        
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            return cursor.fetchall()
+        except Exception as e:
+            logger.error(f"Hata (Repository.get_activity_details_by_month): {e}")
+            return []
+        finally:
+            if conn:
+                conn.close()
+
     # --- Ayarlar / Tür Yönetimi ---
 
     def ensure_types_table_exists(self):
@@ -619,11 +679,20 @@ class ActivityRepository:
                 conn.close()
 
     def get_all_types(self) -> list[str]:
-        """Tüm aktif türleri alfabetik sırayla döndürür."""
+        """Tüm aktif türleri alfabetik sırayla döndürür (kayıtlı + kullanılan)."""
         # Tablo yoksa oluştur (Güvenlik için)
         self.ensure_types_table_exists()
         
-        sql = "SELECT name FROM activity_types ORDER BY name ASC"
+        # Hem kayıtlı türleri hem de gerçekte kullanılan türleri getir
+        sql = """
+            SELECT DISTINCT name FROM (
+                SELECT name FROM activity_types
+                UNION
+                SELECT DISTINCT type as name FROM activities WHERE type IS NOT NULL AND type != ''
+            )
+            ORDER BY name ASC
+        """
+        
         try:
             conn = get_connection()
             if not conn: return []

@@ -1,8 +1,8 @@
 # views/pages/stats_page.py
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QTableWidget, QTableWidgetItem, QHeaderView, 
-                             QFrame, QSplitter, QDialog, QListWidget, QListWidgetItem, QSizePolicy)
-from PyQt5.QtCore import Qt
+                             QFrame, QSplitter, QDialog, QListWidget, QListWidgetItem, QSizePolicy, QPushButton)
+from PyQt5.QtCore import Qt, pyqtSignal
 import sys, os
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -81,6 +81,9 @@ class DetailDialog(QDialog):
             list_widget.addItem(item)
 
 class StatsPage(QWidget):
+    
+    open_trend_analysis = pyqtSignal()  # Trend analizi sayfasını açma sinyali
+    
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
@@ -127,6 +130,30 @@ class StatsPage(QWidget):
         filter_layout.addWidget(self.date_picker)
         
         filter_layout.addStretch()
+        
+        # Trend Analizi Butonu
+        self.btn_trend = QPushButton("📈 Zaman Serisi ve Trend Analizi")
+        self.btn_trend.setCursor(Qt.PointingHandCursor)
+        self.btn_trend.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #3B82F6, stop:1 #2563EB);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 10px 20px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2563EB, stop:1 #1D4ED8);
+            }
+            QPushButton:pressed {
+                background: #1E40AF;
+            }
+        """)
+        self.btn_trend.clicked.connect(self.open_trend_analysis.emit)
+        filter_layout.addWidget(self.btn_trend)
+        
         main_layout.addWidget(filter_frame)
 
         # --- Özet Kartları (KPIs) ---

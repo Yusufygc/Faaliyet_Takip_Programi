@@ -209,6 +209,18 @@ class MainController:
         """PDF verisini asenkron çeker."""
         self._run_async(self.repository.get_detailed_data_for_pdf, callback, date_prefix)
 
+    def get_trend_data(self, callback, year, category=None):
+        """Trend analizi verilerini asenkron çeker."""
+        # Yıl validasyonu
+        if not str(year).isdigit() or len(str(year)) != 4:
+            callback([])
+            return
+        self._run_async(self.repository.get_monthly_activity_counts, callback, int(year), category)
+    
+    def get_activity_details_by_month(self, callback, date_str, category=None):
+        """Belirli bir aydaki aktivite detaylarını çeker (isim, tarih)"""
+        self._run_async(self.repository.get_activity_details_by_month, callback, date_str, category)
+
     # --- Ayarlar / Tür Yönetimi ---
 
     def get_all_activity_types(self, callback):
