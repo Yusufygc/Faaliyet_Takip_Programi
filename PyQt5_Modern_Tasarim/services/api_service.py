@@ -20,7 +20,7 @@ TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 RAWG_API_KEY = os.getenv("RAWG_API_KEY")
 
 # Sayfa başına öğe sayısı
-ITEMS_PER_PAGE = 10
+ITEMS_PER_PAGE = 12
 
 
 class ApiService:

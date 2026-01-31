@@ -64,16 +64,16 @@ class SuggestionCard(QFrame):
         self.init_ui()
 
     def init_ui(self):
-        self.setFixedSize(200, 320)
+        self.setFixedSize(220, 360)  # Kart boyutu büyütüldü
         self.setStyleSheet("""
             QFrame {
                 background-color: #2b2b2b;
                 border: 1px solid #3d3d3d;
-                border-radius: 10px;
+                border-radius: 12px;
             }
             QFrame:hover {
-                background-color: #333;
-                border: 1px solid #555;
+                background-color: #383838;
+                border: 1px solid #666;
             }
             QLabel { background-color: transparent; border: none; }
         """)
@@ -83,13 +83,13 @@ class SuggestionCard(QFrame):
         
         # Image
         img_url = self.data.get('image')
-        self.img_lbl = AsyncImage(img_url, 180, 220)
+        self.img_lbl = AsyncImage(img_url, 200, 260) # Resim boyutu büyütüldü
         layout.addWidget(self.img_lbl, alignment=Qt.AlignCenter)
         
         # Title
         title = self.data.get('title', 'Başlık Yok')
         title_lbl = QLabel(title)
-        title_lbl.setStyleSheet("color: white; font-weight: bold; font-size: 12px;")
+        title_lbl.setStyleSheet("color: white; font-weight: bold; font-size: 14px;") # Font büyütüldü
         title_lbl.setWordWrap(True)
         title_lbl.setFixedHeight(35)
         layout.addWidget(title_lbl)
@@ -140,7 +140,7 @@ class SuggestionPage(QWidget):
         header_layout = QHBoxLayout()
         
         title = QLabel("🚀 Keşfet & Öneriler")
-        title.setStyleSheet("font-size: 22px; font-weight: bold; color: #333;")
+        title.setStyleSheet("font-size: 26px; font-weight: bold; color: #333;") # Başlık büyütüldü
         header_layout.addWidget(title)
         
         header_layout.addStretch()
@@ -153,9 +153,10 @@ class SuggestionPage(QWidget):
                 background-color: #9c27b0;
                 color: white;
                 border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
+                padding: 10px 20px;
+                border-radius: 8px;
                 font-weight: bold;
+                font-size: 14px;
             }
             QPushButton:hover { background-color: #7b1fa2; }
         """)
@@ -170,9 +171,10 @@ class SuggestionPage(QWidget):
                 background-color: #ff9800;
                 color: white;
                 border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
+                padding: 10px 20px;
+                border-radius: 8px;
                 font-weight: bold;
+                font-size: 14px;
             }
             QPushButton:hover { background-color: #f57c00; }
         """)
@@ -219,7 +221,7 @@ class SuggestionPage(QWidget):
             btn = QPushButton(cat)
             btn.setCheckable(True)
             btn.setCursor(Qt.PointingHandCursor)
-            btn.setFixedSize(70, 30)
+            btn.setFixedSize(90, 40) # Kategori butonları büyütüldü
             btn.clicked.connect(lambda checked, c=cat: self.on_category_changed(c))
             filter_layout.addWidget(btn)
             self.cat_btns[cat] = btn
@@ -281,13 +283,21 @@ class SuggestionPage(QWidget):
                 background: transparent; 
             }
             QScrollBar:vertical {
-                background: #e0e0e0;
-                width: 10px;
-                border-radius: 5px;
+                background: #f1f1f1;
+                width: 14px;
+                margin: 0px 0px 0px 0px;
+                border-radius: 7px;
             }
             QScrollBar::handle:vertical {
-                background: #888;
-                border-radius: 5px;
+                background: #bdbdbd;
+                min-height: 30px;
+                border-radius: 7px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #9e9e9e;
+            }
+            QScrollBar::sub-line:vertical, QScrollBar::add-line:vertical {
+                height: 0px;
             }
         """)
         
@@ -320,12 +330,12 @@ class SuggestionPage(QWidget):
                 color: white;
                 border: none;
                 padding: 12px 25px;
-                border-radius: 8px;
+                border-radius: 10px;
                 font-weight: bold;
-                font-size: 13px;
+                font-size: 14px;
             }
             QPushButton:hover { background-color: #546e7a; }
-            QPushButton:disabled { background-color: #ccc; color: #888; }
+            QPushButton:disabled { background-color: #cfd8dc; color: #90a4ae; }
         """)
         self.btn_show_cached.clicked.connect(self.on_show_cached_clicked)
         pagination_layout.addWidget(self.btn_show_cached)
@@ -348,12 +358,12 @@ class SuggestionPage(QWidget):
                 color: white;
                 border: none;
                 padding: 12px 25px;
-                border-radius: 8px;
+                border-radius: 10px;
                 font-weight: bold;
-                font-size: 13px;
+                font-size: 14px;
             }
             QPushButton:hover { background-color: #43a047; }
-            QPushButton:disabled { background-color: #ccc; color: #888; }
+            QPushButton:disabled { background-color: #c8e6c9; color: #81c784; }
         """)
         self.btn_load_more.clicked.connect(self.on_load_more_clicked)
         pagination_layout.addWidget(self.btn_load_more)
@@ -371,16 +381,16 @@ class SuggestionPage(QWidget):
                 background-color: white;
                 color: #333;
                 border: 1px solid #ccc;
-                padding: 6px 10px;
-                border-radius: 6px;
-                font-size: 12px;
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 14px;
             }
             QComboBox:hover {
                 border: 1px solid #2196F3;
             }
             QComboBox::drop-down { 
                 border: none;
-                width: 20px;
+                width: 24px;
             }
             QComboBox QAbstractItemView {
                 background-color: white;
@@ -388,6 +398,8 @@ class SuggestionPage(QWidget):
                 selection-background-color: #2196F3;
                 selection-color: white;
                 border: 1px solid #ccc;
+                outline: none;
+                padding: 4px;
             }
         """)
 
@@ -400,9 +412,9 @@ class SuggestionPage(QWidget):
                         background-color: #2196F3;
                         color: white;
                         border: none;
-                        border-radius: 6px;
+                        border-radius: 8px;
                         font-weight: bold;
-                        font-size: 12px;
+                        font-size: 14px;
                     }
                 """)
             else:
@@ -411,8 +423,8 @@ class SuggestionPage(QWidget):
                         background-color: white;
                         color: #555;
                         border: 1px solid #ddd;
-                        border-radius: 6px;
-                        font-size: 12px;
+                        border-radius: 8px;
+                        font-size: 14px;
                     }
                     QPushButton:hover {
                         background-color: #e3f2fd;
@@ -703,16 +715,40 @@ class SuggestionPage(QWidget):
             self.grid.addWidget(lbl, 0, 0)
             return
 
-        row, col = 0, 0
-        cols_per_row = 5
+        self._rearrange_grid(results)
+
+    def _rearrange_grid(self, results=None):
+        """Grid'i mevcut genişliğe göre yeniden düzenler (Responsive)."""
+        data_to_render = results if results is not None else self.all_results
+        if not data_to_render:
+            return
+
+        # Grid'i temizle ama widget'ları silme (yeniden ekleyeceğiz)
+        # Pratik yöntem: hepsini siliyoruz ve yeniden oluşturuyoruz (performans sorunu olursa optimize edilir)
+        self._clear_grid()
         
-        for item in results:
+        # Ekran genişliğine göre kolon sayısını hesapla
+        available_width = self.scroll.width() - 40 # Scrollbar ve margin payı
+        card_width = 240 # Kart genişliği (220) + boşluk (20)
+        cols = max(1, available_width // card_width)
+        
+        row, col = 0, 0
+        
+        for item in data_to_render:
             card = SuggestionCard(item)
             self.grid.addWidget(card, row, col)
             col += 1
-            if col >= cols_per_row:
+            if col >= cols:
                 col = 0
                 row += 1
+
+    def resizeEvent(self, event):
+        """Pencere boyutu değişince grid'i yeniden düzenle."""
+        super().resizeEvent(event)
+        # Resize sırasında sürekli tetiklenmemesi için bir timer veya basit bir check konulabilir
+        # Ancak PyQt layout sistemi bazen kendi halleder, burada manuel hesaplama için çağırıyoruz.
+        if self.all_results:
+             self._rearrange_grid()
 
     def on_data_loaded(self, results):
         """İlk sayfa verisi yüklenince çağrılır."""
