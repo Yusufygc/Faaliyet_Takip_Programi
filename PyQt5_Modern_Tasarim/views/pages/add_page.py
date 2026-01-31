@@ -129,12 +129,15 @@ class AddPage(QWidget):
         card_layout.addLayout(form_layout)
 
         # Kaydet Butonu
-        self.btn_save = QPushButton("💾 Kaydet (Ctrl+S)")
+        card_layout.addSpacing(45)
+
+        self.btn_save = QPushButton("Kaydet")
         self.btn_save.setObjectName("SuccessBtn") # Yeşil buton stili
         self.btn_save.setCursor(Qt.PointingHandCursor)
         self.btn_save.setMinimumHeight(45)
+        self.btn_save.setFixedWidth(220)
         self.btn_save.clicked.connect(self.handle_save)
-        card_layout.addWidget(self.btn_save)
+        card_layout.addWidget(self.btn_save, 0, Qt.AlignCenter)
         
         # Kartın içinde altta boşluk kalırsa doldur
         card_layout.addStretch()

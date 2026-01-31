@@ -1,73 +1,208 @@
 # views/pages/settings_page.py
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QListWidget, QLineEdit, QMessageBox, 
-                             QInputDialog, QFrame)
+                             QInputDialog, QFrame, QGraphicsDropShadowEffect,
+                             QListWidgetItem)
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor
 
 class SettingsPage(QWidget):
+    # Sayfalama sabitleri
+    ITEMS_PER_PAGE = 10
+    MIN_LIST_HEIGHT = 120
+    MAX_LIST_HEIGHT = 400  # Önceki maksimum yüksekliğin 2 katı
+    ITEM_HEIGHT = 32  # Her bir öğe için tahmini yükseklik
+    
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.all_types = []  # Tüm türleri saklar
+        self.filtered_types = []  # Filtrelenmiş türler
+        self.current_page = 0
         self.init_ui()
 
     def init_ui(self):
         main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(20)
-        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(25, 25, 25, 25)
 
         # Başlık
         title = QLabel("⚙️ Ayarlar")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #2C3E50;")
+        title.setStyleSheet("""
+            font-size: 22px; 
+            font-weight: bold; 
+            color: #2C3E50;
+            padding-bottom: 5px;
+        """)
         main_layout.addWidget(title)
 
         # --- Faaliyet Türleri Yönetimi Kartı ---
-        card = QFrame()
-        card.setObjectName("Card") # styles.py
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(20, 20, 20, 20)
-        card_layout.setSpacing(15)
+        self.card = QFrame()
+        self.card.setObjectName("Card")
+        self.card.setMaximumWidth(550)
+        self.card.setStyleSheet("""
+            QFrame#Card {
+                background-color: #FFFFFF;
+                border: 1px solid #E0E0E0;
+                border-radius: 12px;
+            }
+        """)
+        
+        # Gölge efekti
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(15)
+        shadow.setXOffset(0)
+        shadow.setYOffset(3)
+        shadow.setColor(QColor(0, 0, 0, 30))
+        self.card.setGraphicsEffect(shadow)
+        
+        card_layout = QVBoxLayout(self.card)
+        card_layout.setContentsMargins(18, 15, 18, 15)
+        card_layout.setSpacing(10)
 
         # Alt Başlık
-        sub_title = QLabel("Faaliyet Türleri Yönetimi")
-        sub_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #34495E;")
+        sub_title = QLabel("📋 Faaliyet Türleri")
+        sub_title.setStyleSheet("""
+            font-size: 15px; 
+            font-weight: bold; 
+            color: #34495E;
+            border: none;
+        """)
         card_layout.addWidget(sub_title)
 
         # Açıklama
-        desc = QLabel("Buradan yeni faaliyet türleri ekleyebilir, mevcutları düzenleyebilir veya silebilirsiniz.\n"
-                      "Dikkat: Bir türün adını değiştirdiğinizde, o türe ait tüm geçmiş kayıtlar da güncellenir.")
-        desc.setStyleSheet("color: #7F8C8D; font-size: 13px;")
+        desc = QLabel("Türleri ekleyin, düzenleyin veya silin.")
+        desc.setStyleSheet("color: #95A5A6; font-size: 12px; border: none;")
         desc.setWordWrap(True)
         card_layout.addWidget(desc)
 
+        # --- Arama Kutusu ---
+        search_layout = QHBoxLayout()
+        search_layout.setSpacing(8)
+        
+        search_icon = QLabel("🔍")
+        search_icon.setStyleSheet("border: none; font-size: 14px;")
+        search_layout.addWidget(search_icon)
+        
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Tür ara...")
+        self.search_input.textChanged.connect(self.filter_types)
+        self.search_input.setStyleSheet("""
+            QLineEdit {
+                border: 1px solid #E0E0E0;
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-size: 12px;
+                background-color: #FAFAFA;
+            }
+            QLineEdit:focus {
+                border: 1px solid #3498DB;
+                background-color: #FFFFFF;
+            }
+        """)
+        search_layout.addWidget(self.search_input)
+        card_layout.addLayout(search_layout)
+
         # İçerik Alanı (Liste ve Butonlar)
         content_layout = QHBoxLayout()
+        content_layout.setSpacing(12)
         
-        # 1. Liste
+        # Liste Alanı (Liste + Sayfalama)
+        list_container = QVBoxLayout()
+        list_container.setSpacing(6)
+        
+        # Liste
         self.type_list = QListWidget()
+        self.type_list.setMinimumHeight(self.MIN_LIST_HEIGHT)
+        self.type_list.setMaximumHeight(self.MAX_LIST_HEIGHT)
         self.type_list.setStyleSheet("""
             QListWidget {
-                border: 1px solid #BDC3C7;
-                border-radius: 5px;
-                padding: 5px;
-                font-size: 14px;
+                border: 1px solid #E0E0E0;
+                border-radius: 8px;
+                padding: 4px;
+                font-size: 13px;
+                background-color: #FAFAFA;
             }
             QListWidget::item {
-                padding: 8px;
+                padding: 6px 10px;
+                border-radius: 4px;
+                margin: 2px;
+            }
+            QListWidget::item:hover {
+                background-color: #EBF5FB;
             }
             QListWidget::item:selected {
                 background-color: #3498DB;
                 color: white;
             }
         """)
-        content_layout.addWidget(self.type_list)
+        list_container.addWidget(self.type_list)
+        
+        # Sayfalama Kontrolleri
+        self.pagination_frame = QFrame()
+        self.pagination_frame.setStyleSheet("border: none;")
+        pagination_layout = QHBoxLayout(self.pagination_frame)
+        pagination_layout.setContentsMargins(0, 0, 0, 0)
+        pagination_layout.setSpacing(5)
+        
+        self.btn_prev = QPushButton("◀")
+        self.btn_prev.setFixedSize(28, 28)
+        self.btn_prev.setCursor(Qt.PointingHandCursor)
+        self.btn_prev.clicked.connect(self.prev_page)
+        self.btn_prev.setStyleSheet("""
+            QPushButton {
+                background-color: #ECF0F1;
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+                color: #2C3E50;
+            }
+            QPushButton:hover { background-color: #BDC3C7; }
+            QPushButton:disabled { color: #BDC3C7; background-color: #F5F5F5; }
+        """)
+        pagination_layout.addWidget(self.btn_prev)
+        
+        self.page_label = QLabel("1/1")
+        self.page_label.setStyleSheet("font-size: 11px; color: #7F8C8D; border: none;")
+        self.page_label.setAlignment(Qt.AlignCenter)
+        self.page_label.setMinimumWidth(50)
+        pagination_layout.addWidget(self.page_label)
+        
+        self.btn_next = QPushButton("▶")
+        self.btn_next.setFixedSize(28, 28)
+        self.btn_next.setCursor(Qt.PointingHandCursor)
+        self.btn_next.clicked.connect(self.next_page)
+        self.btn_next.setStyleSheet("""
+            QPushButton {
+                background-color: #ECF0F1;
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+                color: #2C3E50;
+            }
+            QPushButton:hover { background-color: #BDC3C7; }
+            QPushButton:disabled { color: #BDC3C7; background-color: #F5F5F5; }
+        """)
+        pagination_layout.addWidget(self.btn_next)
+        
+        pagination_layout.addStretch()
+        
+        # Toplam sayı etiketi
+        self.total_label = QLabel("0 tür")
+        self.total_label.setStyleSheet("font-size: 11px; color: #95A5A6; border: none;")
+        pagination_layout.addWidget(self.total_label)
+        
+        list_container.addWidget(self.pagination_frame)
+        content_layout.addLayout(list_container, 1)
 
-        # 2. İşlem Butonları (Sağ Taraf)
+        # İşlem Butonları
         btn_layout = QVBoxLayout()
         btn_layout.setAlignment(Qt.AlignTop)
+        btn_layout.setSpacing(8)
         
-        self.btn_add = self.create_btn("➕ Yeni Ekle", "#2ECC71", self.add_type)
-        self.btn_edit = self.create_btn("✏️ Düzenle", "#F39C12", self.edit_type)
-        self.btn_delete = self.create_btn("🗑️ Sil", "#E74C3C", self.delete_type)
+        self.btn_add = self.create_btn("➕ Ekle", "#27AE60", "#219A52", self.add_type)
+        self.btn_edit = self.create_btn("✏️ Düzenle", "#E67E22", "#D35400", self.edit_type)
+        self.btn_delete = self.create_btn("🗑️ Sil", "#E74C3C", "#C0392B", self.delete_type)
         
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_edit)
@@ -77,48 +212,122 @@ class SettingsPage(QWidget):
         content_layout.addLayout(btn_layout)
         card_layout.addLayout(content_layout)
         
-        main_layout.addWidget(card)
+        main_layout.addWidget(self.card, 0, Qt.AlignLeft | Qt.AlignTop)
         main_layout.addStretch()
 
         # İlk veri yükleme
         self.refresh_types()
 
-    def create_btn(self, text, color, func):
+    def create_btn(self, text, color, hover_color, func):
         btn = QPushButton(text)
         btn.setCursor(Qt.PointingHandCursor)
         btn.clicked.connect(func)
+        btn.setFixedWidth(95)
         btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {color};
                 color: white;
                 border: none;
-                border-radius: 5px;
-                padding: 10px 15px;
-                font-weight: bold;
-                text-align: left;
+                border-radius: 6px;
+                padding: 8px 10px;
+                font-weight: 600;
+                font-size: 12px;
             }}
             QPushButton:hover {{
-                background-color: {color}DD;
+                background-color: {hover_color};
+            }}
+            QPushButton:pressed {{
+                background-color: {hover_color};
+                padding-top: 9px;
+                padding-bottom: 7px;
             }}
         """)
         return btn
 
+    def filter_types(self, search_text):
+        """Arama metnine göre türleri filtreler."""
+        search_text = search_text.lower().strip()
+        if search_text:
+            self.filtered_types = [t for t in self.all_types if search_text in t.lower()]
+        else:
+            self.filtered_types = self.all_types.copy()
+        
+        self.current_page = 0
+        self.update_list_display()
+
+    def update_list_display(self):
+        """Listeyi gösterir ve sayfalama kontrollerini günceller."""
+        self.type_list.clear()
+        
+        total_items = len(self.filtered_types)
+        total_pages = max(1, (total_items + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
+        
+        # Sayfa sınırlarını kontrol et
+        if self.current_page >= total_pages:
+            self.current_page = total_pages - 1
+        if self.current_page < 0:
+            self.current_page = 0
+        
+        # Bu sayfadaki öğeleri göster
+        start_idx = self.current_page * self.ITEMS_PER_PAGE
+        end_idx = min(start_idx + self.ITEMS_PER_PAGE, total_items)
+        
+        page_items = self.filtered_types[start_idx:end_idx]
+        for item_text in page_items:
+            self.type_list.addItem(item_text)
+        
+        # Sayfalama kontrollerini güncelle
+        self.page_label.setText(f"{self.current_page + 1}/{total_pages}")
+        self.btn_prev.setEnabled(self.current_page > 0)
+        self.btn_next.setEnabled(self.current_page < total_pages - 1)
+        
+        # Toplam sayı
+        self.total_label.setText(f"{total_items} tür")
+        
+        # Sayfalama görünürlüğü
+        self.pagination_frame.setVisible(total_items > self.ITEMS_PER_PAGE)
+        
+        # Dinamik liste yüksekliği
+        self.adjust_list_height(len(page_items))
+
+    def adjust_list_height(self, item_count):
+        """Öğe sayısına göre liste yüksekliğini dinamik ayarlar."""
+        if item_count == 0:
+            new_height = self.MIN_LIST_HEIGHT
+        else:
+            calculated_height = item_count * self.ITEM_HEIGHT + 20  # Padding için ekstra
+            new_height = max(self.MIN_LIST_HEIGHT, min(calculated_height, self.MAX_LIST_HEIGHT))
+        
+        self.type_list.setMinimumHeight(new_height)
+        self.type_list.setMaximumHeight(new_height)
+
+    def prev_page(self):
+        """Önceki sayfaya git."""
+        if self.current_page > 0:
+            self.current_page -= 1
+            self.update_list_display()
+
+    def next_page(self):
+        """Sonraki sayfaya git."""
+        total_pages = max(1, (len(self.filtered_types) + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
+        if self.current_page < total_pages - 1:
+            self.current_page += 1
+            self.update_list_display()
+
     def refresh_types(self):
         """Türleri veritabanından çeker ve listeyi yeniler."""
-        self.type_list.clear() # Temizle ama asenkron çağrıdan önce değil, callback'te yapılmalı? 
-                               # Hayır, clear() senkron. Ama dolana kadar boş görünür.
-                               # Loading ekleyebiliriz ama basit tutalım.
         self.controller.get_all_activity_types(self.on_types_loaded)
 
     def on_types_loaded(self, types):
-        self.type_list.clear()
-        if types:
-            self.type_list.addItems(types)
+        self.all_types = types if types else []
+        self.filtered_types = self.all_types.copy()
+        self.search_input.clear()
+        self.current_page = 0
+        self.update_list_display()
 
     def add_type(self):
         text, ok = QInputDialog.getText(self, "Yeni Tür", "Faaliyet Türü Adı:")
         if ok and text:
-            # Asenkron Ekleme
             self.btn_add.setEnabled(False)
             self.controller.add_activity_type(text, self.on_add_finished)
 
