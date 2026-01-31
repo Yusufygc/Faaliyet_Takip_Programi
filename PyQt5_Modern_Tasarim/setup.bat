@@ -1,46 +1,43 @@
 @echo off
-echo Nuitka ile insa islemi baslatiliyor...
-echo Lutfen sanal ortaminin aktif oldugundan emin olun.
+echo =========================================================
+echo  Faaliyet Takip Programi - Setup ve Build Islemi
+echo =========================================================
+
 echo.
+echo [1/2] Bagimliliklar kontrol ediliyor ve yukleniyor...
+pip install -r requirements.txt
 
-REM Nuitka var mi kontrol et
-where nuitka >nul 2>nul
+echo.
+echo [2/2] Nuitka ile EXE olusturuluyor...
+echo Bu islem birkac dakika surebilir, lutfen bekleyin...
 
-if %errorlevel% equ 0 (
-    nuitka ^
-        --standalone ^
-        --onefile ^
-        --enable-plugin=pyqt5 ^
-        --windows-disable-console ^
-        --windows-icon-from-ico=icons/icon.ico ^
-        --include-data-dir=icons=icons ^
-        --include-data-dir=fonts=fonts ^
-        --include-data-file=.env=.env ^
-        --output-dir=dist ^
-        main.py
-) else (
-    echo 'nuitka' komutu bulunamadi, 'python -m nuitka' deneniyor...
-    python -m nuitka ^
-        --standalone ^
-        --onefile ^
-        --enable-plugin=pyqt5 ^
-        --windows-disable-console ^
-        --windows-icon-from-ico=icons/icon.ico ^
-        --include-data-dir=icons=icons ^
-        --include-data-dir=fonts=fonts ^
-        --include-data-file=.env=.env ^
-        --output-dir=dist ^
-        main.py
-)
+if not exist dist mkdir dist
 
-if %errorlevel% neq 0 (
+python -m nuitka ^
+    --onefile ^
+    --standalone ^
+    --enable-plugin=pyqt5 ^
+    --include-data-dir=icons=icons ^
+    --include-data-dir=fonts=fonts ^
+    --include-data-file=.env=.env ^
+    --windows-disable-console ^
+    --windows-icon-from-ico=icons/icon.ico ^
+    --output-dir=dist ^
+    --output-filename=FaaliyetTakip.exe ^
+    --remove-output ^
+    --assume-yes-for-downloads ^
+    main.py
+
+if %ERRORLEVEL% EQU 0 (
     echo.
-    echo HATA: Derleme sirasinda bir sorun olustu.
-    pause
-    exit /b %errorlevel%
+    echo =========================================================
+    echo  BASARILI! FaaliyetTakip.exe olusturuldu.
+    echo =========================================================
+) else (
+    echo.
+    echo =========================================================
+    echo  Birkac hata olustu. Lutfen ciktilari kontrol edin.
+    echo =========================================================
 )
 
-echo.
-echo Islem basariyla tamamlandi!
-echo Cikti dosyasini 'dist/main.exe' adresinde bulabilirsiniz.
 pause

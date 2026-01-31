@@ -3,7 +3,11 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit,
                              QTextEdit, QComboBox, QPushButton, QMessageBox, 
                              QDateEdit, QFormLayout, QFrame, QShortcut, QCompleter, QCheckBox, QHBoxLayout)
 from PyQt5.QtCore import QDate, Qt, QLocale, QTimer
+from PyQt5.QtCore import QDate, Qt, QLocale, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
+from utils import get_resource_path
+import os
+
 
 
 class AddPage(QWidget):
@@ -111,7 +115,7 @@ class AddPage(QWidget):
                 width: 40px;
             }
             QComboBox::down-arrow {
-                image: url(down_arrow.png);
+                image: url(icons/down_arrow.svg);
                 width: 16px;
                 height: 16px;
             }
@@ -133,6 +137,8 @@ class AddPage(QWidget):
                 background-color: #F1F5F9;
             }
         """
+
+
 
         # 1. Tür - Modern Combobox
         self.combo_type = QComboBox()
@@ -188,6 +194,7 @@ class AddPage(QWidget):
                 color: white;
             }
         """)
+
         # Türleri yükle
         self.load_types() 
         form_layout.addRow(self.create_label("Tür:"), self.combo_type)
@@ -262,32 +269,36 @@ class AddPage(QWidget):
                 height: 16px;
             }
         """)
+
         
         # Bitiş Tarihi Checkbox - Modern toggle
         self.chk_range = QCheckBox("Bitiş Tarihi")
-        self.chk_range.setStyleSheet("""
-            QCheckBox {
+        # Checkbox Stili
+        check_url = get_resource_path("icons/check.svg").replace("\\", "/")
+        self.chk_range.setStyleSheet(f"""
+            QCheckBox {{
                 color: #475569;
                 font-weight: 500;
                 font-size: 14px;
                 spacing: 8px;
-            }
-            QCheckBox::indicator {
+            }}
+            QCheckBox::indicator {{
                 width: 20px;
                 height: 20px;
                 border-radius: 6px;
                 border: 2px solid #CBD5E1;
                 background-color: white;
-            }
-            QCheckBox::indicator:checked {
+            }}
+            QCheckBox::indicator:checked {{
                 background-color: #3B82F6;
                 border-color: #3B82F6;
-                image: url(icons/check.svg);
-            }
-            QCheckBox::indicator:hover {
+                image: url({check_url});
+            }}
+            QCheckBox::indicator:hover {{
                 border-color: #94A3B8;
-            }
+            }}
         """)
+
         self.chk_range.toggled.connect(self.on_range_toggled)
         
         date_layout.addWidget(self.input_date, 70)
@@ -331,6 +342,7 @@ class AddPage(QWidget):
                 height: 16px;
             }
         """)
+
         
         # Label ve widget'ı saklamak için referansları tutuyoruz
         self.lbl_end_date = self.create_label("Bitiş:")
@@ -424,6 +436,7 @@ class AddPage(QWidget):
                 color: #92400E;
             }
         """)
+
         form_layout.addRow(self.create_label("Puan:"), self.combo_rating)
 
         card_layout.addLayout(form_layout)

@@ -51,3 +51,6 @@ Thumbs.db
 # =========================
 document/conda.txt
 document/Faaliyet_Takip_Eklenebilirler.txt
+crash_log.txt
+
+*.pdf

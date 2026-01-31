@@ -1,5 +1,22 @@
-# utils.py
+import sys
+import os
 from datetime import datetime
+
+def get_resource_path(relative_path):
+    """
+    Uygulamanın kaynak dosyalarına (ikonlar, fontlar vb.) erişim sağlar.
+    PyInstaller ve Nuitka (onefile) modlarında çalışır.
+    """
+    try:
+        # PyInstaller temp folder
+        base_path = sys._MEIPASS
+    except Exception:
+        # Nuitka onefile mode or Dev environment
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    return os.path.join(base_path, relative_path)
+
+
 
 def is_valid_yyyymm(date_str):
     """YYYY-MM formatını doğrular."""

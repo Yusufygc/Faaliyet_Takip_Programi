@@ -8,6 +8,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import os
 from datetime import datetime
+from utils import get_resource_path
+
 
 class PDFService:
     def __init__(self):
@@ -20,9 +22,11 @@ class PDFService:
             # Font yolları (Proje ana dizininde 'fonts' klasörü olmalı)
             # main.py içinde os.chdir(application_path) yapıldığı için
             # doğrudan "fonts/..." diyebiliriz.
+            # main.py içinde os.chdir(application_path) yapıldığı için
+            # doğrudan "fonts/..." diyebiliriz.
             font_dir = "fonts"
-            regular_font = os.path.join(font_dir, "DejaVuSans.ttf")
-            bold_font = os.path.join(font_dir, "DejaVuSans-Bold.ttf")
+            regular_font = get_resource_path(os.path.join(font_dir, "DejaVuSans.ttf"))
+            bold_font = get_resource_path(os.path.join(font_dir, "DejaVuSans-Bold.ttf"))
 
             if os.path.exists(regular_font) and os.path.exists(bold_font):
                 pdfmetrics.registerFont(TTFont('DejaVuSans', regular_font))

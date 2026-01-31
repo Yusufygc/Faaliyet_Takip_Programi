@@ -1,4 +1,7 @@
 # views/styles.py
+from utils import get_resource_path
+import os
+# views/styles.py
 
 # Renk Paleti (Gözü yormayan modern tonlar)
 COLORS = {
@@ -16,6 +19,12 @@ COLORS = {
 }
 
 # QSS (Qt Style Sheets) - CSS benzeri stiller
+# Fix for Qt Stylesheet URL
+arrow_path = get_resource_path(os.path.join('icons', 'down_arrow.svg')).replace('\\', '/')
+# Ensure proper URI scheme if needed, but standard paths usually work with forward slashes.
+# Quote the URL in the stylesheet to handle spaces.
+arrow_url = arrow_path
+
 STYLESHEET = f"""
     QMainWindow {{
         background-color: {COLORS["background"]};
@@ -88,7 +97,7 @@ STYLESHEET = f"""
     }}
 
     QComboBox::down-arrow {{
-        image: url(icons/down_arrow.svg);
+        image: url('{arrow_url}');
         width: 14px;
         height: 14px;
     }}

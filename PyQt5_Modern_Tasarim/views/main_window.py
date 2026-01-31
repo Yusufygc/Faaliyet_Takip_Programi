@@ -1,4 +1,5 @@
 # views/main_window.py
+# -*- coding: utf-8 -*-
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QStackedWidget, QLabel, QFrame, QStatusBar, 
                              QShortcut, QSizePolicy, QGraphicsDropShadowEffect)
@@ -18,6 +19,7 @@ from views.pages.analysis_page import TrendAnalysisPage
 from views.styles import STYLESHEET 
 
 import os
+from utils import get_resource_path
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -26,9 +28,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Faaliyet Takip Sistemi")
         self.setGeometry(100, 100, 1150, 750)
         
-        icon_path = os.path.join(os.getcwd(), "icons", "icon.ico")
+        icon_path = get_resource_path(os.path.join("icons", "icon.ico"))
         if not os.path.exists(icon_path):
-             icon_path = os.path.join(os.getcwd(), "icons", "icon.png")
+             icon_path = get_resource_path(os.path.join("icons", "icon.png"))
         
         self.setWindowIcon(QIcon(icon_path))
         self.setStyleSheet(STYLESHEET)

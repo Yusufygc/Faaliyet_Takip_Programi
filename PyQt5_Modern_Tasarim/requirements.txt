@@ -1,19 +1,6 @@
-# PyQt5 Modern Faaliyet Takip Programı - Bağımlılıklar
-# pip install -r requirements.txt
-
-# GUI Framework
-PyQt5>=5.15.0
-
-# Grafik ve Görselleştirme
-matplotlib>=3.5.0
-
-# HTTP İstekleri (API'ler için)
-requests>=2.28.0
-
-# Ortam Değişkenleri (.env dosyası için)
-python-dotenv>=1.0.0
-
-# PDF Oluşturma
-reportlab>=4.0.0
-
-nuitka
+matplotlib==3.10.8
+PyQt5==5.15.11
+pyqt5_sip==12.17.1
+python-dotenv==1.2.1
+reportlab==4.4.9
+Requests==2.32.5
