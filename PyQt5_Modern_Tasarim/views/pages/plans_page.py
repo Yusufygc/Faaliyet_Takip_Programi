@@ -628,7 +628,30 @@ class PlansPage(QWidget):
         # ─── 3. Scroll Area ───
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        scroll.setStyleSheet("""
+            QScrollArea { border: none; background: transparent; }
+            QScrollBar:vertical {
+                background: transparent;
+                width: 10px;
+                margin: 0px 0px 0px 0px;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical {
+                background: #BDC3C7;
+                border-radius: 5px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #95A5A6;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+                background: transparent;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+        """)
         
         container = QWidget()
         container.setStyleSheet("background: transparent;")
