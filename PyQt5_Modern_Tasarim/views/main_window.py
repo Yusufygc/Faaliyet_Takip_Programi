@@ -136,6 +136,12 @@ class MainWindow(QMainWindow):
 
         sidebar_layout.addStretch() 
         
+        # Geliştirici Label
+        dev_label = QLabel("Geliştirici : MYY yazılım")
+        dev_label.setAlignment(Qt.AlignCenter)
+        dev_label.setStyleSheet("color: #909497; font-size: 11px; font-weight: 600; margin-bottom: 15px; letter-spacing: 0.5px;")
+        sidebar_layout.addWidget(dev_label)
+        
         # Çıkış butonu kaldırıldı
 
         self.main_layout.addWidget(self.sidebar)

@@ -10,8 +10,8 @@ class SettingsPage(QWidget):
     # Sayfalama sabitleri
     ITEMS_PER_PAGE = 10
     MIN_LIST_HEIGHT = 120
-    MAX_LIST_HEIGHT = 400  # Önceki maksimum yüksekliğin 2 katı
-    ITEM_HEIGHT = 32  # Her bir öğe için tahmini yükseklik
+    MAX_LIST_HEIGHT = 500  # Liste yüksekliği arttırıldı
+    ITEM_HEIGHT = 40  # Öğe yüksekliği arttırıldı
     
     def __init__(self, controller):
         super().__init__()
@@ -29,7 +29,7 @@ class SettingsPage(QWidget):
         # Başlık
         title = QLabel("⚙️ Ayarlar")
         title.setStyleSheet("""
-            font-size: 22px; 
+            font-size: 26px; 
             font-weight: bold; 
             color: #2C3E50;
             padding-bottom: 5px;
@@ -39,7 +39,7 @@ class SettingsPage(QWidget):
         # --- Faaliyet Türleri Yönetimi Kartı ---
         self.card = QFrame()
         self.card.setObjectName("Card")
-        self.card.setMaximumWidth(550)
+        self.card.setMaximumWidth(650) # Kart genişletildi
         self.card.setStyleSheet("""
             QFrame#Card {
                 background-color: #FFFFFF;
@@ -63,7 +63,7 @@ class SettingsPage(QWidget):
         # Alt Başlık
         sub_title = QLabel("📋 Faaliyet Türleri")
         sub_title.setStyleSheet("""
-            font-size: 15px; 
+            font-size: 18px; 
             font-weight: bold; 
             color: #34495E;
             border: none;
@@ -72,7 +72,7 @@ class SettingsPage(QWidget):
 
         # Açıklama
         desc = QLabel("Türleri ekleyin, düzenleyin veya silin.")
-        desc.setStyleSheet("color: #95A5A6; font-size: 12px; border: none;")
+        desc.setStyleSheet("color: #95A5A6; font-size: 14px; border: none;")
         desc.setWordWrap(True)
         card_layout.addWidget(desc)
 
@@ -81,7 +81,7 @@ class SettingsPage(QWidget):
         search_layout.setSpacing(8)
         
         search_icon = QLabel("🔍")
-        search_icon.setStyleSheet("border: none; font-size: 14px;")
+        search_icon.setStyleSheet("border: none; font-size: 16px;")
         search_layout.addWidget(search_icon)
         
         self.search_input = QLineEdit()
@@ -91,8 +91,8 @@ class SettingsPage(QWidget):
             QLineEdit {
                 border: 1px solid #E0E0E0;
                 border-radius: 6px;
-                padding: 6px 10px;
-                font-size: 12px;
+                padding: 10px 14px;
+                font-size: 14px;
                 background-color: #FAFAFA;
             }
             QLineEdit:focus {
@@ -119,8 +119,8 @@ class SettingsPage(QWidget):
             QListWidget {
                 border: 1px solid #E0E0E0;
                 border-radius: 8px;
-                padding: 4px;
-                font-size: 13px;
+                padding: 6px;
+                font-size: 15px;
                 background-color: #FAFAFA;
             }
             QListWidget::item {
@@ -146,15 +146,15 @@ class SettingsPage(QWidget):
         pagination_layout.setSpacing(5)
         
         self.btn_prev = QPushButton("◀")
-        self.btn_prev.setFixedSize(28, 28)
+        self.btn_prev.setFixedSize(36, 36)
         self.btn_prev.setCursor(Qt.PointingHandCursor)
         self.btn_prev.clicked.connect(self.prev_page)
         self.btn_prev.setStyleSheet("""
             QPushButton {
                 background-color: #ECF0F1;
                 border: none;
-                border-radius: 4px;
-                font-size: 12px;
+                border-radius: 8px;
+                font-size: 14px;
                 color: #2C3E50;
             }
             QPushButton:hover { background-color: #BDC3C7; }
@@ -163,21 +163,21 @@ class SettingsPage(QWidget):
         pagination_layout.addWidget(self.btn_prev)
         
         self.page_label = QLabel("1/1")
-        self.page_label.setStyleSheet("font-size: 11px; color: #7F8C8D; border: none;")
+        self.page_label.setStyleSheet("font-size: 13px; color: #7F8C8D; border: none;")
         self.page_label.setAlignment(Qt.AlignCenter)
         self.page_label.setMinimumWidth(50)
         pagination_layout.addWidget(self.page_label)
         
         self.btn_next = QPushButton("▶")
-        self.btn_next.setFixedSize(28, 28)
+        self.btn_next.setFixedSize(36, 36)
         self.btn_next.setCursor(Qt.PointingHandCursor)
         self.btn_next.clicked.connect(self.next_page)
         self.btn_next.setStyleSheet("""
             QPushButton {
                 background-color: #ECF0F1;
                 border: none;
-                border-radius: 4px;
-                font-size: 12px;
+                border-radius: 8px;
+                font-size: 14px;
                 color: #2C3E50;
             }
             QPushButton:hover { background-color: #BDC3C7; }
@@ -189,7 +189,7 @@ class SettingsPage(QWidget):
         
         # Toplam sayı etiketi
         self.total_label = QLabel("0 tür")
-        self.total_label.setStyleSheet("font-size: 11px; color: #95A5A6; border: none;")
+        self.total_label.setStyleSheet("font-size: 13px; color: #95A5A6; border: none;")
         pagination_layout.addWidget(self.total_label)
         
         list_container.addWidget(self.pagination_frame)
@@ -222,16 +222,16 @@ class SettingsPage(QWidget):
         btn = QPushButton(text)
         btn.setCursor(Qt.PointingHandCursor)
         btn.clicked.connect(func)
-        btn.setFixedWidth(95)
+        btn.setFixedWidth(120)
         btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {color};
                 color: white;
                 border: none;
-                border-radius: 6px;
-                padding: 8px 10px;
+                border-radius: 8px;
+                padding: 10px 15px;
                 font-weight: 600;
-                font-size: 12px;
+                font-size: 14px;
             }}
             QPushButton:hover {{
                 background-color: {hover_color};
