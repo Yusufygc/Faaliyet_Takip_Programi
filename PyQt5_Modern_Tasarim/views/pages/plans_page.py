@@ -5,63 +5,81 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QComboBox, QScrollArea, QFrame, 
                              QDialog, QLineEdit, QTextEdit, QProgressBar, 
                              QSlider, QMessageBox, QGraphicsDropShadowEffect,
-                             QGridLayout, QSizePolicy, QCheckBox)
-from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPropertyAnimation, QEasingCurve
-from PyQt5.QtGui import QColor, QFont, QIcon
+                             QGridLayout, QSizePolicy, QCheckBox, QAbstractItemView)
+from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPropertyAnimation, QEasingCurve, QPoint, QRect
+from PyQt5.QtGui import QColor, QFont, QIcon, QPalette, QCursor
 from datetime import datetime
 from models import Plan
+from views.styles import COLORS as GLOBAL_COLORS
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# DESIGN SYSTEM CONSTANTS
+# MODERN DESIGN SYSTEM & COLORS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Color Palette (WCAG 2.1 AA Compliant - Minimum 4.5:1 Contrast)
 COLORS = {
-    'bg_main': '#1a1a1a',
-    'bg_card': '#2d2d2d',
-    'bg_hover': '#3d3d3d',
-    'bg_input': '#252525',
-    'primary': '#2196F3',
-    'primary_hover': '#1976D2',
-    'success': '#4CAF50',
-    'success_hover': '#43A047',
-    'warning': '#FF9800',
-    'danger': '#F44336',
-    'danger_hover': '#D32F2F',
-    'text_primary': '#ffffff',
-    'text_secondary': '#e0e0e0',
-    'text_muted': '#9e9e9e',
-    'border': '#3d3d3d',
-    'border_light': '#555555'
+    'bg_main': '#F4F7F6',      # Çok hafif gri-mavi arka plan
+    'bg_card': '#FFFFFF',      # Kartlar için saf beyaz
+    'text_main': '#2C3E50',    # Ana metin rengi
+    'text_sub': '#7F8C8D',     # Alt metin rengi
+    'primary': GLOBAL_COLORS['primary'],
+    'primary_gradient': f"qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {GLOBAL_COLORS['primary']}, stop:1 #3498DB)",
+    'success_gradient': "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #27AE60, stop:1 #2ECC71)",
+    'danger': '#E74C3C',
+    'border': '#E0E6ED'
 }
 
-# Spacing System (8px Grid)
-SPACING = {'xs': 8, 'sm': 16, 'md': 24, 'lg': 32, 'xl': 48}
-
-# Typography
-FONTS = {'h1': 24, 'h2': 18, 'body': 14, 'caption': 12, 'small': 11}
-
-# Priority Colors & Configuration
-PRIORITY_CONFIG = {
-    'low': {'color': '#2196F3', 'label': 'Düşük', 'icon': '🔵'},
-    'medium': {'color': '#FF9800', 'label': 'Orta', 'icon': '🟡'},
-    'high': {'color': '#F44336', 'label': 'Yüksek', 'icon': '🔴'}
+# Öncelik Renkleri ve İkonları
+PRIORITY_CFG = {
+    'low': {'bg': '#E8F6F3', 'fg': '#1ABC9C', 'label': 'Düşük', 'dot': '🟢'},
+    'medium': {'bg': '#FEF9E7', 'fg': '#F1C40F', 'label': 'Orta', 'dot': '🟡'},
+    'high': {'bg': '#FDEDEC', 'fg': '#E74C3C', 'label': 'Yüksek', 'dot': '🔴'}
 }
-
-# Status Configuration
-STATUS_CONFIG = {
-    'planned': {'color': '#2196F3', 'label': 'Planlandı', 'icon': '📋'},
-    'in_progress': {'color': '#FF9800', 'label': 'Devam Ediyor', 'icon': '⚙️'},
-    'completed': {'color': '#4CAF50', 'label': 'Tamamlandı', 'icon': '✅'},
-    'archived': {'color': '#9E9E9E', 'label': 'Arşiv', 'icon': '📦'}
-}
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PLAN CARD WIDGET
+# CUSTOM WIDGETS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class PlanCard(QFrame):
+class ModernCard(QFrame):
+    """Hover animasyonlu temel kart sınıfı"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet(f"""
+            ModernCard {{
+                background-color: {COLORS['bg_card']};
+                border: 1px solid {COLORS['border']};
+                border-radius: 16px;
+            }}
+        """)
+        
+        # Gölge Efekti
+        self.shadow = QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(20)
+        self.shadow.setXOffset(0)
+        self.shadow.setYOffset(4)
+        self.shadow.setColor(QColor(0, 0, 0, 15)) # %15 Opaklık
+        self.setGraphicsEffect(self.shadow)
+
+        # Animasyon Değişkenleri
+        self.default_y = 4
+        self.hover_y = 8
+        self.default_blur = 20
+        self.hover_blur = 30
+
+    def enterEvent(self, event):
+        # Hover durumunda gölgeyi ve pozisyon hissini değiştir
+        self.shadow.setYOffset(self.hover_y)
+        self.shadow.setBlurRadius(self.hover_blur)
+        self.shadow.setColor(QColor(0, 0, 0, 25)) # Biraz daha koyu gölge
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        # Normal duruma dön
+        self.shadow.setYOffset(self.default_y)
+        self.shadow.setBlurRadius(self.default_blur)
+        self.shadow.setColor(QColor(0, 0, 0, 15))
+        super().leaveEvent(event)
+
+class PlanCard(ModernCard):
     edited = pyqtSignal(Plan)
     deleted = pyqtSignal(int)
     status_changed = pyqtSignal(int, int, str)
@@ -72,667 +90,448 @@ class PlanCard(QFrame):
         self.init_ui()
 
     def init_ui(self):
-        self.setObjectName("PlanCard")
         self.setMinimumHeight(160)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
-        # Card Base Style
-        self.setStyleSheet(f"""
-            #PlanCard {{
-                background-color: {COLORS['bg_card']};
-                border: 1px solid {COLORS['border']};
-                border-radius: 12px;
-            }}
-            #PlanCard:hover {{
-                border: 1px solid {COLORS['border_light']};
-                background-color: {COLORS['bg_hover']};
-            }}
-        """)
-        
-        # Drop Shadow Effect
-        shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(20)
-        shadow.setColor(QColor(0, 0, 0, 100))
-        shadow.setOffset(0, 4)
-        self.setGraphicsEffect(shadow)
-
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(SPACING['md'], SPACING['md'], SPACING['md'], SPACING['md'])
-        layout.setSpacing(SPACING['sm'])
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(16)
+
+        # ─── 1. Header (Öncelik - Tarih) ───
+        header = QHBoxLayout()
         
-        # ─── Header Section ───
-        header_layout = QHBoxLayout()
-        header_layout.setSpacing(SPACING['sm'])
-        
-        # Priority Indicator (Larger, More Visible)
-        priority_cfg = PRIORITY_CONFIG.get(self.plan.priority, PRIORITY_CONFIG['medium'])
-        priority_indicator = QLabel()
-        priority_indicator.setFixedSize(14, 14)
-        priority_indicator.setStyleSheet(f"""
-            background-color: {priority_cfg['color']}; 
-            border-radius: 7px;
-            border: 2px solid {COLORS['bg_card']};
-        """)
-        priority_indicator.setToolTip(f"Öncelik: {priority_cfg['label']}")
-        
-        # Title (Bold and Prominent)
-        title_lbl = QLabel(self.plan.title)
-        title_lbl.setStyleSheet(f"""
-            font-size: {FONTS['h2']}px; 
-            font-weight: 600; 
-            color: {COLORS['text_primary']};
-            border: none;
-        """)
-        
-        # Date Badge (Better Formatted)
-        date_parts = []
-        if self.plan.year:
-            date_parts.append(str(self.plan.year))
-        if self.plan.month:
-            months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-                     'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-            date_parts.insert(0, months[self.plan.month - 1])
-        
-        date_text = ' '.join(date_parts) if date_parts else 'Tarihsiz'
-        date_lbl = QLabel(f"📅 {date_text}")
-        date_lbl.setStyleSheet(f"""
-            color: {COLORS['text_muted']}; 
-            font-size: {FONTS['caption']}px;
-            background-color: {COLORS['bg_main']};
+        # Öncelik Badge (Hap şeklinde)
+        p_data = PRIORITY_CFG.get(self.plan.priority, PRIORITY_CFG['medium'])
+        lbl_priority = QLabel(f"{p_data['dot']} {p_data['label']}")
+        lbl_priority.setStyleSheet(f"""
+            background-color: {p_data['bg']};
+            color: {p_data['fg']};
             padding: 6px 12px;
-            border-radius: 6px;
-            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 12px;
         """)
         
-        header_layout.addWidget(priority_indicator)
-        header_layout.addWidget(title_lbl)
-        header_layout.addStretch()
-        header_layout.addWidget(date_lbl)
-        layout.addLayout(header_layout)
-        
-        # ─── Description Section ───
-        if self.plan.description:
-            desc_lbl = QLabel(self.plan.description)
-            desc_lbl.setWordWrap(True)
-            desc_lbl.setMaximumHeight(45)  # ~2 lines with proper spacing
-            desc_lbl.setStyleSheet(f"""
-                color: {COLORS['text_secondary']}; 
-                font-size: {FONTS['body']}px; 
-                line-height: 1.5;
-                border: none;
-            """)
-            layout.addWidget(desc_lbl)
-        
-        # Add spacing before progress bar
-        layout.addSpacing(SPACING['xs'])
+        # Tarih
+        date_str = f"{self.plan.year}"
+        if self.plan.month:
+            months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
+                      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+            date_str = f"{months[self.plan.month-1]} {self.plan.year}"
             
-        # ─── Progress Bar Section ───
-        progress_layout = QVBoxLayout()
-        progress_layout.setSpacing(SPACING['xs'])
+        lbl_date = QLabel(f"📅 {date_str}")
+        lbl_date.setStyleSheet(f"color: {COLORS['text_sub']}; font-size: 12px; font-weight: 600;")
+
+        header.addWidget(lbl_priority)
+        header.addStretch()
+        header.addWidget(lbl_date)
+        layout.addLayout(header)
+
+        # ─── 2. İçerik (Başlık - Açıklama) ───
+        content = QVBoxLayout()
+        content.setSpacing(6)
         
-        self.pbar = QProgressBar()
-        self.pbar.setRange(0, 100)
-        self.pbar.setValue(self.plan.progress)
-        self.pbar.setTextVisible(True)
-        self.pbar.setFixedHeight(14)
-        self.pbar.setFormat(f"%p%")
+        lbl_title = QLabel(self.plan.title)
+        lbl_title.setWordWrap(True)
+        lbl_title.setStyleSheet(f"""
+            font-size: 18px; 
+            font-weight: 800; 
+            color: {COLORS['text_main']};
+            background: transparent;
+        """)
         
-        progress_color = self._get_progress_color(self.plan.progress)
-        self.pbar.setStyleSheet(f"""
+        if self.plan.description:
+            lbl_desc = QLabel(self.plan.description)
+            lbl_desc.setWordWrap(True)
+            lbl_desc.setMaximumHeight(40)
+            lbl_desc.setStyleSheet(f"""
+                font-size: 13px; 
+                color: {COLORS['text_sub']};
+                line-height: 1.4;
+                background: transparent;
+            """)
+            content.addWidget(lbl_title)
+            content.addWidget(lbl_desc)
+        else:
+            content.addWidget(lbl_title)
+            
+        layout.addLayout(content)
+
+        # ─── 3. Progress Bar ───
+        progress_container = QVBoxLayout()
+        progress_container.setSpacing(4)
+        
+        # Label Row
+        pl_row = QHBoxLayout()
+        pl_lbl = QLabel("İlerleme")
+        pl_lbl.setStyleSheet(f"color: {COLORS['text_sub']}; font-size: 11px; font-weight: 600;")
+        pl_val = QLabel(f"%{self.plan.progress}")
+        pl_val.setStyleSheet(f"color: {COLORS['primary']}; font-size: 12px; font-weight: 800;")
+        pl_row.addWidget(pl_lbl)
+        pl_row.addStretch()
+        pl_row.addWidget(pl_val)
+        
+        # Bar
+        pbar = QProgressBar()
+        pbar.setRange(0, 100)
+        pbar.setValue(self.plan.progress)
+        pbar.setTextVisible(False)
+        pbar.setFixedHeight(8)
+        
+        # Duruma göre renk (Degrade)
+        bar_color = COLORS['success_gradient'] if self.plan.progress == 100 else COLORS['primary_gradient']
+        if self.plan.progress < 30: bar_color = "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #E74C3C, stop:1 #C0392B)"
+        
+        pbar.setStyleSheet(f"""
             QProgressBar {{
+                background-color: #F0F3F4;
+                border-radius: 4px;
                 border: none;
-                border-radius: 7px;
-                background-color: {COLORS['bg_main']};
-                text-align: center;
-                color: {COLORS['text_primary']};
-                font-size: {FONTS['small']}px;
-                font-weight: bold;
             }}
             QProgressBar::chunk {{
-                background-color: {progress_color};
-                border-radius: 7px;
+                background: {bar_color};
+                border-radius: 4px;
             }}
         """)
-        progress_layout.addWidget(self.pbar)
-        layout.addLayout(progress_layout)
+        
+        progress_container.addLayout(pl_row)
+        progress_container.addWidget(pbar)
+        layout.addLayout(progress_container)
 
-        # ─── Footer Section ───
-        footer_layout = QHBoxLayout()
-        footer_layout.setSpacing(SPACING['xs'])
+        # ─── 4. Footer (Durum - Butonlar) ───
+        footer = QHBoxLayout()
+        footer.setSpacing(10)
         
-        # Status Badge (Pill Style with Icon)
-        status_cfg = STATUS_CONFIG.get(self.plan.status, STATUS_CONFIG['planned'])
-        status_lbl = QLabel(f"{status_cfg['icon']} {status_cfg['label']}")
-        status_lbl.setStyleSheet(f"""
-            background-color: {status_cfg['color']}22;
-            color: {status_cfg['color']};
-            padding: 8px 14px; 
-            border-radius: 14px; 
-            font-size: {FONTS['caption']}px; 
-            font-weight: 600;
-            border: 1px solid {status_cfg['color']}40;
-        """)
-        footer_layout.addWidget(status_lbl)
-        footer_layout.addStretch()
+        # Status Text
+        status_map = {
+            'planned': ('📋 Planlandı', '#7F8C8D'),
+            'in_progress': ('⚙️ Sürüyor', '#F39C12'),
+            'completed': ('✅ Tamamlandı', '#27AE60'),
+            'archived': ('📦 Arşiv', '#95A5A6')
+        }
+        st_text, st_color = status_map.get(self.plan.status, status_map['planned'])
+        lbl_status = QLabel(st_text)
+        lbl_status.setStyleSheet(f"color: {st_color}; font-weight: bold; font-size: 12px; background: transparent;")
         
-        # Quick Complete Button
-        if self.plan.status != 'completed':
-            btn_check = QPushButton("✓")
-            btn_check.setFixedSize(38, 38)
-            btn_check.setCursor(Qt.PointingHandCursor)
-            btn_check.setToolTip("Hızlıca Tamamla")
-            btn_check.setStyleSheet(f"""
-                QPushButton {{ 
-                    color: {COLORS['success']}; 
-                    font-weight: bold; 
-                    font-size: 18px;
-                    border: 2px solid {COLORS['success']}; 
-                    border-radius: 19px; 
+        footer.addWidget(lbl_status)
+        footer.addStretch()
+
+        # Action Buttons (Circle)
+        def create_circle_btn(icon, color, tooltip, callback):
+            btn = QPushButton(icon)
+            btn.setFixedSize(32, 32)
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setToolTip(tooltip)
+            btn.setStyleSheet(f"""
+                QPushButton {{
                     background-color: transparent;
-                }} 
-                QPushButton:hover {{ 
-                    background-color: {COLORS['success']}; 
-                    color: white; 
+                    border: 1px solid {COLORS['border']};
+                    border-radius: 16px;
+                    color: {COLORS['text_sub']};
+                    font-size: 14px;
+                }}
+                QPushButton:hover {{
+                    background-color: {color}1A; /* %10 Opacity */
+                    border: 1px solid {color};
+                    color: {color};
                 }}
             """)
-            btn_check.clicked.connect(self.on_quick_complete)
-            footer_layout.addWidget(btn_check)
+            btn.clicked.connect(callback)
+            return btn
 
-        # Edit Button
-        btn_edit = QPushButton("✏️")
-        btn_edit.setFixedSize(38, 38)
-        btn_edit.setCursor(Qt.PointingHandCursor)
-        btn_edit.setToolTip("Düzenle")
-        btn_edit.setStyleSheet(f"""
-            QPushButton {{
-                background-color: transparent; 
-                border: none;
-                border-radius: 19px;
-                font-size: 17px;
-            }}
-            QPushButton:hover {{ 
-                background-color: {COLORS['primary']}33;
-            }}
-        """)
-        btn_edit.clicked.connect(lambda: self.edited.emit(self.plan))
+        if self.plan.status != 'completed':
+            btn_ok = create_circle_btn("✓", "#27AE60", "Tamamla", self.on_quick_complete)
+            footer.addWidget(btn_ok)
+            
+        btn_edit = create_circle_btn("✏️", "#2980B9", "Düzenle", lambda: self.edited.emit(self.plan))
+        footer.addWidget(btn_edit)
         
-        # Delete Button
-        btn_del = QPushButton("🗑️")
-        btn_del.setFixedSize(38, 38)
-        btn_del.setCursor(Qt.PointingHandCursor)
-        btn_del.setToolTip("Sil")
-        btn_del.setStyleSheet(f"""
-            QPushButton {{
-                background-color: transparent; 
-                border: none;
-                border-radius: 19px;
-                font-size: 17px;
-            }}
-            QPushButton:hover {{ 
-                background-color: {COLORS['danger']}33;
-            }}
-        """)
-        btn_del.clicked.connect(self.on_delete)
-
-        footer_layout.addWidget(btn_edit)
-        footer_layout.addWidget(btn_del)
-        layout.addLayout(footer_layout)
-
-    def _get_progress_color(self, value):
-        """Get progress color based on completion percentage."""
-        if value < 30: return COLORS['danger']
-        if value < 70: return COLORS['warning']
-        return COLORS['success']
+        btn_del = create_circle_btn("🗑️", "#E74C3C", "Sil", self.on_delete)
+        footer.addWidget(btn_del)
+        
+        layout.addLayout(footer)
 
     def on_delete(self):
-        """Show confirmation dialog before deleting."""
         msg = QMessageBox()
-        msg.setWindowTitle("Plan Sil")
-        msg.setText(f"'{self.plan.title}' planını silmek istediğinize emin misiniz?")
+        msg.setWindowTitle("Planı Sil")
+        msg.setText(f"'{self.plan.title}' silinecek. Onaylıyor musunuz?")
         msg.setIcon(QMessageBox.Question)
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg.setStyleSheet(f"""
-            QMessageBox {{ 
-                background-color: {COLORS['bg_card']}; 
-                color: {COLORS['text_primary']}; 
-            }}
-            QPushButton {{ 
-                padding: 8px 16px; 
-                border-radius: 6px; 
-                min-width: 80px;
-                background-color: {COLORS['bg_input']};
-                color: {COLORS['text_primary']};
-                border: 1px solid {COLORS['border']};
-            }}
-            QPushButton:hover {{
-                background-color: {COLORS['bg_hover']};
-            }}
-        """)
+        msg.setStyleSheet(f"background-color: white; color: {COLORS['text_main']}; font-size: 13px;")
         if msg.exec_() == QMessageBox.Yes:
             self.deleted.emit(self.plan.id)
 
     def on_quick_complete(self):
-        """Quick complete action - set progress to 100% and status to completed."""
         self.status_changed.emit(self.plan.id, 100, 'completed')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PLAN ADD/EDIT DIALOG (Enhanced)
+# PLAN DIALOG (MODERN FORM)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class PlanDialog(QDialog):
     def __init__(self, parent=None, plan: Plan = None):
         super().__init__(parent)
         self.plan = plan
-        self.setWindowTitle("✨ Plan Ekle" if not plan else "✏️ Plan Düzenle")
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self.setFixedWidth(540)
-        self.setMinimumHeight(450)
-        self.setMaximumHeight(750)
-        
-        # Dialog Base Stylesheet
-        self.setStyleSheet(f"""
-            QDialog {{ 
-                background-color: {COLORS['bg_card']}; 
-                color: {COLORS['text_primary']}; 
-            }}
-        """)
+        self.setWindowTitle("Plan Oluştur" if not plan else "Planı Düzenle")
+        self.setFixedWidth(480)
+        self.setStyleSheet(f"background-color: {COLORS['bg_card']};")
         self.init_ui()
 
     def init_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(SPACING['sm'])
-        layout.setContentsMargins(SPACING['lg'], SPACING['md'], SPACING['lg'], SPACING['lg'])
+        layout.setSpacing(20)
+        layout.setContentsMargins(30, 30, 30, 30)
 
-        # ─── Form: Title ───
-        lbl_title = self._create_label("BAŞLIK *")
-        layout.addWidget(lbl_title)
+        # Başlık Alanı
+        title_lbl = QLabel("✨ Yeni Plan" if not self.plan else "✏️ Planı Düzenle")
+        title_lbl.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {COLORS['text_main']}; margin-bottom: 10px;")
+        layout.addWidget(title_lbl)
+
+        # ─── Inputs ───
         
+        # 1. Başlık
+        layout.addWidget(self._make_label("BAŞLIK"))
         self.inp_title = QLineEdit()
-        self.inp_title.setFixedHeight(44)
-        self.inp_title.setPlaceholderText("Plan başlığını girin...")
-        self.inp_title.setStyleSheet(self._get_input_style())
-        if self.plan: 
-            self.inp_title.setText(self.plan.title)
+        self.inp_title.setPlaceholderText("Hedefinizi buraya yazın...")
+        self.inp_title.setStyleSheet(self._input_style())
+        if self.plan: self.inp_title.setText(self.plan.title)
         layout.addWidget(self.inp_title)
 
-        layout.addSpacing(SPACING['xs'])
-
-        # ─── Form: Description ───
-        layout.addWidget(self._create_label("AÇIKLAMA"))
-        
+        # 2. Açıklama
+        layout.addWidget(self._make_label("AÇIKLAMA"))
         self.inp_desc = QTextEdit()
-        self.inp_desc.setMinimumHeight(120)
-        self.inp_desc.setMaximumHeight(150)
-        self.inp_desc.setPlaceholderText("Plan açıklaması (opsiyonel)...")
-        self.inp_desc.setStyleSheet(self._get_input_style())
-        if self.plan: 
-            self.inp_desc.setText(self.plan.description)
+        self.inp_desc.setPlaceholderText("Detaylar (opsiyonel)...")
+        self.inp_desc.setMinimumHeight(80)
+        self.inp_desc.setMaximumHeight(100)
+        self.inp_desc.setStyleSheet(self._input_style())
+        if self.plan: self.inp_desc.setText(self.plan.description)
         layout.addWidget(self.inp_desc)
 
-        layout.addSpacing(SPACING['xs'])
-
-        # ─── Form: Priority (Separate Dropdown with Icons) ───
-        layout.addWidget(self._create_label("ÖNCELİK"))
-        
+        # 3. Öncelik (Custom Combobox)
+        layout.addWidget(self._make_label("ÖNCELİK"))
         self.cmb_priority = QComboBox()
-        self.cmb_priority.setFixedHeight(44)
-        self.cmb_priority.addItems([
-            "🔵 Düşük", 
-            "🟡 Orta", 
-            "🔴 Yüksek"
-        ])
-        self.cmb_priority.setStyleSheet(self._get_combo_style())
-        self.cmb_priority.setCursor(Qt.PointingHandCursor)
+        self.cmb_priority.addItems(["🔵 Düşük Öncelik", "🟡 Orta Öncelik", "🔴 Yüksek Öncelik"])
+        self.cmb_priority.setStyleSheet(self._combo_style())
+        
         priority_map = {'low': 0, 'medium': 1, 'high': 2}
-        if self.plan: 
-            self.cmb_priority.setCurrentIndex(priority_map.get(self.plan.priority, 1))
-        else: 
-            self.cmb_priority.setCurrentIndex(1)
+        idx = priority_map.get(self.plan.priority, 1) if self.plan else 1
+        self.cmb_priority.setCurrentIndex(idx)
         layout.addWidget(self.cmb_priority)
 
-        # ─── Form: Status (Edit Mode Only - Separate Dropdown) ───
+        # 4. Durum & İlerleme (Sadece Düzenlerken)
         if self.plan:
-            layout.addSpacing(SPACING['xs'])
-            layout.addWidget(self._create_label("DURUM"))
-            
+            layout.addWidget(self._make_label("DURUM"))
             self.cmb_status = QComboBox()
-            self.cmb_status.setFixedHeight(44)
-            self.cmb_status.addItems([
-                "📋 Planlandı", 
-                "⚙️ Devam Ediyor", 
-                "✅ Tamamlandı", 
-                "📦 Arşiv"
-            ])
-            self.cmb_status.setStyleSheet(self._get_combo_style())
-            self.cmb_status.setCursor(Qt.PointingHandCursor)
-            status_map = {'planned': 0, 'in_progress': 1, 'completed': 2, 'archived': 3}
-            self.cmb_status.setCurrentIndex(status_map.get(self.plan.status, 0))
+            self.cmb_status.addItems(["📋 Planlandı", "⚙️ Sürüyor", "✅ Tamamlandı", "📦 Arşiv"])
+            self.cmb_status.setStyleSheet(self._combo_style())
+            
+            st_map = {'planned': 0, 'in_progress': 1, 'completed': 2, 'archived': 3}
+            self.cmb_status.setCurrentIndex(st_map.get(self.plan.status, 0))
             layout.addWidget(self.cmb_status)
-
-            layout.addSpacing(SPACING['sm'])
-
-            # ─── Form: Progress Slider ───
-            progress_header = QHBoxLayout()
-            progress_header.addWidget(self._create_label("İLERLEME"))
             
-            # Large Progress Value Display
-            self.lbl_progress_value = QLabel(f"%{self.plan.progress}")
-            self.lbl_progress_value.setStyleSheet(f"""
-                font-size: 26px;
-                font-weight: bold;
-                color: {self._get_progress_color_for_value(self.plan.progress)};
-                border: none;
-            """)
-            progress_header.addStretch()
-            progress_header.addWidget(self.lbl_progress_value)
-            layout.addLayout(progress_header)
+            # Slider Area
+            layout.addSpacing(10)
+            sl_layout = QHBoxLayout()
+            sl_layout.addWidget(self._make_label("İLERLEME"))
+            self.lbl_val = QLabel(f"%{self.plan.progress}")
+            self.lbl_val.setStyleSheet(f"font-weight: bold; color: {COLORS['primary']}; font-size: 15px;")
+            sl_layout.addStretch()
+            sl_layout.addWidget(self.lbl_val)
+            layout.addLayout(sl_layout)
             
-            self.slider_progress = QSlider(Qt.Horizontal)
-            self.slider_progress.setRange(0, 100)
-            self.slider_progress.setValue(self.plan.progress)
-            self.slider_progress.setSingleStep(5)
-            self.slider_progress.setPageStep(10)
-            self.slider_progress.setFixedHeight(32)
-            self.slider_progress.setStyleSheet(f"""
-                QSlider::groove:horizontal {{
-                    border: none;
-                    height: 10px;
-                    background: {COLORS['bg_main']};
-                    border-radius: 5px;
+            self.slider = QSlider(Qt.Horizontal)
+            self.slider.setRange(0, 100)
+            self.slider.setValue(self.plan.progress)
+            
+            # box-shadow kaldırıldı
+            self.slider.setStyleSheet(f"""
+                QSlider::groove:horizontal {{ height: 8px; background: #F0F3F4; border-radius: 4px; }}
+                QSlider::handle:horizontal {{ 
+                    background: {COLORS['primary']}; width: 20px; height: 20px; margin: -6px 0; border-radius: 10px; 
+                    border: 2px solid white; 
                 }}
-                QSlider::handle:horizontal {{
-                    background: {COLORS['primary']};
-                    border: 3px solid {COLORS['bg_card']};
-                    width: 24px;
-                    height: 24px;
-                    margin: -9px 0;
-                    border-radius: 12px;
-                }}
-                QSlider::handle:horizontal:hover {{
-                    background: {COLORS['primary_hover']};
-                    border: 3px solid {COLORS['primary']}44;
-                    width: 26px;
-                    height: 26px;
-                    margin: -10px 0;
-                    border-radius: 13px;
-                }}
-                QSlider::sub-page:horizontal {{
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, 
-                        stop:0 {COLORS['danger']}, 
-                        stop:0.5 {COLORS['warning']}, 
-                        stop:1 {COLORS['success']});
-                    border-radius: 5px;
-                }}
+                QSlider::sub-page:horizontal {{ background: {COLORS['primary_gradient']}; border-radius: 4px; }}
             """)
-            self.slider_progress.valueChanged.connect(self._on_progress_changed)
-            layout.addWidget(self.slider_progress)
+            self.slider.valueChanged.connect(lambda v: self.lbl_val.setText(f"%{v}"))
+            layout.addWidget(self.slider)
 
-        layout.addSpacing(SPACING['md'])
+        layout.addStretch()
 
-        # ─── Action Buttons ───
-        btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(12)
+        # ─── Butonlar ───
+        btn_box = QHBoxLayout()
+        btn_box.setSpacing(10)
         
         btn_cancel = QPushButton("İptal")
-        btn_cancel.setFixedHeight(44)
-        btn_cancel.setMinimumWidth(100)
         btn_cancel.setCursor(Qt.PointingHandCursor)
         btn_cancel.setStyleSheet(f"""
-            QPushButton {{
-                background-color: transparent; 
-                color: {COLORS['text_secondary']};
-                border: 2px solid {COLORS['border']};
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: {FONTS['body']}px;
-                padding: 0 {SPACING['md']}px;
-            }}
-            QPushButton:hover {{
-                background-color: {COLORS['bg_hover']};
-                border-color: {COLORS['border_light']};
-                color: {COLORS['text_primary']};
-            }}
+            QPushButton {{ color: {COLORS['text_sub']}; background: transparent; border: none; font-weight: 600; font-size: 14px; }}
+            QPushButton:hover {{ color: {COLORS['text_main']}; }}
         """)
         btn_cancel.clicked.connect(self.reject)
         
-        btn_save = QPushButton("💾 Kaydet")
-        btn_save.setFixedHeight(44)
-        btn_save.setMinimumWidth(120)
+        btn_save = QPushButton("Kaydet")
         btn_save.setCursor(Qt.PointingHandCursor)
+        btn_save.setFixedHeight(45)
         btn_save.setStyleSheet(f"""
             QPushButton {{
-                background-color: {COLORS['success']}; 
+                background: {COLORS['primary_gradient']};
                 color: white;
                 border: none;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: {FONTS['body']}px;
-                padding: 0 {SPACING['md']}px;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 14px;
+                padding: 0 25px;
             }}
             QPushButton:hover {{
-                background-color: {COLORS['success_hover']};
+                background: {COLORS['primary']};
             }}
         """)
         btn_save.clicked.connect(self.accept)
         
-        btn_layout.addStretch()
-        btn_layout.addWidget(btn_cancel)
-        btn_layout.addWidget(btn_save)
-        layout.addLayout(btn_layout)
+        btn_box.addStretch()
+        btn_box.addWidget(btn_cancel)
+        btn_box.addWidget(btn_save)
+        layout.addLayout(btn_box)
 
-    def _create_label(self, text):
-        """Create styled form label with uppercase text."""
-        lbl = QLabel(text)
-        lbl.setStyleSheet(f"""
-            font-size: {FONTS['caption']}px;
-            font-weight: 700;
-            color: {COLORS['text_secondary']};
-            background-color: transparent;
-            margin-bottom: 4px;
-            border: none;
-            letter-spacing: 0.5px;
-        """)
-        return lbl
+    def _make_label(self, text):
+        l = QLabel(text)
+        l.setStyleSheet(f"font-size: 11px; font-weight: 700; color: {COLORS['text_sub']}; letter-spacing: 0.5px;")
+        return l
 
-    def _get_input_style(self):
-        """Return consistent input styling with focus states."""
+    def _input_style(self):
         return f"""
             QLineEdit, QTextEdit {{
-                background-color: {COLORS['bg_input']}; 
-                color: {COLORS['text_primary']}; 
-                border: 1px solid {COLORS['border']}; 
-                padding: 12px 16px; 
-                border-radius: 8px;
-                font-size: {FONTS['body']}px;
-            }}
-            QLineEdit:focus, QTextEdit:focus {{
-                border: 2px solid {COLORS['primary']};
-                background-color: {COLORS['bg_card']};
-            }}
-            QLineEdit::placeholder, QTextEdit::placeholder {{
-                color: {COLORS['text_muted']};
-            }}
-        """
-
-    def _get_combo_style(self):
-        """Return consistent combobox styling with dropdown improvements."""
-        return f"""
-            QComboBox {{
-                background-color: {COLORS['bg_input']}; 
-                color: {COLORS['text_primary']}; 
-                border: 1px solid {COLORS['border']}; 
-                padding: 12px 16px; 
-                border-radius: 8px;
-                font-size: {FONTS['body']}px;
-            }}
-            QComboBox:hover {{
-                border: 1px solid {COLORS['border_light']};
-            }}
-            QComboBox:focus {{
-                border: 2px solid {COLORS['primary']};
-            }}
-            QComboBox::drop-down {{
-                subcontrol-origin: padding;
-                subcontrol-position: right center;
-                width: 30px;
-                border: none;
-                background-color: transparent;
-            }}
-            QComboBox::down-arrow {{
-                width: 0;
-                height: 0;
-                border-left: 6px solid transparent;
-                border-right: 6px solid transparent;
-                border-top: 8px solid {COLORS['text_muted']};
-            }}
-            QComboBox::down-arrow:hover {{
-                border-top: 8px solid {COLORS['text_primary']};
-            }}
-            QComboBox QAbstractItemView {{
-                background-color: {COLORS['bg_card']};
-                color: {COLORS['text_primary']};
-                selection-background-color: {COLORS['primary']};
-                selection-color: white;
+                background-color: #FAFAFA;
                 border: 1px solid {COLORS['border']};
                 border-radius: 8px;
-                padding: 4px 0;
-                outline: none;
+                padding: 12px;
+                font-size: 14px;
+                color: {COLORS['text_main']};
+                selection-background-color: {COLORS['primary']}40;
+            }}
+            QLineEdit:focus, QTextEdit:focus {{
+                background-color: white;
+                border: 1px solid {COLORS['primary']};
+            }}
+        """
+        
+    def _combo_style(self):
+        # Transform (rotate) kaldırıldı, yerine border-triangle eklendi
+        return f"""
+            QComboBox {{
+                background-color: #FAFAFA;
+                border: 1px solid {COLORS['border']};
+                border-radius: 8px;
+                padding: 10px 12px;
+                font-size: 14px;
+                color: {COLORS['text_main']};
+            }}
+            QComboBox:hover {{ background-color: white; border-color: {COLORS['text_sub']}; }}
+            QComboBox:focus {{ border-color: {COLORS['primary']}; background-color: white; }}
+            QComboBox::drop-down {{
+                subcontrol-origin: padding; subcontrol-position: top right;
+                width: 30px; border-left-width: 0px;
+            }}
+            QComboBox::down-arrow {{
+                image: none;
+                width: 0; 
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid {COLORS['text_sub']};
+                margin-top: 2px;
+                margin-right: 10px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: white; border: 1px solid {COLORS['border']}; 
+                border-radius: 8px; padding: 5px; outline: none;
             }}
             QComboBox QAbstractItemView::item {{
-                min-height: 40px;
-                padding: 10px 16px;
-                background-color: transparent;
-                color: {COLORS['text_primary']};
-                border: none;
-            }}
-            QComboBox QAbstractItemView::item:hover {{
-                background-color: {COLORS['bg_hover']};
+                height: 40px; padding-left: 10px; color: {COLORS['text_main']}; border-radius: 4px;
             }}
             QComboBox QAbstractItemView::item:selected {{
-                background-color: {COLORS['primary']};
-                color: white;
+                background-color: {COLORS['primary']}1A; color: {COLORS['primary']};
+            }}
+            QComboBox QAbstractItemView::item:hover {{
+                background-color: #F5F5F5;
             }}
         """
 
-    def _get_progress_color_for_value(self, value):
-        """Get progress color based on value."""
-        if value < 30: return COLORS['danger']
-        if value < 70: return COLORS['warning']
-        return COLORS['success']
-
-    def _on_progress_changed(self, value):
-        """Update progress value label with color animation."""
-        self.lbl_progress_value.setText(f"%{value}")
-        self.lbl_progress_value.setStyleSheet(f"""
-            font-size: 26px;
-            font-weight: bold;
-            color: {self._get_progress_color_for_value(value)};
-            border: none;
-        """)
-
     def get_data(self):
-        """Extract and return form data."""
         priority_map = {0: 'low', 1: 'medium', 2: 'high'}
         data = {
             'title': self.inp_title.text().strip(),
             'description': self.inp_desc.toPlainText().strip(),
             'priority': priority_map.get(self.cmb_priority.currentIndex(), 'medium')
         }
-        
         if self.plan:
-            status_map = {0: 'planned', 1: 'in_progress', 2: 'completed', 3: 'archived'}
-            data['status'] = status_map.get(self.cmb_status.currentIndex(), 'planned')
-            data['progress'] = self.slider_progress.value()
-            
-            # Auto-sync: If progress is 100%, mark as completed
-            if data['progress'] == 100 and data['status'] != 'completed':
-                data['status'] = 'completed'
-            # Auto-sync: If status is completed, set progress to 100%
-            elif data['status'] == 'completed' and data['progress'] < 100:
-                data['progress'] = 100
-                
+            st_map = {0: 'planned', 1: 'in_progress', 2: 'completed', 3: 'archived'}
+            data['status'] = st_map.get(self.cmb_status.currentIndex(), 'planned')
+            data['progress'] = self.slider.value()
+            if data['progress'] == 100: data['status'] = 'completed'
+            elif data['status'] == 'completed' and data['progress'] < 100: data['progress'] = 100
         return data
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STATISTICS WIDGET (PILL BADGES)
+# STATS WIDGET
 # ═══════════════════════════════════════════════════════════════════════════════
+
+class StatCard(ModernCard):
+    def __init__(self, title, icon, color):
+        super().__init__()
+        self.setFixedHeight(100)
+        self.setFixedWidth(200)
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Üst Satır (Icon + Sayı)
+        row = QHBoxLayout()
+        lbl_icon = QLabel(icon)
+        lbl_icon.setStyleSheet("font-size: 24px; background: transparent;")
+        
+        self.lbl_count = QLabel("0")
+        self.lbl_count.setStyleSheet(f"font-size: 28px; font-weight: 800; color: {color}; background: transparent;")
+        
+        row.addWidget(lbl_icon)
+        row.addStretch()
+        row.addWidget(self.lbl_count)
+        
+        # Alt Satır (Başlık)
+        lbl_title = QLabel(title)
+        lbl_title.setStyleSheet(f"color: {COLORS['text_sub']}; font-size: 13px; font-weight: 600; background: transparent;")
+        
+        layout.addLayout(row)
+        layout.addWidget(lbl_title)
 
 class PlanStatsWidget(QWidget):
     def __init__(self):
         super().__init__()
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, SPACING['xs'], 0, SPACING['md'])
-        layout.setSpacing(SPACING['sm'])
+        layout.setContentsMargins(0, 10, 0, 20)
+        layout.setSpacing(20)
         
-        self.lbl_total = self._create_badge("📊", "0", "Toplam", COLORS['primary'])
-        self.lbl_completed = self._create_badge("✅", "0", "Tamamlanan", COLORS['success'])
-        self.lbl_pending = self._create_badge("⏳", "0", "Bekleyen", COLORS['warning'])
+        self.card_total = StatCard("Toplam Plan", "📊", COLORS['primary'])
+        self.card_done = StatCard("Tamamlanan", "✅", "#27AE60")
+        self.card_wait = StatCard("Bekleyen", "⏳", "#F39C12")
         
-        layout.addWidget(self.lbl_total)
-        layout.addWidget(self.lbl_completed)
-        layout.addWidget(self.lbl_pending)
+        layout.addWidget(self.card_total)
+        layout.addWidget(self.card_done)
+        layout.addWidget(self.card_wait)
         layout.addStretch()
 
-    def _create_badge(self, icon, count, label, color):
-        """Create a modern pill-shaped statistics badge."""
-        badge = QFrame()
-        badge.setObjectName("statsBadge")
-        badge.setStyleSheet(f"""
-            #statsBadge {{
-                background-color: {color}1a; 
-                border: 1px solid {color}40;
-                border-radius: 20px;
-            }}
-            QLabel {{
-                background-color: transparent;
-                border: none;
-            }}
-        """)
-        
-        h = QHBoxLayout(badge)
-        h.setContentsMargins(16, 12, 16, 12)
-        h.setSpacing(12)
-        
-        icon_lbl = QLabel(icon)
-        icon_lbl.setStyleSheet("font-size: 18px;")
-        
-        count_lbl = QLabel(count)
-        count_lbl.setObjectName("count")
-        count_lbl.setStyleSheet(f"""
-            font-size: 18px; 
-            font-weight: bold; 
-            color: {color};
-        """)
-        
-        text_lbl = QLabel(label)
-        text_lbl.setStyleSheet(f"""
-            font-size: 13px; 
-            color: {COLORS['text_secondary']};
-            font-weight: 500;
-        """)
-        
-        h.addWidget(icon_lbl)
-        h.addWidget(count_lbl)
-        h.addWidget(text_lbl)
-        
-        badge.count_label = count_lbl
-        return badge
-
     def update_stats(self, plans):
-        """Update badge counts based on plans list."""
         total = len(plans)
         completed = sum(1 for p in plans if p.status == 'completed')
-        pending = total - completed
-        
-        self.lbl_total.count_label.setText(str(total))
-        self.lbl_completed.count_label.setText(str(completed))
-        self.lbl_pending.count_label.setText(str(pending))
+        self.card_total.lbl_count.setText(str(total))
+        self.card_done.lbl_count.setText(str(completed))
+        self.card_wait.lbl_count.setText(str(total - completed))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MAIN PLANS PAGE
+# MAIN PAGE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class PlansPage(QWidget):
@@ -748,348 +547,226 @@ class PlansPage(QWidget):
         self.setStyleSheet(f"background-color: {COLORS['bg_main']};")
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(SPACING['md'])
-        layout.setContentsMargins(SPACING['lg'], SPACING['md'], SPACING['lg'], SPACING['md'])
+        layout.setSpacing(20)
+        layout.setContentsMargins(40, 40, 40, 40)
 
-        # ═══════════════════════════════════════════════════════════════════════
-        # HEADER SECTION
-        # ═══════════════════════════════════════════════════════════════════════
-        header_frame = QFrame()
-        header_frame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {COLORS['bg_card']}; 
-                border-radius: 12px;
-            }}
-        """)
+        # ─── 1. Header & Filters ───
+        header = QHBoxLayout()
         
-        # Header Shadow
-        header_shadow = QGraphicsDropShadowEffect()
-        header_shadow.setBlurRadius(15)
-        header_shadow.setColor(QColor(0, 0, 0, 60))
-        header_shadow.setOffset(0, 2)
-        header_frame.setGraphicsEffect(header_shadow)
-        
-        header_layout = QHBoxLayout(header_frame)
-        header_layout.setContentsMargins(SPACING['md'], SPACING['sm'], SPACING['md'], SPACING['sm'])
-        header_layout.setSpacing(SPACING['md'])
-        
-        # Page Title (H1)
-        lbl_head = QLabel("📅 Planlama & Hedefler")
-        lbl_head.setStyleSheet(f"""
-            color: {COLORS['text_primary']}; 
-            font-size: {FONTS['h1']}px; 
-            font-weight: bold;
-            border: none;
-        """)
-        header_layout.addWidget(lbl_head)
-        header_layout.addStretch()
+        title = QLabel("Planlama & Hedefler")
+        title.setStyleSheet(f"font-size: 28px; font-weight: 900; color: {COLORS['text_main']};")
+        header.addWidget(title)
+        header.addStretch()
 
-        # ─── Scope Toggle (Segment Control) ───
-        toggle_container = QFrame()
-        toggle_container.setStyleSheet(f"""
+        # Filtre Kapsayıcısı (Beyaz Hap Şeklinde)
+        filter_box = QFrame()
+        filter_box.setStyleSheet(f"""
             QFrame {{
-                background-color: {COLORS['bg_main']};
-                border-radius: 8px;
+                background-color: white;
+                border: 1px solid {COLORS['border']};
+                border-radius: 25px;
                 padding: 4px;
             }}
         """)
-        toggle_layout = QHBoxLayout(toggle_container)
-        toggle_layout.setContentsMargins(4, 4, 4, 4)
-        toggle_layout.setSpacing(4)
-        
-        self.btn_monthly = QPushButton("📆 Aylık")
-        self.btn_monthly.setCheckable(True)
-        self.btn_monthly.setChecked(True)
-        self.btn_monthly.setFixedHeight(36)
-        self.btn_monthly.setCursor(Qt.PointingHandCursor)
-        self.btn_monthly.clicked.connect(lambda: self.set_scope('monthly'))
-        
-        self.btn_yearly = QPushButton("📊 Yıllık")
-        self.btn_yearly.setCheckable(True)
-        self.btn_yearly.setFixedHeight(36)
-        self.btn_yearly.setCursor(Qt.PointingHandCursor)
-        self.btn_yearly.clicked.connect(lambda: self.set_scope('yearly'))
-        
-        toggle_layout.addWidget(self.btn_monthly)
-        toggle_layout.addWidget(self.btn_yearly)
-        header_layout.addWidget(toggle_container)
+        # Filtre kutusuna hafif gölge
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(15); shadow.setColor(QColor(0,0,0,10)); shadow.setOffset(0,2)
+        filter_box.setGraphicsEffect(shadow)
 
-        # ─── Date Selectors ───
-        cmb_style = f"""
-            QComboBox {{
-                background-color: {COLORS['bg_main']}; 
-                color: {COLORS['text_primary']}; 
-                border: 1px solid {COLORS['border']}; 
-                padding: 8px 16px; 
-                border-radius: 6px;
-                font-size: {FONTS['body']}px;
-                font-weight: 500;
-                min-width: 90px;
-            }}
-            QComboBox:hover {{
-                border-color: {COLORS['border_light']};
-            }}
-            QComboBox::drop-down {{
-                border: none;
-                padding-right: 10px;
-            }}
-            QComboBox::down-arrow {{
-                width: 0;
-                height: 0;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 6px solid {COLORS['text_muted']};
-            }}
-            QComboBox QAbstractItemView {{
-                background-color: {COLORS['bg_card']};
-                color: {COLORS['text_primary']};
-                selection-background-color: {COLORS['primary']};
-                border: 1px solid {COLORS['border']};
-                border-radius: 6px;
-                padding: 4px 0;
-            }}
-            QComboBox QAbstractItemView::item {{
-                min-height: 32px;
-                padding: 6px 12px;
-            }}
-            QComboBox QAbstractItemView::item:hover {{
-                background-color: {COLORS['bg_hover']};
-            }}
-        """
+        fb_layout = QHBoxLayout(filter_box)
+        fb_layout.setContentsMargins(10, 4, 10, 4)
+        fb_layout.setSpacing(8)
+
+        # Toggle Buttons
+        self.btn_m = self._make_toggle("Aylık", True)
+        self.btn_y = self._make_toggle("Yıllık", False)
+        self.btn_m.clicked.connect(lambda: self.set_scope('monthly'))
+        self.btn_y.clicked.connect(lambda: self.set_scope('yearly'))
+        fb_layout.addWidget(self.btn_m)
+        fb_layout.addWidget(self.btn_y)
         
-        # Year Selector
-        self.cmb_year = QComboBox()
-        self.cmb_year.addItems([str(y) for y in range(self.current_year, self.current_year + 3)])
-        self.cmb_year.setCurrentText(str(self.current_year))
+        # Divider
+        line = QFrame()
+        line.setFrameShape(QFrame.VLine)
+        line.setStyleSheet("background-color: #E0E0E0; margin: 5px;")
+        line.setFixedWidth(1)
+        fb_layout.addWidget(line)
+
+        # Comboboxes
+        self.cmb_year = self._make_header_combo([str(y) for y in range(self.current_year, self.current_year + 3)])
         self.cmb_year.currentIndexChanged.connect(self.refresh_data)
-        self.cmb_year.setStyleSheet(cmb_style)
-        self.cmb_year.setCursor(Qt.PointingHandCursor)
-        header_layout.addWidget(self.cmb_year)
+        fb_layout.addWidget(self.cmb_year)
         
-        # Month Selector
-        self.cmb_month = QComboBox()
-        months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-                  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-        self.cmb_month.addItems(months)
+        self.cmb_month = self._make_header_combo(['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'])
         self.cmb_month.setCurrentIndex(self.current_month - 1)
         self.cmb_month.currentIndexChanged.connect(self.refresh_data)
-        self.cmb_month.setStyleSheet(cmb_style)
-        self.cmb_month.setCursor(Qt.PointingHandCursor)
-        header_layout.addWidget(self.cmb_month)
+        fb_layout.addWidget(self.cmb_month)
+        
+        header.addWidget(filter_box)
 
-        # ─── New Plan Button ───
-        btn_add = QPushButton("➕ Yeni Plan")
-        btn_add.setFixedHeight(40)
-        btn_add.setCursor(Qt.PointingHandCursor)
-        btn_add.setStyleSheet(f"""
+        # Yeni Plan Butonu
+        btn_new = QPushButton("+ Yeni Plan")
+        btn_new.setCursor(Qt.PointingHandCursor)
+        btn_new.setFixedSize(140, 50)
+        btn_new.setStyleSheet(f"""
             QPushButton {{
-                background-color: {COLORS['success']}; 
-                color: white; 
-                border-radius: 8px; 
-                padding: 0 {SPACING['md']}px; 
-                font-weight: 600;
-                font-size: {FONTS['body']}px;
+                background: {COLORS['primary_gradient']};
+                color: white; border-radius: 25px; font-weight: bold; font-size: 14px;
+                padding-left: 10px; padding-right: 10px;
             }}
-            QPushButton:hover {{ 
-                background-color: {COLORS['success_hover']}; 
-            }}
+            QPushButton:hover {{ background: {COLORS['primary']}; }}
         """)
-        btn_add.clicked.connect(self.add_plan_dialog)
-        header_layout.addWidget(btn_add)
+        btn_new.clicked.connect(self.add_plan_dialog)
+        header.addWidget(btn_new)
         
-        layout.addWidget(header_frame)
-        
-        # ═══════════════════════════════════════════════════════════════════════
-        # STATS SECTION
-        # ═══════════════════════════════════════════════════════════════════════
-        self.stats_widget = PlanStatsWidget()
-        layout.addWidget(self.stats_widget)
+        layout.addLayout(header)
 
-        # ═══════════════════════════════════════════════════════════════════════
-        # CONTENT AREA (Scrollable Cards)
-        # ═══════════════════════════════════════════════════════════════════════
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet(f"""
-            QScrollArea {{ 
+        # ─── 2. İstatistikler ───
+        self.stats = PlanStatsWidget()
+        layout.addWidget(self.stats)
+
+        # ─── 3. Scroll Area ───
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        
+        container = QWidget()
+        container.setStyleSheet("background: transparent;")
+        self.card_layout = QVBoxLayout(container)
+        self.card_layout.setSpacing(20)
+        self.card_layout.setContentsMargins(0, 10, 10, 10)
+        self.card_layout.addStretch()
+        
+        scroll.setWidget(container)
+        layout.addWidget(scroll)
+
+    def _make_toggle(self, text, active):
+        b = QPushButton(text)
+        b.setCheckable(True)
+        b.setChecked(active)
+        b.setCursor(Qt.PointingHandCursor)
+        b.setFixedHeight(36)
+        self._style_toggle(b)
+        return b
+
+    def _style_toggle(self, b):
+        if b.isChecked():
+            b.setStyleSheet(f"background-color: {COLORS['bg_main']}; color: {COLORS['primary']}; font-weight: bold; border: none; border-radius: 18px; padding: 0 15px;")
+        else:
+            b.setStyleSheet(f"background: transparent; color: {COLORS['text_sub']}; font-weight: 500; border: none; padding: 0 15px;")
+
+    def _make_header_combo(self, items):
+        c = QComboBox()
+        c.addItems(items)
+        c.setCursor(Qt.PointingHandCursor)
+        # Oku ve butonu tamamen gizliyoruz, sadece text kalıyor
+        c.setStyleSheet(f"""
+            QComboBox {{
+                background: transparent; 
                 border: none; 
-                background-color: transparent; 
+                color: {COLORS['text_main']}; 
+                font-weight: bold; 
+                padding: 4px 10px; 
+                min-width: 50px;
             }}
-            QScrollBar:vertical {{
-                background-color: {COLORS['bg_main']};
-                width: 10px;
-                border-radius: 5px;
+            /* Dropdown buton alanını gizle */
+            QComboBox::drop-down {{
+                border: none;
+                width: 0px; 
             }}
-            QScrollBar::handle:vertical {{
-                background-color: {COLORS['border']};
-                border-radius: 5px;
-                min-height: 30px;
+            /* Oku gizle */
+            QComboBox::down-arrow {{
+                image: none;
             }}
-            QScrollBar::handle:vertical:hover {{
-                background-color: {COLORS['border_light']};
+            
+            /* Tıklanabilir hissi için hover */
+            QComboBox:hover {{
+                background-color: #F5F7FA;
+                border-radius: 12px;
+                color: {COLORS['primary']};
             }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-                height: 0px;
+            
+            /* Popup Listesi */
+            QComboBox QAbstractItemView {{
+                background: white; 
+                border: 1px solid {COLORS['border']}; 
+                border-radius: 12px; 
+                padding: 5px; 
+                outline: none;
+                min-width: 120px;
+            }}
+            QComboBox QAbstractItemView::item {{
+                height: 32px; 
+                padding-left: 10px; 
+                color: {COLORS['text_main']};
+                border-radius: 6px;
+            }}
+            QComboBox QAbstractItemView::item:selected {{
+                background-color: {COLORS['primary']}1A; 
+                color: {COLORS['primary']};
             }}
         """)
-        
-        self.content_container = QWidget()
-        self.content_container.setStyleSheet("background-color: transparent;")
-        self.cards_layout = QVBoxLayout(self.content_container)
-        self.cards_layout.setSpacing(SPACING['sm'])
-        self.cards_layout.setContentsMargins(0, 0, SPACING['xs'], 0)
-        self.cards_layout.addStretch()
-        
-        self.scroll.setWidget(self.content_container)
-        layout.addWidget(self.scroll)
+        return c
 
     def set_scope(self, scope):
-        """Set the time scope (monthly/yearly) and update UI."""
         self.scope = scope
-        
-        toggle_style_checked = f"""
-            QPushButton {{
-                background-color: {COLORS['primary']}; 
-                color: white;
-                border: none;
-                padding: 0 {SPACING['sm']}px;
-                font-weight: 600;
-                font-size: {FONTS['body']}px;
-                border-radius: 6px;
-            }}
-        """
-        toggle_style_unchecked = f"""
-            QPushButton {{
-                background-color: transparent; 
-                color: {COLORS['text_muted']};
-                border: none;
-                padding: 0 {SPACING['sm']}px;
-                font-weight: 500;
-                font-size: {FONTS['body']}px;
-                border-radius: 6px;
-            }}
-            QPushButton:hover {{
-                color: {COLORS['text_secondary']};
-                background-color: {COLORS['bg_hover']};
-            }}
-        """
-        
-        if scope == 'monthly':
-            self.btn_monthly.setChecked(True)
-            self.btn_yearly.setChecked(False)
-            self.btn_monthly.setStyleSheet(toggle_style_checked)
-            self.btn_yearly.setStyleSheet(toggle_style_unchecked)
-            self.cmb_month.setVisible(True)
-        else:
-            self.btn_monthly.setChecked(False)
-            self.btn_yearly.setChecked(True)
-            self.btn_monthly.setStyleSheet(toggle_style_unchecked)
-            self.btn_yearly.setStyleSheet(toggle_style_checked)
-            self.cmb_month.setVisible(False)
-        
+        self.btn_m.setChecked(scope == 'monthly')
+        self.btn_y.setChecked(scope == 'yearly')
+        self._style_toggle(self.btn_m)
+        self._style_toggle(self.btn_y)
+        self.cmb_month.setVisible(scope == 'monthly')
         self.refresh_data()
 
     def refresh_data(self):
-        """Fetch and display plans based on current filters."""
-        year = int(self.cmb_year.currentText())
-        month = self.cmb_month.currentIndex() + 1 if self.scope == 'monthly' else None
-        self.controller.get_plans(self.scope, year, month, self.on_data_loaded)
+        y = int(self.cmb_year.currentText())
+        m = self.cmb_month.currentIndex() + 1 if self.scope == 'monthly' else None
+        self.controller.get_plans(self.scope, y, m, self.on_loaded)
 
-    def on_data_loaded(self, plans):
-        """Handle loaded plans data and update UI."""
-        # Clear existing items
-        while self.cards_layout.count():
-            item = self.cards_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+    def on_loaded(self, plans):
+        # Temizle
+        while self.card_layout.count():
+            item = self.card_layout.takeAt(0)
+            if item.widget(): item.widget().deleteLater()
 
         if not plans:
-            # Empty State
-            empty_container = QWidget()
-            empty_layout = QVBoxLayout(empty_container)
-            empty_layout.setAlignment(Qt.AlignCenter)
-            
-            empty_icon = QLabel("📭")
-            empty_icon.setStyleSheet(f"font-size: 64px; border: none;")
-            empty_icon.setAlignment(Qt.AlignCenter)
-            
-            empty_lbl = QLabel("Bu dönem için henüz plan oluşturulmamış")
-            empty_lbl.setAlignment(Qt.AlignCenter)
-            empty_lbl.setStyleSheet(f"""
-                color: {COLORS['text_muted']}; 
-                font-size: {FONTS['h2']}px;
-                margin-top: {SPACING['sm']}px;
-                border: none;
-            """)
-            
-            empty_hint = QLabel("Yukarıdaki '+ Yeni Plan' butonunu kullanarak başlayın")
-            empty_hint.setAlignment(Qt.AlignCenter)
-            empty_hint.setStyleSheet(f"""
-                color: {COLORS['text_muted']}; 
-                font-size: {FONTS['body']}px;
-                border: none;
-            """)
-            
-            empty_layout.addStretch()
-            empty_layout.addWidget(empty_icon)
-            empty_layout.addSpacing(SPACING['sm'])
-            empty_layout.addWidget(empty_lbl)
-            empty_layout.addSpacing(SPACING['xs'])
-            empty_layout.addWidget(empty_hint)
-            empty_layout.addStretch()
-            
-            self.cards_layout.addWidget(empty_container)
+            lbl = QLabel("📭 Bu dönem için henüz bir plan yok.")
+            lbl.setAlignment(Qt.AlignCenter)
+            lbl.setStyleSheet(f"color: {COLORS['text_sub']}; font-size: 16px; margin-top: 40px;")
+            self.card_layout.addWidget(lbl)
         
-        for plan in plans:
-            card = PlanCard(plan)
-            card.edited.connect(self.edit_plan_dialog)
+        for p in plans:
+            card = PlanCard(p)
+            card.edited.connect(self.edit_plan)
             card.deleted.connect(self.delete_plan)
             card.status_changed.connect(self.update_status)
-            self.cards_layout.addWidget(card)
-            
-        self.cards_layout.addStretch()
-        self.stats_widget.update_stats(plans)
+            self.card_layout.addWidget(card)
+        
+        self.card_layout.addStretch()
+        self.stats.update_stats(plans)
 
     def add_plan_dialog(self):
-        """Show dialog to add a new plan."""
-        dialog = PlanDialog(self)
-        if dialog.exec_() == QDialog.Accepted:
-            data = dialog.get_data()
-            year = int(self.cmb_year.currentText())
-            month = self.cmb_month.currentIndex() + 1 if self.scope == 'monthly' else None
-            
-            self.controller.add_plan(
-                data['title'], data['description'], self.scope, year, month, data['priority'],
-                self.on_operation_finished
-            )
+        d = PlanDialog(self)
+        if d.exec_() == QDialog.Accepted:
+            data = d.get_data()
+            y = int(self.cmb_year.currentText())
+            m = self.cmb_month.currentIndex() + 1 if self.scope == 'monthly' else None
+            self.controller.add_plan(data['title'], data['description'], self.scope, y, m, data['priority'], self.on_finished)
 
-    def edit_plan_dialog(self, plan):
-        """Show dialog to edit an existing plan."""
-        dialog = PlanDialog(self, plan)
-        if dialog.exec_() == QDialog.Accepted:
-            data = dialog.get_data()
-            self.controller.update_plan(
-                plan.id, data['title'], data['description'], data['status'], 
-                data['progress'], data['priority'], self.on_operation_finished
-            )
+    def edit_plan(self, plan):
+        d = PlanDialog(self, plan)
+        if d.exec_() == QDialog.Accepted:
+            data = d.get_data()
+            self.controller.update_plan(plan.id, data['title'], data['description'], data['status'], data['progress'], data['priority'], self.on_finished)
 
-    def delete_plan(self, plan_id):
-        """Delete a plan by ID."""
-        self.controller.delete_plan(plan_id, self.on_operation_finished)
+    def delete_plan(self, pid):
+        self.controller.delete_plan(pid, self.on_finished)
 
-    def update_status(self, plan_id, progress, status):
-        """Update plan progress and status."""
-        self.controller.update_plan_progress(plan_id, progress, status, lambda res: self.refresh_data())
+    def update_status(self, pid, prog, stat):
+        self.controller.update_plan_progress(pid, prog, stat, lambda x: self.refresh_data())
 
-    def on_operation_finished(self, result):
-        """Handle the result of a plan operation."""
-        if isinstance(result, tuple):
-            success, msg = result
-        else:
-            success = result
-            msg = ""
-            
-        if success:
+    def on_finished(self, res):
+        if (isinstance(res, tuple) and res[0]) or res is True:
             self.refresh_data()
         else:
+            msg = res[1] if isinstance(res, tuple) else "Hata oluştu"
             QMessageBox.critical(self, "Hata", msg)
