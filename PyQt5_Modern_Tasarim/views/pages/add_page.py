@@ -479,7 +479,6 @@ class AddPage(QWidget):
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                                           stop:0 #2563EB, stop:1 #1D4ED8);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
             }
             QPushButton:pressed {
                 background: #1D4ED8;

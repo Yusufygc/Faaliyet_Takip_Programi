@@ -1,7 +1,7 @@
 # views/pages/stats_page.py
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QTableWidget, QTableWidgetItem, QHeaderView, 
-                             QFrame, QSplitter, QDialog, QListWidget, QSizePolicy)
+                             QFrame, QSplitter, QDialog, QListWidget, QListWidgetItem, QSizePolicy)
 from PyQt5.QtCore import Qt
 import sys, os
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -15,15 +15,70 @@ class DetailDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self.resize(400, 300)
+        self.setFixedSize(400, 500)
+        self.setStyleSheet("""
+            QDialog { background-color: #F8FAFC; }
+            QListWidget {
+                background-color: white;
+                border: 2px solid #E2E8F0;
+                border-radius: 8px;
+                padding: 5px;
+                outline: none;
+            }
+            QListWidget::item {
+                border-bottom: 1px solid #F1F5F9;
+                padding: 0px;
+                margin-bottom: 5px;
+            }
+            QListWidget::item:selected {
+                background-color: #EFF6FF;
+                border: 1px solid #BFDBFE;
+                border-radius: 6px;
+            }
+        """)
+        
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        lbl_head = QLabel(title)
+        lbl_head.setStyleSheet("font-size: 18px; font-weight: bold; color: #1E293B; margin-bottom: 10px;")
+        layout.addWidget(lbl_head)
+
         list_widget = QListWidget()
+        layout.addWidget(list_widget)
+
         if details_list:
             for item in details_list:
-                list_widget.addItem(f"• {item[0]} ({item[1]})")
+                # item[0]: isim, item[1]: tarih
+                
+                # Container Widget
+                widget = QWidget()
+                widget_layout = QVBoxLayout(widget)
+                widget_layout.setContentsMargins(10, 10, 10, 10)
+                widget_layout.setSpacing(5)
+                
+                # Başlık Label
+                lbl_name = QLabel(f"📌 {item[0]}")
+                lbl_name.setStyleSheet("font-size: 14px; font-weight: 600; color: #334155; background: transparent;")
+                lbl_name.setWordWrap(True)
+                
+                # Tarih Label
+                lbl_date = QLabel(f"📅 {item[1]}")
+                lbl_date.setStyleSheet("font-size: 12px; color: #64748B; background: transparent;")
+                
+                widget_layout.addWidget(lbl_name)
+                widget_layout.addWidget(lbl_date)
+                
+                # List Item
+                list_item = QListWidgetItem(list_widget)
+                list_item.setSizeHint(widget.sizeHint())
+                list_widget.addItem(list_item)
+                list_widget.setItemWidget(list_item, widget)
+                
         else:
-            list_widget.addItem("Kayıt bulunamadı.")
-        layout.addWidget(list_widget)
+            item = QListWidgetItem("Kayıt bulunamadı.")
+            item.setTextAlignment(Qt.AlignCenter)
+            list_widget.addItem(item)
 
 class StatsPage(QWidget):
     def __init__(self, controller):
@@ -33,25 +88,41 @@ class StatsPage(QWidget):
 
     def init_ui(self):
         main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(15)
+        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(0, 0, 0, 0) # Parent widget padding'i kullanır genelde
 
-        # Başlık
-        title = QLabel("İstatistik Paneli")
-        title.setStyleSheet("font-size: 22px; font-weight: bold; color: #2C3E50; margin: 5px 0;")
+        # --- Başlık ---
+        title = QLabel("İSTATİSTİK PANELİ")
+        title.setStyleSheet("""
+            font-family: 'Segoe UI';
+            font-size: 26px; 
+            font-weight: bold; 
+            color: #1E293B; 
+            margin-bottom: 5px;
+        """)
         title.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(title)
 
-        # --- Filtreleme Alanı ---
+        # --- Filtreleme Alanı (Card Stili) ---
         filter_frame = QFrame()
-        filter_frame.setObjectName("Card") # styles.py'daki #Card stilini kullanır
+        filter_frame.setObjectName("FilterCard")
+        filter_frame.setStyleSheet("""
+            QFrame#FilterCard {
+                background-color: white;
+                border: 2px solid #E2E8F0;
+                border-radius: 12px;
+            }
+        """)
         filter_layout = QHBoxLayout(filter_frame)
-        filter_layout.setContentsMargins(15, 10, 15, 10)
+        filter_layout.setContentsMargins(20, 15, 20, 15)
+        filter_layout.setSpacing(15)
 
         self.lbl_date = QLabel("Rapor Dönemi:")
-        self.lbl_date.setStyleSheet("font-weight: bold; color: #555;")
+        self.lbl_date.setStyleSheet("font-size: 14px; font-weight: 600; color: #64748B;")
         filter_layout.addWidget(self.lbl_date)
         
         self.date_picker = MonthYearWidget()
+        # Widget'ın kendi stili var ama burada hizalamasını sağlıyoruz
         self.date_picker.dateChanged.connect(self.refresh_statistics)
         filter_layout.addWidget(self.date_picker)
         
@@ -60,11 +131,12 @@ class StatsPage(QWidget):
 
         # --- Özet Kartları (KPIs) ---
         kpi_layout = QHBoxLayout()
-        kpi_layout.setSpacing(15)
+        kpi_layout.setSpacing(20)
 
-        self.card_total = self.create_kpi_card("Toplam Faaliyet", "0", "#3498DB") # Mavi
-        self.card_avg = self.create_kpi_card("Genel Ort. Puan", "0.0", "#9B59B6") # Mor
-        self.card_top = self.create_kpi_card("En Aktif Kategori", "-", "#E67E22") # Turuncu
+        # Kart Renkleri
+        self.card_total = self.create_kpi_card("TOPLAM FAALİYET", "0", "#3B82F6", "icons/activity.svg") 
+        self.card_avg = self.create_kpi_card("GENEL ORT. PUAN", "0.0", "#8B5CF6", "icons/star.svg") 
+        self.card_top = self.create_kpi_card("EN AKTİF KATEGORİ", "-", "#F59E0B", "icons/trophy.svg") 
 
         kpi_layout.addWidget(self.card_total)
         kpi_layout.addWidget(self.card_avg)
@@ -75,35 +147,77 @@ class StatsPage(QWidget):
         # --- Veri Yok Uyarısı ---
         self.lbl_no_data = QLabel("⚠️ Seçilen kriterlere uygun veri bulunamadı.")
         self.lbl_no_data.setAlignment(Qt.AlignCenter)
-        self.lbl_no_data.setStyleSheet("font-size: 16px; color: #7f8c8d; margin-top: 30px;")
+        self.lbl_no_data.setStyleSheet("""
+            font-size: 16px; 
+            color: #94A3B8; 
+            background-color: white;
+            border: 2px dashed #E2E8F0;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 10px;
+        """)
         self.lbl_no_data.hide()
         main_layout.addWidget(self.lbl_no_data)
 
         # --- İçerik Alanı (Splitter) ---
         self.splitter = QSplitter(Qt.Vertical)
-        self.splitter.setHandleWidth(10) # Tutamaç genişliği (Rahat tutuş için)
-        self.splitter.setStyleSheet("QSplitter::handle { background-color: #E0E0E0; }")
+        self.splitter.setHandleWidth(2)
+        self.splitter.setStyleSheet("""
+            QSplitter::handle { 
+                background-color: #E2E8F0; 
+                margin: 10px 0px; 
+            }
+        """)
         
         # 1. Tablo Alanı
         self.table_container = QWidget()
         table_layout = QVBoxLayout(self.table_container)
-        table_layout.setContentsMargins(0, 0, 0, 0)
+        table_layout.setContentsMargins(0, 5, 0, 5)
         
         self.table = QTableWidget()
         self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Kategori", "Toplam Sayı", "Ort. Puan"])
+        self.table.setHorizontalHeaderLabels(["KATEGORİ", "TOPLAM SAYI", "ORT. PUAN"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.verticalHeader().setVisible(False) # Satır numaralarını gizle
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setAlternatingRowColors(True)
         self.table.setShowGrid(False)
+        self.table.setFocusPolicy(Qt.NoFocus) # Tıklayınca oluşan dotted border'ı kaldırır
+        
+        # Tablo Stili
         self.table.setStyleSheet("""
-            QTableWidget { border: 1px solid #E0E0E0; background-color: white; border-radius: 8px; } 
-            QHeaderView::section { background-color: #EAEDED; border: none; padding: 8px; font-weight: bold; color: #2C3E50; }
+            QTableWidget { 
+                border: 2px solid #E2E8F0; 
+                background-color: white; 
+                border-radius: 12px; 
+                padding: 0px;
+                gridline-color: transparent;
+            } 
+            QHeaderView::section { 
+                background-color: #F1F5F9; 
+                border: none; 
+                border-bottom: 2px solid #E2E8F0;
+                padding: 12px; 
+                font-weight: bold; 
+                color: #475569; 
+                font-size: 13px;
+            }
+            QTableWidget::item {
+                padding: 10px;
+                border-bottom: 1px solid #F8FAFC;
+                color: #334155;
+            }
+            QTableWidget::item:selected {
+                background-color: #EFF6FF;
+                color: #1E40AF;
+            }
+            QTableWidget::item:alternate {
+                background-color: #FAFAFA;
+            }
         """)
         self.table.doubleClicked.connect(self.open_details)
-        
-        # Tabloya minimum yükseklik vererek sıkışmasını önlüyoruz
         self.table.setMinimumHeight(250)
         table_layout.addWidget(self.table)
         
@@ -112,46 +226,62 @@ class StatsPage(QWidget):
         # 2. Grafik Alanı
         self.graph_container = QWidget()
         graph_layout = QVBoxLayout(self.graph_container)
-        graph_layout.setContentsMargins(0, 10, 0, 0) # Üstten biraz boşluk
+        graph_layout.setContentsMargins(0, 10, 0, 0)
         
+        # Grafik için beyaz bir kart görünümü oluştur
+        graph_card = QFrame()
+        graph_card.setStyleSheet("""
+            background-color: white;
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+        """)
+        card_inner_layout = QVBoxLayout(graph_card)
+        card_inner_layout.setContentsMargins(15, 15, 15, 15)
+
         self.figure = Figure(figsize=(5, 4), dpi=100)
-        self.figure.patch.set_facecolor('#F4F7F6') 
+        self.figure.patch.set_facecolor('#FFFFFF') # Grafik arka planı beyaz
         self.canvas = FigureCanvas(self.figure)
-        # Grafiğe de minimum yükseklik verelim
-        self.canvas.setMinimumHeight(300)
+        self.canvas.setStyleSheet("background-color: transparent;")
         
-        graph_layout.addWidget(self.canvas)
+        self.canvas.setMinimumHeight(320)
+        
+        card_inner_layout.addWidget(self.canvas)
+        graph_layout.addWidget(graph_card)
+        
         self.splitter.addWidget(self.graph_container)
 
-        # Başlangıçta oranları ayarla (Tablo biraz daha küçük, Grafik büyük)
-        self.splitter.setSizes([300, 400])
+        self.splitter.setSizes([350, 450])
 
         main_layout.addWidget(self.splitter)
 
-        # İlk yükleme
         self.refresh_statistics()
 
-    def create_kpi_card(self, title, value, color):
-        """Şık bir özet kartı oluşturur."""
+    def create_kpi_card(self, title, value, color, icon_path=None):
+        """Modern, şık KPI kartı."""
         frame = QFrame()
         frame.setStyleSheet(f"""
             QFrame {{
                 background-color: white;
-                border-left: 5px solid {color};
-                border-radius: 5px;
-                border-top: 1px solid #E0E0E0;
-                border-right: 1px solid #E0E0E0;
-                border-bottom: 1px solid #E0E0E0;
+                border: 2px solid #E2E8F0;
+                border-radius: 12px;
+                border-left: 6px solid {color};
+            }}
+            QFrame:hover {{
+                border: 2px solid {color};
+                border-left: 6px solid {color};
             }}
         """)
         layout = QVBoxLayout(frame)
-        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(5)
         
+        # Üst Kısım: Başlık
         lbl_title = QLabel(title)
-        lbl_title.setStyleSheet("color: #7F8C8D; font-size: 12px; font-weight: bold; border: none;")
+        lbl_title.setStyleSheet("color: #64748B; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; border: none; background: transparent;")
         
+        # Alt Kısım: Değer
         lbl_value = QLabel(value)
-        lbl_value.setStyleSheet(f"color: {color}; font-size: 24px; font-weight: bold; border: none;")
+        lbl_value.setStyleSheet(f"color: {color}; font-size: 28px; font-weight: 800; border: none; background: transparent;")
         
         layout.addWidget(lbl_title)
         layout.addWidget(lbl_value)
@@ -164,8 +294,6 @@ class StatsPage(QWidget):
         ignore_dates = (date_str == "")
         year_only = (len(date_str) == 4) 
 
-        # Loading durumu
-        # Loading durumu
         window = self.window()
         if window and hasattr(window, 'statusBar') and window.statusBar():
             window.statusBar().showMessage("İstatistikler hesaplanıyor...", 1000)
@@ -248,7 +376,9 @@ class StatsPage(QWidget):
             
             if avg >= 8.0:
                 item_avg.setForeground(Qt.darkGreen)
-                item_avg.setFont(self.table.font()) 
+                font = item_avg.font()
+                font.setBold(True)
+                item_avg.setFont(font)
             elif avg > 0 and avg < 5.0:
                 item_avg.setForeground(Qt.red)
                 
@@ -259,26 +389,44 @@ class StatsPage(QWidget):
         
         types = [row[0] for row in data]
         counts = [row[1] for row in data]
-        colors = ['#3498DB', '#E74C3C', '#F1C40F', '#2ECC71', '#9B59B6', '#34495E']
+        # Modern Pastel Renkler
+        colors = ['#3B82F6', '#EF4444', '#F59E0B', '#10B981', '#8B5CF6', '#6366F1', '#EC4899']
 
+        # 1. Bar Chart (Sayısal)
         ax1 = self.figure.add_subplot(121)
-        bars = ax1.bar(types, counts, color=colors[:len(types)])
-        ax1.set_title("Sayısal Dağılım", fontsize=9, fontweight='bold', color='#2C3E50')
-        ax1.tick_params(axis='x', rotation=45, labelsize=8)
+        bars = ax1.bar(types, counts, color=colors[:len(types)], zorder=3)
+        ax1.set_title("Faaliyet Sayıları", fontsize=10, fontweight='bold', color='#334155', pad=15)
+        ax1.tick_params(axis='x', rotation=45, labelsize=9, colors='#64748B')
+        ax1.tick_params(axis='y', labelsize=9, colors='#64748B')
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
+        ax1.spines['left'].set_color('#CBD5E1')
+        ax1.spines['bottom'].set_color('#CBD5E1')
+        ax1.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
         
         for bar in bars:
             height = bar.get_height()
-            ax1.text(bar.get_x() + bar.get_width()/2., height, f'{int(height)}',
-                    ha='center', va='bottom', fontsize=8)
+            ax1.text(bar.get_x() + bar.get_width()/2., height + 0.1, f'{int(height)}',
+                    ha='center', va='bottom', fontsize=9, fontweight='bold', color='#475569')
 
+        # 2. Pie Chart (Oransal)
         ax2 = self.figure.add_subplot(122)
-        ax2.pie(counts, labels=types, autopct='%1.1f%%', startangle=90, 
-                colors=colors[:len(types)], pctdistance=0.75, textprops={'fontsize': 8})
-        centre_circle = Circle((0,0),0.60,fc='#F4F7F6')
-        ax2.add_artist(centre_circle)
-        ax2.set_title("Oransal Dağılım", fontsize=9, fontweight='bold', color='#2C3E50')
+        wedges, texts, autotexts = ax2.pie(counts, labels=types, autopct='%1.1f%%', startangle=90, 
+                                          colors=colors[:len(types)], pctdistance=0.80, 
+                                          textprops={'fontsize': 9, 'color': '#475569'},
+                                          wedgeprops={'width': 0.5, 'edgecolor': 'white'}) # Donut chart görünümü
+        
+        # Donut Chart Merkezi Text
+        total = sum(counts)
+        ax2.text(0, 0, f"TOPLAM\n{total}", ha='center', va='center', fontsize=10, fontweight='bold', color='#334155')
+        
+        ax2.set_title("Oransal Dağılım", fontsize=10, fontweight='bold', color='#334155', pad=15)
+        
+        # Metin renklerini ayarla
+        for autotext in autotexts:
+            autotext.set_color('white')
+            autotext.set_fontweight('bold')
+            autotext.set_fontsize(8)
 
         self.figure.tight_layout()
         self.canvas.draw()
@@ -293,7 +441,6 @@ class StatsPage(QWidget):
         ignore_dates = (date_str == "")
         year_only = (len(date_str) == 4) 
         
-        # Repository artık büyük/küçük harf ayrımını kendi içinde hallediyor.
         self.activity_type_display = activity_type_display
         self.controller.get_activity_details_by_type(
             self.on_details_loaded,
