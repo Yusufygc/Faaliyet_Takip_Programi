@@ -1,5 +1,6 @@
 import sys
 import os
+import ctypes
 import matplotlib
 import traceback
 
@@ -22,6 +23,13 @@ except Exception as e:
 
 
 def main():
+    # Gorev cubugu ikonu icin App ID ayarla
+    try:
+        myappid = 'myy.faaliyettakip.v1.0'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except:
+        pass
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion") 
 
