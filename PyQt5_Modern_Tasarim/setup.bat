@@ -11,7 +11,6 @@ if %errorlevel% equ 0 (
         --standalone ^
         --onefile ^
         --enable-plugin=pyqt5 ^
-        --windows-console-mode=disable ^
         --windows-icon-from-ico=icons/icon.ico ^
         --include-data-dir=icons=icons ^
         --include-data-dir=fonts=fonts ^
@@ -24,7 +23,6 @@ if %errorlevel% equ 0 (
         --standalone ^
         --onefile ^
         --enable-plugin=pyqt5 ^
-        --windows-console-mode=disable ^
         --windows-icon-from-ico=icons/icon.ico ^
         --include-data-dir=icons=icons ^
         --include-data-dir=fonts=fonts ^

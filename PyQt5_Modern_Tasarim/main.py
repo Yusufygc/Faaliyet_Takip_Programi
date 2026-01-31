@@ -20,12 +20,6 @@ except Exception as e:
     input("Hata olustu. Enter'a basin...")
     sys.exit(1)
 
-# PyInstaller/Nuitka için çalışma dizinini ayarla
-if getattr(sys, 'frozen', False):
-    # Onefile modunda resources temp dizine çıkarılır.
-    # sys.executable exe'nin olduğu yeri verirken, __file__ temp dizindeki scripti verir.
-    application_path = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(application_path)
 
 def main():
     app = QApplication(sys.argv)

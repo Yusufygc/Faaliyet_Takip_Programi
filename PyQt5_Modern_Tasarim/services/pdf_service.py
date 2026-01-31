@@ -18,6 +18,8 @@ class PDFService:
         """Türkçe karakter desteği için DejaVu fontlarını yükler."""
         try:
             # Font yolları (Proje ana dizininde 'fonts' klasörü olmalı)
+            # main.py içinde os.chdir(application_path) yapıldığı için
+            # doğrudan "fonts/..." diyebiliriz.
             font_dir = "fonts"
             regular_font = os.path.join(font_dir, "DejaVuSans.ttf")
             bold_font = os.path.join(font_dir, "DejaVuSans-Bold.ttf")
