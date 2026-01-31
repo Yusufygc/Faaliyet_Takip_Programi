@@ -1,21 +1,235 @@
 # views/pages/edit_dialog.py
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QLabel, QLineEdit, 
                              QTextEdit, QComboBox, QPushButton, QMessageBox, 
-                             QFormLayout, QDateEdit, QCheckBox, QHBoxLayout)
-from PyQt5.QtCore import QDate, Qt
+                             QDateEdit, QCheckBox, QHBoxLayout, QFrame, QGraphicsDropShadowEffect)
+from PyQt5.QtCore import QDate, Qt, QSize
+from PyQt5.QtGui import QFont, QColor, QCursor
+from views.styles import COLORS
 
 class EditDialog(QDialog):
     def __init__(self, controller, activity, parent=None):
         super().__init__(parent)
         self.controller = controller
         self.activity = activity # Düzenlenecek aktivite nesnesi
+        
         self.setWindowTitle(f"Düzenle: {activity.name}")
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self.setFixedSize(400, 500)
+        self.setFixedSize(450, 650) # Boyutu biraz artırdık ferahlık için
+        
+        # Arka plan rengi
+        self.setStyleSheet(f"background-color: #FFFFFF;")
+        
         self.init_ui()
         self.load_types() # Türleri yükle
-        # self.load_data() # Bunu load_types bittikten sonra çağırmalıyız ki combo dolu olsun
 
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(15)
+
+        # ─── Başlık ───
+        lbl_head = QLabel("Faaliyet Düzenle")
+        lbl_head.setStyleSheet(f"font-size: 22px; font-weight: 800; color: {COLORS['text']}; margin-bottom: 10px;")
+        layout.addWidget(lbl_head)
+
+        # ─── 1. Tür Seçimi ───
+        layout.addWidget(self._create_label("TÜR"))
+        self.combo_type = QComboBox()
+        self.combo_type.setStyleSheet(self._get_combo_style())
+        layout.addWidget(self.combo_type)
+
+        # ─── 2. Ad (Başlık) ───
+        layout.addWidget(self._create_label("BAŞLIK / AD"))
+        self.input_name = QLineEdit()
+        self.input_name.setPlaceholderText("Faaliyet adını girin...")
+        self.input_name.setStyleSheet(self._get_input_style())
+        layout.addWidget(self.input_name)
+
+        # ─── 3. Tarih Alanı ───
+        layout.addWidget(self._create_label("TARİH"))
+        
+        date_layout = QHBoxLayout()
+        date_layout.setSpacing(10)
+        
+        self.input_date = QDateEdit()
+        self.input_date.setCalendarPopup(True)
+        self.input_date.setDisplayFormat("yyyy-MM-dd")
+        self.input_date.setStyleSheet(self._get_date_style())
+        self.input_date.setFixedHeight(40)
+        date_layout.addWidget(self.input_date)
+        
+        # Bitiş Tarihi Checkbox
+        self.chk_range = QCheckBox("Bitiş Tarihi")
+        self.chk_range.setCursor(Qt.PointingHandCursor)
+        self.chk_range.setStyleSheet(f"""
+            QCheckBox {{ spacing: 8px; font-size: 14px; color: {COLORS['text']}; font-weight: 600; }}
+            QCheckBox::indicator {{ width: 18px; height: 18px; border-radius: 4px; border: 1px solid #BDC3C7; }}
+            QCheckBox::indicator:checked {{ background-color: {COLORS['primary']}; border-color: {COLORS['primary']}; }}
+        """)
+        self.chk_range.toggled.connect(self.toggle_end_date)
+        date_layout.addWidget(self.chk_range)
+        
+        layout.addLayout(date_layout)
+
+        # ─── 4. Bitiş Tarihi (Gizli) ───
+        self.lbl_end_date = self._create_label("BİTİŞ TARİHİ")
+        self.lbl_end_date.hide()
+        layout.addWidget(self.lbl_end_date)
+
+        self.input_end_date = QDateEdit()
+        self.input_end_date.setCalendarPopup(True)
+        self.input_end_date.setDisplayFormat("yyyy-MM-dd")
+        self.input_end_date.setStyleSheet(self._get_date_style())
+        self.input_end_date.setFixedHeight(40)
+        self.input_end_date.hide()
+        layout.addWidget(self.input_end_date)
+
+        # ─── 5. Yorum ───
+        layout.addWidget(self._create_label("YORUM / AÇIKLAMA"))
+        self.input_comment = QTextEdit()
+        self.input_comment.setPlaceholderText("Detayları buraya yazabilirsiniz...")
+        self.input_comment.setStyleSheet(self._get_input_style())
+        self.input_comment.setMinimumHeight(80)
+        layout.addWidget(self.input_comment)
+
+        # ─── 6. Puan ───
+        layout.addWidget(self._create_label("PUAN (1-10)"))
+        self.combo_rating = QComboBox()
+        self.combo_rating.addItems([str(i) for i in range(1, 11)])
+        self.combo_rating.setStyleSheet(self._get_combo_style())
+        layout.addWidget(self.combo_rating)
+
+        layout.addStretch()
+
+        # ─── Butonlar ───
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(15)
+        
+        self.btn_cancel = QPushButton("İptal")
+        self.btn_cancel.setCursor(Qt.PointingHandCursor)
+        self.btn_cancel.setFixedHeight(45)
+        self.btn_cancel.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: #7F8C8D;
+                border: 2px solid #E0E6ED;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 14px;
+            }}
+            QPushButton:hover {{
+                background-color: #F8F9F9;
+                color: {COLORS['text']};
+                border-color: #BDC3C7;
+            }}
+        """)
+        self.btn_cancel.clicked.connect(self.reject)
+        
+        self.btn_save = QPushButton("Değişiklikleri Kaydet")
+        self.btn_save.setCursor(Qt.PointingHandCursor)
+        self.btn_save.setFixedHeight(45)
+        self.btn_save.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['primary']};
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 14px;
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS['primary_hover']};
+            }}
+            QPushButton:disabled {{
+                background-color: #BDC3C7;
+            }}
+        """)
+        self.btn_save.clicked.connect(self.handle_update)
+        
+        btn_layout.addWidget(self.btn_cancel)
+        btn_layout.addWidget(self.btn_save)
+        
+        layout.addLayout(btn_layout)
+
+    # ─── Yardımcı Stil Metodları ───
+    def _create_label(self, text):
+        lbl = QLabel(text)
+        lbl.setStyleSheet(f"""
+            font-size: 12px; 
+            font-weight: 800; 
+            color: #95A5A6; 
+            margin-top: 5px;
+            letter-spacing: 0.5px;
+        """)
+        return lbl
+
+    def _get_input_style(self):
+        return f"""
+            QLineEdit, QTextEdit {{
+                background-color: #FAFAFA;
+                border: 1px solid #E0E6ED;
+                border-radius: 8px;
+                padding: 10px 12px;
+                color: {COLORS['text']};
+                font-size: 14px;
+            }}
+            QLineEdit:focus, QTextEdit:focus {{
+                background-color: #FFFFFF;
+                border: 2px solid {COLORS['primary']};
+            }}
+        """
+
+    def _get_combo_style(self):
+        return f"""
+            QComboBox {{
+                background-color: #FAFAFA;
+                border: 1px solid #E0E6ED;
+                border-radius: 8px;
+                padding: 8px 12px;
+                color: {COLORS['text']};
+                font-size: 14px;
+            }}
+            QComboBox:hover {{ background-color: #FFFFFF; border-color: #BDC3C7; }}
+            QComboBox:focus {{ border: 2px solid {COLORS['primary']}; }}
+            QComboBox::drop-down {{ width: 25px; border: none; }}
+            QComboBox::down-arrow {{
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid #95A5A6;
+                margin-right: 10px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: white; border: 1px solid #E0E6ED; border-radius: 8px; padding: 5px;
+            }}
+            QComboBox QAbstractItemView::item {{ height: 35px; padding-left: 10px; }}
+            QComboBox QAbstractItemView::item:selected {{
+                background-color: {COLORS['primary']}1A; color: {COLORS['primary']};
+            }}
+        """
+
+    def _get_date_style(self):
+        return f"""
+            QDateEdit {{
+                background-color: #FAFAFA;
+                border: 1px solid #E0E6ED;
+                border-radius: 8px;
+                padding: 8px 12px;
+                color: {COLORS['text']};
+                font-size: 14px;
+            }}
+            QDateEdit::drop-down {{ width: 25px; border: none; }}
+            QDateEdit::down-arrow {{
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid #95A5A6;
+                margin-right: 10px;
+            }}
+            QDateEdit:focus {{ border: 2px solid {COLORS['primary']}; background-color: white; }}
+        """
+
+    # ─── Mantıksal Fonksiyonlar (Aynen Korundu) ───
     def load_types(self):
         """Veritabanından türleri çeker."""
         if hasattr(self.controller, 'get_all_activity_types'):
@@ -29,131 +243,49 @@ class EditDialog(QDialog):
         # Türler yüklendikten sonra veriyi doldur
         self.load_data()
 
-    def init_ui(self):
-        layout = QVBoxLayout(self)
-
-        # Başlık
-        title = QLabel("Faaliyet Düzenle")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 10px;")
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
-
-        # Form
-        form_layout = QFormLayout()
-        
-        # Tür
-        self.combo_type = QComboBox()
-        # self.combo_type.addItems(FAALIYET_TURLERI) # Artık dinamik
-        form_layout.addRow("Tür:", self.combo_type)
-
-        # Ad
-        self.input_name = QLineEdit()
-        form_layout.addRow("Ad:", self.input_name)
-
-        # Tarih
-        date_layout = QHBoxLayout()
-        date_layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.input_date = QDateEdit()
-        self.input_date.setCalendarPopup(True)
-        self.input_date.setDisplayFormat("yyyy-MM-dd") # Formatı güncelledik
-        self.input_date.setMinimumHeight(35)
-        
-        self.chk_range = QCheckBox("Bitiş Tarihi")
-        self.chk_range.toggled.connect(self.on_range_toggled)
-        
-        date_layout.addWidget(self.input_date)
-        date_layout.addWidget(self.chk_range)
-        
-        form_layout.addRow("Tarih:", date_layout)
-        
-        # Bitiş Tarihi (Gizli)
-        self.input_end_date = QDateEdit()
-        self.input_end_date.setCalendarPopup(True)
-        self.input_end_date.setDisplayFormat("yyyy-MM-dd")
-        self.input_end_date.setMinimumHeight(35)
-        
-        self.lbl_end_date = QLabel("Bitiş:")
-        
-        form_layout.addRow(self.lbl_end_date, self.input_end_date)
-        
-        # Gizle
-        self.lbl_end_date.hide()
-        self.input_end_date.hide()
-
-        # Yorum
-        self.input_comment = QTextEdit()
-        self.input_comment.setMaximumHeight(80)
-        form_layout.addRow("Yorum:", self.input_comment)
-
-        # Puan
-        self.combo_rating = QComboBox()
-        self.combo_rating.addItem("Seçiniz")
-        self.combo_rating.addItems([str(i) for i in range(1, 11)])
-        form_layout.addRow("Puan:", self.combo_rating)
-
-        layout.addLayout(form_layout)
-
-        # Butonlar
-        self.btn_save = QPushButton("Değişiklikleri Kaydet")
-        self.btn_save.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 10px;")
-        self.btn_save.clicked.connect(self.handle_update)
-        layout.addWidget(self.btn_save)
-
-        btn_cancel = QPushButton("İptal")
-        btn_cancel.clicked.connect(self.reject) # Pencereyi kapatır
-        layout.addWidget(btn_cancel)
-
     def load_data(self):
-        """Mevcut aktivite verilerini form alanlarına doldurur."""
-        # Türü seç
+        """Aktivite verilerini alanlara doldurur."""
+        # 1. Tür
         index = self.combo_type.findText(self.activity.type)
         if index >= 0:
             self.combo_type.setCurrentIndex(index)
         
-        # Adı yaz
+        # 2. Ad
         self.input_name.setText(self.activity.name)
         
-        # Tarihi ayarla
+        # 3. Tarih
         try:
-            # Önce tam tarih denemesi
-            if len(self.activity.date.split('-')) == 3:
-                 qdate = QDate.fromString(self.activity.date, "yyyy-MM-dd")
-            else:
-                 qdate = QDate.fromString(self.activity.date, "yyyy-MM")
-            
-            if qdate.isValid():
-                self.input_date.setDate(qdate)
-            else:
-                self.input_date.setDate(QDate.currentDate())
+            date_obj = QDate.fromString(self.activity.date, "yyyy-MM-dd")
+            self.input_date.setDate(date_obj)
         except:
             self.input_date.setDate(QDate.currentDate())
-            
-        # Bitiş tarihi varsa ayarla
-        if hasattr(self.activity, 'end_date') and self.activity.end_date:
+
+        # 4. Bitiş Tarihi
+        if self.activity.end_date:
             self.chk_range.setChecked(True)
             try:
-                qend = QDate.fromString(self.activity.end_date, "yyyy-MM-dd")
-                if qend.isValid():
-                    self.input_end_date.setDate(qend)
+                end_date_obj = QDate.fromString(self.activity.end_date, "yyyy-MM-dd")
+                self.input_end_date.setDate(end_date_obj)
             except:
                 pass
         else:
             self.chk_range.setChecked(False)
+            self.lbl_end_date.hide()
+            self.input_end_date.hide()
 
-        # Yorumu yaz
+        # 5. Yorum
         self.input_comment.setText(self.activity.comment)
+        
+        # 6. Puan
+        rating_index = self.combo_rating.findText(str(self.activity.rating))
+        if rating_index >= 0:
+            self.combo_rating.setCurrentIndex(rating_index)
 
-        # Puanı seç
-        if self.activity.rating and self.activity.rating > 0:
-            self.combo_rating.setCurrentText(str(self.activity.rating))
-        else:
-            self.combo_rating.setCurrentIndex(0)
-
-    def on_range_toggled(self, checked):
+    def toggle_end_date(self, checked):
         if checked:
             self.lbl_end_date.show()
             self.input_end_date.show()
+            # Varsayılan olarak başlangıç tarihinden 1 gün sonrasını ayarla
             if self.input_end_date.date() <= self.input_date.date():
                 self.input_end_date.setDate(self.input_date.date().addDays(1))
         else:
@@ -190,10 +322,8 @@ class EditDialog(QDialog):
         self.btn_save.setEnabled(True)
         self.btn_save.setText("Değişiklikleri Kaydet")
         
-        success, message = result
-
+        success, msg = result
         if success:
-            QMessageBox.information(self, "Başarılı", message)
-            self.accept() # Dialogu onayla ve kapat
+            self.accept() # Pencereyi kapat ve 'Accepted' dön
         else:
-            QMessageBox.warning(self, "Hata", message)
+            QMessageBox.warning(self, "Hata", f"Güncelleme başarısız: {msg}")
