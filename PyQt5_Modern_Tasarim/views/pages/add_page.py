@@ -7,6 +7,7 @@ from PyQt5.QtCore import QDate, Qt, QLocale, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
 from utils import get_resource_path
 import os
+from ..styles import arrow_url
 
 
 
@@ -92,8 +93,8 @@ class AddPage(QWidget):
         form_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
         
         # Form elemanları için genel stil
-        input_style = """
-            QComboBox, QLineEdit, QDateEdit, QTextEdit {
+        input_style = f"""
+            QComboBox, QLineEdit, QDateEdit, QTextEdit {{
                 background-color: #FFFFFF;
                 border: 2px solid #E2E8F0;
                 border-radius: 10px;
@@ -102,24 +103,24 @@ class AddPage(QWidget):
                 color: #334155;
                 selection-background-color: #3B82F6;
                 selection-color: white;
-            }
-            QComboBox:focus, QLineEdit:focus, QDateEdit:focus, QTextEdit:focus {
+            }}
+            QComboBox:focus, QLineEdit:focus, QDateEdit:focus, QTextEdit:focus {{
                 border: 2px solid #3B82F6;
                 background-color: #F8FAFC;
-            }
-            QComboBox:hover, QLineEdit:hover, QDateEdit:hover {
+            }}
+            QComboBox:hover, QLineEdit:hover, QDateEdit:hover {{
                 border: 2px solid #CBD5E1;
-            }
-            QComboBox::drop-down {
+            }}
+            QComboBox::drop-down {{
                 border: none;
                 width: 40px;
-            }
-            QComboBox::down-arrow {
-                image: url(icons/down_arrow.svg);
+            }}
+            QComboBox::down-arrow {{
+                image: url('{arrow_url}');
                 width: 16px;
                 height: 16px;
-            }
-            QComboBox QAbstractItemView {
+            }}
+            QComboBox QAbstractItemView {{
                 border: 2px solid #E2E8F0;
                 border-radius: 8px;
                 background-color: white;
@@ -127,15 +128,15 @@ class AddPage(QWidget):
                 selection-color: white;
                 padding: 8px;
                 font-size: 14px;
-            }
-            QComboBox QAbstractItemView::item {
+            }}
+            QComboBox QAbstractItemView::item {{
                 padding: 10px 15px;
                 border-radius: 5px;
                 margin: 2px;
-            }
-            QComboBox QAbstractItemView::item:hover {
+            }}
+            QComboBox QAbstractItemView::item:hover {{
                 background-color: #F1F5F9;
-            }
+            }}
         """
 
 
@@ -143,35 +144,35 @@ class AddPage(QWidget):
         # 1. Tür - Modern Combobox
         self.combo_type = QComboBox()
         self.combo_type.setMinimumHeight(42)
-        self.combo_type.setStyleSheet("""
-            QComboBox {
+        self.combo_type.setStyleSheet(f"""
+            QComboBox {{
                 background-color: #FFFFFF;
                 border: 2px solid #E2E8F0;
                 border-radius: 10px;
                 padding: 12px 15px;
                 font-size: 14px;
                 color: #334155;
-            }
-            QComboBox:focus {
+            }}
+            QComboBox:focus {{
                 border: 2px solid #3B82F6;
                 background-color: #F8FAFC;
-            }
-            QComboBox:hover {
+            }}
+            QComboBox:hover {{
                 border: 2px solid #CBD5E1;
-            }
-            QComboBox::drop-down {
+            }}
+            QComboBox::drop-down {{
                 border: none;
                 width: 40px;
                 border-left: 1px solid #E2E8F0;
                 border-radius: 0 8px 8px 0;
                 background-color: #F8FAFC;
-            }
-            QComboBox::down-arrow {
-                image: url(icons/down_arrow.svg);
+            }}
+            QComboBox::down-arrow {{
+                image: url('{arrow_url}');
                 width: 16px;
                 height: 16px;
-            }
-            QComboBox QAbstractItemView {
+            }}
+            QComboBox QAbstractItemView {{
                 border: 2px solid #E2E8F0;
                 border-radius: 8px;
                 background-color: white;
@@ -180,19 +181,19 @@ class AddPage(QWidget):
                 padding: 8px;
                 font-size: 14px;
                 margin-top: 5px;
-            }
-            QComboBox QAbstractItemView::item {
+            }}
+            QComboBox QAbstractItemView::item {{
                 padding: 12px 15px;
                 border-radius: 5px;
                 margin: 2px;
-            }
-            QComboBox QAbstractItemView::item:hover {
+            }}
+            QComboBox QAbstractItemView::item:hover {{
                 background-color: #F1F5F9;
-            }
-            QComboBox QAbstractItemView::item:selected {
+            }}
+            QComboBox QAbstractItemView::item:selected {{
                 background-color: #3B82F6;
                 color: white;
-            }
+            }}
         """)
 
         # Türleri yükle
@@ -240,34 +241,34 @@ class AddPage(QWidget):
         self.input_date.setDisplayFormat("d MMMM yyyy") 
         self.input_date.setDate(QDate.currentDate())
         self.input_date.setMinimumHeight(42)
-        self.input_date.setStyleSheet("""
-            QDateEdit {
+        self.input_date.setStyleSheet(f"""
+            QDateEdit {{
                 background-color: #FFFFFF;
                 border: 2px solid #E2E8F0;
                 border-radius: 10px;
                 padding: 12px 15px;
                 font-size: 14px;
                 color: #334155;
-            }
-            QDateEdit:focus {
+            }}
+            QDateEdit:focus {{
                 border: 2px solid #3B82F6;
                 background-color: #F8FAFC;
-            }
-            QDateEdit:hover {
+            }}
+            QDateEdit:hover {{
                 border: 2px solid #CBD5E1;
-            }
-            QDateEdit::drop-down {
+            }}
+            QDateEdit::drop-down {{
                 border: none;
                 width: 40px;
                 border-left: 1px solid #E2E8F0;
                 border-radius: 0 8px 8px 0;
                 background-color: #F8FAFC;
-            }
-            QDateEdit::down-arrow {
-                image: url(icons/down_arrow.svg);
+            }}
+            QDateEdit::down-arrow {{
+                image: url('{arrow_url}');
                 width: 16px;
                 height: 16px;
-            }
+            }}
         """)
 
         
@@ -313,34 +314,34 @@ class AddPage(QWidget):
         self.input_end_date.setDisplayFormat("d MMMM yyyy") 
         self.input_end_date.setDate(QDate.currentDate().addDays(1))
         self.input_end_date.setMinimumHeight(42)
-        self.input_end_date.setStyleSheet("""
-            QDateEdit {
+        self.input_end_date.setStyleSheet(f"""
+            QDateEdit {{
                 background-color: #FFFFFF;
                 border: 2px solid #E2E8F0;
                 border-radius: 10px;
                 padding: 12px 15px;
                 font-size: 14px;
                 color: #334155;
-            }
-            QDateEdit:focus {
+            }}
+            QDateEdit:focus {{
                 border: 2px solid #3B82F6;
                 background-color: #F8FAFC;
-            }
-            QDateEdit:hover {
+            }}
+            QDateEdit:hover {{
                 border: 2px solid #CBD5E1;
-            }
-            QDateEdit::drop-down {
+            }}
+            QDateEdit::drop-down {{
                 border: none;
                 width: 40px;
                 border-left: 1px solid #E2E8F0;
                 border-radius: 0 8px 8px 0;
                 background-color: #F8FAFC;
-            }
-            QDateEdit::down-arrow {
-                image: url(icons/down_arrow.svg);
+            }}
+            QDateEdit::down-arrow {{
+                image: url('{arrow_url}');
                 width: 16px;
                 height: 16px;
-            }
+            }}
         """)
 
         
@@ -386,35 +387,35 @@ class AddPage(QWidget):
         self.combo_rating.addItem("Seçiniz")
         self.combo_rating.addItems([str(i) for i in range(1, 11)])
         self.combo_rating.setMinimumHeight(42)
-        self.combo_rating.setStyleSheet("""
-            QComboBox {
+        self.combo_rating.setStyleSheet(f"""
+            QComboBox {{
                 background-color: #FFFFFF;
                 border: 2px solid #E2E8F0;
                 border-radius: 10px;
                 padding: 12px 15px;
                 font-size: 14px;
                 color: #334155;
-            }
-            QComboBox:focus {
+            }}
+            QComboBox:focus {{
                 border: 2px solid #3B82F6;
                 background-color: #F8FAFC;
-            }
-            QComboBox:hover {
+            }}
+            QComboBox:hover {{
                 border: 2px solid #CBD5E1;
-            }
-            QComboBox::drop-down {
+            }}
+            QComboBox::drop-down {{
                 border: none;
                 width: 40px;
                 border-left: 1px solid #E2E8F0;
                 border-radius: 0 8px 8px 0;
                 background-color: #F8FAFC;
-            }
-            QComboBox::down-arrow {
-                image: url(icons/down_arrow.svg);
+            }}
+            QComboBox::down-arrow {{
+                image: url('{arrow_url}');
                 width: 16px;
                 height: 16px;
-            }
-            QComboBox QAbstractItemView {
+            }}
+            QComboBox QAbstractItemView {{
                 border: 2px solid #E2E8F0;
                 border-radius: 8px;
                 background-color: white;
@@ -422,19 +423,19 @@ class AddPage(QWidget):
                 selection-color: white;
                 padding: 8px;
                 font-size: 14px;
-            }
-            QComboBox QAbstractItemView::item {
+            }}
+            QComboBox QAbstractItemView::item {{
                 padding: 10px 15px;
                 border-radius: 5px;
                 margin: 2px;
-            }
-            QComboBox QAbstractItemView::item:hover {
+            }}
+            QComboBox QAbstractItemView::item:hover {{
                 background-color: #FEF3C7;
-            }
-            QComboBox QAbstractItemView::item:selected {
+            }}
+            QComboBox QAbstractItemView::item:selected {{
                 background-color: linear-gradient(to right, #FBBF24, #F59E0B);
                 color: #92400E;
-            }
+            }}
         """)
 
         form_layout.addRow(self.create_label("Puan:"), self.combo_rating)
