@@ -8,25 +8,21 @@ Pagination ve Türkçe içerik filtresi destekler.
 import requests
 import datetime
 import os
-from dotenv import load_dotenv
 from services.recommendation_config import (
     PERIODS, PERIOD_ORDER, FILM_GENRES, DIZI_GENRES, OYUN_GENRES, KITAP_GENRES,
     CULT_MOVIE_IDS, CULT_SERIES_IDS, MIN_VOTE_COUNT, MIN_RATING_ALL_TIME
 )
-
-load_dotenv()
-
-TMDB_API_KEY = os.getenv("TMDB_API_KEY")
-RAWG_API_KEY = os.getenv("RAWG_API_KEY")
 
 # Sayfa başına öğe sayısı
 ITEMS_PER_PAGE = 12
 
 
 class ApiService:
-    def __init__(self):
+    def __init__(self, tmdb_api_key=None, rawg_api_key=None):
         self.tmdb_base_url = "https://api.themoviedb.org/3"
         self.rawg_base_url = "https://api.rawg.io/api"
+        self.tmdb_api_key = tmdb_api_key
+        self.rawg_api_key = rawg_api_key
 
     # =========================================================================
     # YARDIMCI METODLAR
@@ -133,7 +129,7 @@ class ApiService:
         
         url = f"{self.tmdb_base_url}/discover/movie"
         params = {
-            'api_key': TMDB_API_KEY,
+            'api_key': self.tmdb_api_key,
             'language': 'tr-TR',
             'sort_by': 'popularity.desc',
             'primary_release_date.gte': start_date,
@@ -164,7 +160,7 @@ class ApiService:
             # Türkçe için discover endpoint kullan
             url = f"{self.tmdb_base_url}/discover/movie"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'sort_by': 'vote_average.desc',
                 'vote_count.gte': 100,
@@ -174,7 +170,7 @@ class ApiService:
         else:
             url = f"{self.tmdb_base_url}/movie/top_rated"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'page': page
             }
@@ -199,7 +195,7 @@ class ApiService:
         if is_turkish:
             url = f"{self.tmdb_base_url}/discover/movie"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'sort_by': 'popularity.desc',
                 'with_origin_country': 'TR',
@@ -208,7 +204,7 @@ class ApiService:
         else:
             url = f"{self.tmdb_base_url}/movie/popular"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'page': page
             }
@@ -238,7 +234,7 @@ class ApiService:
         for movie_id in movie_ids:
             url = f"{self.tmdb_base_url}/movie/{movie_id}"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR'
             }
             try:
@@ -256,7 +252,7 @@ class ApiService:
         """Gizli hazineler."""
         url = f"{self.tmdb_base_url}/discover/movie"
         params = {
-            'api_key': TMDB_API_KEY,
+            'api_key': self.tmdb_api_key,
             'language': 'tr-TR',
             'sort_by': 'vote_average.desc',
             'vote_count.gte': 50,
@@ -290,7 +286,7 @@ class ApiService:
             start_date, end_date = self.get_date_range('upcoming')
             url = f"{self.tmdb_base_url}/discover/movie"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'sort_by': 'popularity.desc',
                 'primary_release_date.gte': start_date,
@@ -301,7 +297,7 @@ class ApiService:
         else:
             url = f"{self.tmdb_base_url}/movie/upcoming"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'region': 'TR',
                 'page': page
@@ -360,7 +356,7 @@ class ApiService:
         
         url = f"{self.tmdb_base_url}/discover/tv"
         params = {
-            'api_key': TMDB_API_KEY,
+            'api_key': self.tmdb_api_key,
             'language': 'tr-TR',
             'sort_by': 'popularity.desc',
             'first_air_date.gte': start_date,
@@ -390,7 +386,7 @@ class ApiService:
         if is_turkish:
             url = f"{self.tmdb_base_url}/discover/tv"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'sort_by': 'vote_average.desc',
                 'vote_count.gte': 50,
@@ -400,7 +396,7 @@ class ApiService:
         else:
             url = f"{self.tmdb_base_url}/tv/top_rated"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'page': page
             }
@@ -425,7 +421,7 @@ class ApiService:
         if is_turkish:
             url = f"{self.tmdb_base_url}/discover/tv"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'sort_by': 'popularity.desc',
                 'with_origin_country': 'TR',
@@ -434,7 +430,7 @@ class ApiService:
         else:
             url = f"{self.tmdb_base_url}/tv/popular"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'page': page
             }
@@ -464,7 +460,7 @@ class ApiService:
         for series_id in series_ids:
             url = f"{self.tmdb_base_url}/tv/{series_id}"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR'
             }
             try:
@@ -482,7 +478,7 @@ class ApiService:
         """Gizli hazine diziler."""
         url = f"{self.tmdb_base_url}/discover/tv"
         params = {
-            'api_key': TMDB_API_KEY,
+            'api_key': self.tmdb_api_key,
             'language': 'tr-TR',
             'sort_by': 'vote_average.desc',
             'vote_count.gte': 20,
@@ -515,7 +511,7 @@ class ApiService:
         if is_turkish:
             url = f"{self.tmdb_base_url}/discover/tv"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'sort_by': 'popularity.desc',
                 'first_air_date.gte': datetime.datetime.now().strftime("%Y-%m-%d"),
@@ -525,7 +521,7 @@ class ApiService:
         else:
             url = f"{self.tmdb_base_url}/tv/on_the_air"
             params = {
-                'api_key': TMDB_API_KEY,
+                'api_key': self.tmdb_api_key,
                 'language': 'tr-TR',
                 'page': page
             }
@@ -581,7 +577,7 @@ class ApiService:
         
         url = f"{self.rawg_base_url}/games"
         params = {
-            'key': RAWG_API_KEY,
+            'key': self.rawg_api_key,
             'dates': f"{start_date},{end_date}",
             'ordering': '-added',
             'page_size': ITEMS_PER_PAGE,
@@ -608,7 +604,7 @@ class ApiService:
         """En iyi oyunlar."""
         url = f"{self.rawg_base_url}/games"
         params = {
-            'key': RAWG_API_KEY,
+            'key': self.rawg_api_key,
             'ordering': '-metacritic',
             'metacritic': '80,100',
             'page_size': ITEMS_PER_PAGE,
@@ -635,7 +631,7 @@ class ApiService:
         """En popüler oyunlar."""
         url = f"{self.rawg_base_url}/games"
         params = {
-            'key': RAWG_API_KEY,
+            'key': self.rawg_api_key,
             'ordering': '-added',
             'page_size': ITEMS_PER_PAGE,
             'page': page
@@ -665,7 +661,7 @@ class ApiService:
         
         url = f"{self.rawg_base_url}/games"
         params = {
-            'key': RAWG_API_KEY,
+            'key': self.rawg_api_key,
             'dates': f"{start_date},{end_date}",
             'ordering': 'released',
             'page_size': ITEMS_PER_PAGE,

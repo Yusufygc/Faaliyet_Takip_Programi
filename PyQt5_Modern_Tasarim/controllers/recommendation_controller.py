@@ -9,6 +9,7 @@ from services.recommendation_config import (
     PERIODS, PERIOD_ORDER, FILM_GENRES, DIZI_GENRES, OYUN_GENRES, KITAP_GENRES
 )
 from database.recommendation_repository import RecommendationRepository
+from database.repository import ActivityRepository
 from controllers.workers import DbWorker
 from logger_setup import logger
 
@@ -20,7 +21,12 @@ class RecommendationController:
     """
     
     def __init__(self):
-        self.api_service = ApiService()
+        # API anahtarlarını çek
+        repo = ActivityRepository()
+        tmdb_key = repo.get_setting("tmdb_api_key")
+        rawg_key = repo.get_setting("rawg_api_key")
+        
+        self.api_service = ApiService(tmdb_key, rawg_key)
         self.cache_repo = RecommendationRepository()
         self.workers = set()
         

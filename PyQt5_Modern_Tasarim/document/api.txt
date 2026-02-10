@@ -1,0 +1,8 @@
+# --- API Keys (Kullanıcı tarafından doldurulmalı veya GUI üzerinden girilmeli) ---
+# TMDB (The Movie Database) - Film/Dizi için
+# Kayıt: https://www.themoviedb.org/documentation/api
+TMDB_API_KEY = "7e8307be09317152cce48f3c8ec98fe3" # Demo Key (or Placeholder)
+
+# RAWG - Oyunlar için
+# Kayıt: https://rawg.io/apidocs
+RAWG_API_KEY = "a3c68445c67741a8a19fbe74c7067dfe" # Demo Key (or Placeholder)

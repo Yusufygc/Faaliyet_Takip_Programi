@@ -20,6 +20,7 @@ class ActivityRepository:
         self.check_and_migrate_schema()
         self.ensure_plans_table_exists()
         self.ensure_folders_table_exists()
+        self.ensure_settings_table_exists()
 
     def check_and_migrate_schema(self):
         """Veritabanı şemasını kontrol eder ve eksik kolonları ekler."""
@@ -882,6 +883,59 @@ class ActivityRepository:
             return True
         except Exception as e:
             logger.error(f"Hata (Repository.delete_folder): {e}")
+            return False
+        finally:
+            if conn: conn.close()
+
+    # --- Uygulama Ayarları (Key-Value) ---
+
+    def ensure_settings_table_exists(self):
+        """Ayarlar tablosunu oluşturur."""
+        sql = '''
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        '''
+        try:
+            conn = get_connection()
+            if not conn: return
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            conn.commit()
+        except Exception as e:
+            logger.error(f"Hata (Repository.ensure_settings_table_exists): {e}")
+        finally:
+            if conn: conn.close()
+
+    def get_setting(self, key: str) -> str | None:
+        """Belirtilen anahtarın değerini döndürür."""
+        sql = "SELECT value FROM settings WHERE key = ?"
+        try:
+            conn = get_connection()
+            if not conn: return None
+            cursor = conn.cursor()
+            cursor.execute(sql, (key,))
+            row = cursor.fetchone()
+            return row[0] if row else None
+        except Exception as e:
+            logger.error(f"Hata (Repository.get_setting): {e}")
+            return None
+        finally:
+            if conn: conn.close()
+
+    def set_setting(self, key: str, value: str) -> bool:
+        """Ayarı kaydeder veya günceller."""
+        sql = "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)"
+        try:
+            conn = get_connection()
+            if not conn: return False
+            cursor = conn.cursor()
+            cursor.execute(sql, (key, value))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Hata (Repository.set_setting): {e}")
             return False
         finally:
             if conn: conn.close()

@@ -2,7 +2,7 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QListWidget, QLineEdit, QMessageBox, 
                              QInputDialog, QFrame, QGraphicsDropShadowEffect,
-                             QListWidgetItem)
+                             QListWidgetItem, QGridLayout)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 
@@ -35,12 +35,42 @@ class SettingsPage(QWidget):
             padding-bottom: 5px;
         """)
         main_layout.addWidget(title)
+        
+        # --- Kartlar Alanı ---
+        # Grid Layout Kullanımı
+        cards_layout = QGridLayout()
+        cards_layout.setSpacing(20)
+        cards_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
-        # --- Faaliyet Türleri Yönetimi Kartı ---
-        self.card = QFrame()
-        self.card.setObjectName("Card")
-        self.card.setMaximumWidth(650) # Kart genişletildi
-        self.card.setStyleSheet("""
+        # 3 sütun için esneklik ayarları (Eşit genişlik)
+        cards_layout.setColumnStretch(0, 1)
+        cards_layout.setColumnStretch(1, 1)        
+        cards_layout.setColumnStretch(2, 1)
+
+        # --- API Konfigürasyon Kartı (0,0) ---
+        self.api_card = self._create_api_stats_card()
+        cards_layout.addWidget(self.api_card, 0, 0)
+
+        # --- Faaliyet Türleri Yönetimi Kartı (0,1) ---
+        self.card = self._create_activity_types_card()
+        cards_layout.addWidget(self.card, 0, 1)
+        
+        # (0,2) şu an boş kalacak
+        
+        main_layout.addLayout(cards_layout)
+        main_layout.addStretch()
+
+        # İlk veri yükleme
+        self.refresh_types()
+        self.load_api_keys()
+
+    def _create_activity_types_card(self):
+        """Faaliyet türleri yönetimi için kart oluşturur."""
+        card = QFrame()
+        card.setObjectName("Card")
+        # Maksimum genişliği kaldırıyoruz veya grid'e uyumlu yapıyoruz
+        # card.setMaximumWidth(650) 
+        card.setStyleSheet("""
             QFrame#Card {
                 background-color: #FFFFFF;
                 border: 1px solid #E0E0E0;
@@ -48,15 +78,14 @@ class SettingsPage(QWidget):
             }
         """)
         
-        # Gölge efekti
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(15)
         shadow.setXOffset(0)
         shadow.setYOffset(3)
         shadow.setColor(QColor(0, 0, 0, 30))
-        self.card.setGraphicsEffect(shadow)
+        card.setGraphicsEffect(shadow)
         
-        card_layout = QVBoxLayout(self.card)
+        card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 15, 18, 15)
         card_layout.setSpacing(10)
 
@@ -212,11 +241,131 @@ class SettingsPage(QWidget):
         content_layout.addLayout(btn_layout)
         card_layout.addLayout(content_layout)
         
-        main_layout.addWidget(self.card, 0, Qt.AlignLeft | Qt.AlignTop)
-        main_layout.addStretch()
+        return card
 
-        # İlk veri yükleme
-        self.refresh_types()
+    def _create_api_stats_card(self):
+        """API Anahtarları yönetimi için kart oluşturur."""
+        card = QFrame()
+        card.setObjectName("ApiCard")
+        # card.setMaximumWidth(650) # Grid içinde esneyecek
+        card.setStyleSheet("""
+            QFrame#ApiCard {
+                background-color: #FFFFFF;
+                border: 1px solid #E0E0E0;
+                border-radius: 12px;
+            }
+        """)
+        
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(15)
+        shadow.setXOffset(0)
+        shadow.setYOffset(3)
+        shadow.setColor(QColor(0, 0, 0, 30))
+        card.setGraphicsEffect(shadow)
+        
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 15, 18, 15)
+        layout.setSpacing(10)
+        
+        # Başlık ve Açıklama
+        header = QLabel("🔑 API Yapılandırması")
+        header.setStyleSheet("font-size: 18px; font-weight: bold; color: #34495E; border: none;")
+        layout.addWidget(header)
+        
+        desc = QLabel("Keşfet sayfası ve öneri sistemi için gerekli API anahtarlarını buradan yönetebilirsiniz. (Değişikliklerin etkili olması için uygulamayı yeniden başlatmanız önerilir.)")
+        desc.setStyleSheet("color: #95A5A6; font-size: 13px; border: none;")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+        
+        # Form
+        form_layout = QVBoxLayout()
+        form_layout.setSpacing(12)
+        
+        # TMDB
+        tmdb_lbl = QLabel("TMDB API Key (Film/Dizi):")
+        tmdb_lbl.setStyleSheet("font-weight: bold; color: #555;")
+        self.txt_tmdb = QLineEdit()
+        self.txt_tmdb.setPlaceholderText("TMDB API Anahtarını giriniz...")
+        self.txt_tmdb.setEchoMode(QLineEdit.Password)
+        self.txt_tmdb.setStyleSheet(self._input_style())
+        form_layout.addWidget(tmdb_lbl)
+        form_layout.addWidget(self.txt_tmdb)
+        
+        # RAWG
+        rawg_lbl = QLabel("RAWG API Key (Oyun):")
+        rawg_lbl.setStyleSheet("font-weight: bold; color: #555;")
+        self.txt_rawg = QLineEdit()
+        self.txt_rawg.setPlaceholderText("RAWG API Anahtarını giriniz...")
+        self.txt_rawg.setEchoMode(QLineEdit.Password)
+        self.txt_rawg.setStyleSheet(self._input_style())
+        form_layout.addWidget(rawg_lbl)
+        form_layout.addWidget(self.txt_rawg)
+        
+        # Kaydet Butonu
+        btn_save = QPushButton("💾 Kaydet")
+        btn_save.setCursor(Qt.PointingHandCursor)
+        btn_save.setFixedWidth(120)
+        btn_save.clicked.connect(self.save_api_keys)
+        btn_save.setStyleSheet("""
+            QPushButton {
+                background-color: #2980B9;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 10px 15px;
+                font-weight: 600;
+                font-size: 14px;
+            }
+            QPushButton:hover { background-color: #3498DB; }
+        """)
+        
+        layout.addLayout(form_layout)
+        layout.addWidget(btn_save, 0, Qt.AlignRight)
+        
+        return card
+
+    def _input_style(self):
+        return """
+            QLineEdit {
+                border: 1px solid #E0E0E0;
+                border-radius: 6px;
+                padding: 8px 12px;
+                background-color: #FAFAFA;
+            }
+            QLineEdit:focus {
+                border: 1px solid #3498DB;
+                background-color: #FFFFFF;
+            }
+        """
+
+    def load_api_keys(self):
+        """API anahtarlarını yükler."""
+        self.controller.get_api_keys(self.on_keys_loaded)
+
+    def on_keys_loaded(self, keys):
+        if keys:
+            self.txt_tmdb.setText(keys.get("tmdb_api_key", ""))
+            self.txt_rawg.setText(keys.get("rawg_api_key", ""))
+
+    def save_api_keys(self):
+        """API anahtarlarını kaydeder."""
+        tmdb = self.txt_tmdb.text()
+        rawg = self.txt_rawg.text()
+        self.controller.save_api_keys(tmdb, rawg, self.on_save_keys_finished)
+
+    def on_save_keys_finished(self, result):
+        success, msg = result
+        if success:
+            if self.window().statusBar():
+                self.window().statusBar().showMessage(f"✅ {msg}", 3000)
+            
+            # Label'ları (Input alanlarını) temizle
+            self.txt_tmdb.clear()
+            self.txt_rawg.clear()
+            
+            QMessageBox.information(self, "Bilgi", "Ayarlar kaydedildi.\nDeğişikliklerin tam olarak yansıması için uygulamayı yeniden başlatmanız gerekebilir.")
+        else:
+            QMessageBox.warning(self, "Hata", msg)
 
     def create_btn(self, text, color, hover_color, func):
         btn = QPushButton(text)

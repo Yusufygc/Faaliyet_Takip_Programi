@@ -19,7 +19,6 @@ python -m nuitka ^
     --enable-plugin=pyqt5 ^
     --include-data-dir=icons=icons ^
     --include-data-dir=fonts=fonts ^
-    --include-data-file=.env=.env ^
     --windows-disable-console ^
     --windows-icon-from-ico=icons/icon.ico ^
     --output-dir=dist ^

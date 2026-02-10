@@ -337,3 +337,24 @@ class MainController:
         def op():
             return self.repository.delete_folder(folder_id), "Klasör silindi."
         self._run_async(lambda: op(), lambda res: callback(res))
+
+    # --- API Anahtarı Yönetimi ---
+
+    def get_api_keys(self, callback):
+        """Kaydedilmiş API anahtarlarını getirir."""
+        def op():
+            tmdb = self.repository.get_setting("tmdb_api_key") or ""
+            rawg = self.repository.get_setting("rawg_api_key") or ""
+            return {"tmdb_api_key": tmdb, "rawg_api_key": rawg}
+        self._run_async(op, callback)
+
+    def save_api_keys(self, tmdb_key, rawg_key, callback):
+        """API anahtarlarını kaydeder."""
+        def op():
+            r1 = self.repository.set_setting("tmdb_api_key", tmdb_key.strip())
+            r2 = self.repository.set_setting("rawg_api_key", rawg_key.strip())
+            if r1 and r2:
+                return True, "API anahtarları başarıyla kaydedildi."
+            else:
+                return False, "Kayıt sırasında hata oluştu."
+        self._run_async(op, callback)
