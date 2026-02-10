@@ -255,7 +255,7 @@ class MainController:
 
     # --- Plan / Hedef İşlemleri ---
 
-    def add_plan(self, title, description, scope, year, month, priority, callback):
+    def add_plan(self, title, description, scope, year, month, priority, folder_id, callback):
         """Yeni plan ekler."""
         if not title:
             callback((False, "Başlık boş olamaz."))
@@ -263,14 +263,14 @@ class MainController:
             
         created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # Yeni plan status='planned', progress=0 başlar
-        plan = Plan(None, title, description, scope, year, month, 'planned', 0, priority, created_at)
+        plan = Plan(None, title, description, scope, year, month, 'planned', 0, priority, created_at, folder_id)
         
         def op():
             return self.repository.add_plan(plan), "Plan eklendi."
             
         self._run_async(lambda: op(), lambda res: callback((res[0], res[1]) if isinstance(res, tuple) else (res, "")))
 
-    def update_plan(self, plan_id, title, description, status, progress, priority, callback):
+    def update_plan(self, plan_id, title, description, status, progress, priority, folder_id, callback):
         """Plan günceller."""
         if not title:
             callback((False, "Başlık boş olamaz."))
@@ -280,10 +280,10 @@ class MainController:
         # Not: Created_at, Scope, Year, Month değişmez varsayıyoruz düzenlemede
         # Hızlı çözüm: Repository sadece ilgili alanları güncelliyor, o yüzden dummy değerler verebiliriz
         # ama en doğrusu repository update metoduna uygun nesne yollamak.
-        # Repository update_plan sql: title=?, description=?, status=?, progress=?, priority=? WHERE id=?
+        # Repository update_plan sql: title=?, description=?, status=?, progress=?, priority=?, folder_id=? WHERE id=?
         # Diğer alanlar (scope, year, month) kullanılmıyor.
         
-        plan = Plan(plan_id, title, description, "", 0, 0, status, progress, priority, "")
+        plan = Plan(plan_id, title, description, "", 0, 0, status, progress, priority, "", folder_id)
         
         def op():
             return self.repository.update_plan(plan), "Plan güncellendi."
@@ -305,3 +305,35 @@ class MainController:
     def get_plans(self, scope, year, month, callback):
         """Planları getirir."""
         self._run_async(self.repository.get_plans, callback, scope, year, month)
+
+    # --- Folder (Klasör) İşlemleri ---
+
+    def get_folders(self, callback):
+        """Klasörleri getirir."""
+        self._run_async(self.repository.get_folders, callback)
+
+    def add_folder(self, name, callback):
+        """Yeni klasör ekler."""
+        if not name or not name.strip():
+            callback((False, "Klasör adı boş olamaz."))
+            return
+        
+        def op():
+            return self.repository.add_folder(name.strip()), "Klasör eklendi."
+        self._run_async(lambda: op(), lambda res: callback(res))
+
+    def update_folder(self, folder_id, name, callback):
+        """Klasör adını günceller."""
+        if not name or not name.strip():
+            callback((False, "Klasör adı boş olamaz."))
+            return
+            
+        def op():
+            return self.repository.update_folder(folder_id, name.strip()), "Klasör güncellendi."
+        self._run_async(lambda: op(), lambda res: callback(res))
+
+    def delete_folder(self, folder_id, callback):
+        """Klasör siler."""
+        def op():
+            return self.repository.delete_folder(folder_id), "Klasör silindi."
+        self._run_async(lambda: op(), lambda res: callback(res))

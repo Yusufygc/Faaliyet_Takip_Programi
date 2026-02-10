@@ -38,6 +38,17 @@ class Activity:
         return f"[{date_str}] {self.type.upper()}: {self.name} ({puan}/10)"
 
 @dataclass
+class Folder:
+    """Proje/Klasör Modeli."""
+    id: int
+    name: str
+    created_at: str
+
+    @classmethod
+    def from_row(cls, row):
+        return cls(*row)
+
+@dataclass
 class Plan:
     """Yıllık ve Aylık Plan/Hedef Modeli."""
     id: int
@@ -50,6 +61,7 @@ class Plan:
     progress: int # 0-100
     priority: str # 'low', 'medium', 'high'
     created_at: str
+    folder_id: Optional[int] = None # Proje/Klasör ID'si
 
     @classmethod
     def from_row(cls, row):
