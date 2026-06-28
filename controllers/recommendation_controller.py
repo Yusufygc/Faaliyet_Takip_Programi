@@ -9,9 +9,11 @@ from services.recommendation_config import (
     PERIODS, PERIOD_ORDER, FILM_GENRES, DIZI_GENRES, OYUN_GENRES, KITAP_GENRES
 )
 from database.recommendation_repository import RecommendationRepository
-from database.repository import ActivityRepository
+from database.type_repository import TypeRepository
 from controllers.workers import DbWorker
 from logger_setup import logger
+
+_KEYRING_APP = "FaaliyetTakip"
 
 
 class RecommendationController:
@@ -19,17 +21,17 @@ class RecommendationController:
     Öneri servisi ile UI arasındaki bağlantıyı yönetir.
     Cache-first stratejisi ile API çağrılarını minimize eder.
     """
-    
+
     def __init__(self):
-        # API anahtarlarını çek
-        repo = ActivityRepository()
-        tmdb_key = repo.get_setting("tmdb_api_key")
-        rawg_key = repo.get_setting("rawg_api_key")
-        
+        import keyring
+        type_repo = TypeRepository()
+        tmdb_key = keyring.get_password(_KEYRING_APP, "tmdb_api_key") or type_repo.get_setting("tmdb_api_key") or ""
+        rawg_key = keyring.get_password(_KEYRING_APP, "rawg_api_key") or type_repo.get_setting("rawg_api_key") or ""
+
         self.api_service = ApiService(tmdb_key, rawg_key)
         self.cache_repo = RecommendationRepository()
         self.workers = set()
-        
+
         # Başlangıçta eski cache'i temizle
         self._cleanup_old_cache()
 
