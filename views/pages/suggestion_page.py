@@ -1,115 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Keşfet & Öneriler sayfası.
-Film, Dizi, Oyun ve Kitap önerileri sunar.
-Pagination, cache ve Türkçe içerik filtresi destekler.
-"""
 
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QScrollArea, QFrame, QGridLayout, 
-                             QComboBox, QCheckBox, QSizePolicy)
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                             QPushButton, QScrollArea, QFrame, QGridLayout,
+                             QComboBox, QCheckBox, QDialog)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage
 from controllers.recommendation_controller import RecommendationController
-import requests
-from controllers.workers import DbWorker
-
-
-class AsyncImage(QLabel):
-    """URL'den resim yükleyen QLabel sınıfı."""
-    
-    def __init__(self, url, width=100, height=150):
-        super().__init__()
-        self._workers = []
-        self.setFixedSize(width, height)
-        self.setStyleSheet("background-color: #333; border-radius: 8px;")
-        self.setAlignment(Qt.AlignCenter)
-        self.setText("...")
-        self.url = url
-        if url:
-            self.load_image()
-
-    def load_image(self):
-        worker = DbWorker(self.fetch_image)
-        worker.finished.connect(self.set_image)
-        worker.finished.connect(lambda: self._workers.remove(worker) if worker in self._workers else None)
-        self._workers.append(worker)
-        worker.start()
-
-    def fetch_image(self):
-        try:
-            response = requests.get(self.url, stream=True, timeout=10)
-            if response.status_code == 200:
-                img = QImage()
-                img.loadFromData(response.content)
-                return img
-        except Exception:
-            return None
-        return None
-
-    def set_image(self, image):
-        if image and not image.isNull():
-            self.setPixmap(QPixmap.fromImage(image).scaled(
-                self.width(), self.height(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation
-            ))
-            self.setText("")
-        else:
-            self.setText("📷")
-
-
-class SuggestionCard(QFrame):
-    """Öneri kartı widget'ı."""
-    
-    def __init__(self, data):
-        super().__init__()
-        self.data = data
-        self.init_ui()
-
-    def init_ui(self):
-        self.setFixedSize(220, 360)  # Kart boyutu büyütüldü
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #2b2b2b;
-                border: 1px solid #3d3d3d;
-                border-radius: 12px;
-            }
-            QFrame:hover {
-                background-color: #383838;
-                border: 1px solid #666;
-            }
-            QLabel { background-color: transparent; border: none; }
-        """)
-        
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        
-        # Image
-        img_url = self.data.get('image')
-        self.img_lbl = AsyncImage(img_url, 200, 260) # Resim boyutu büyütüldü
-        layout.addWidget(self.img_lbl, alignment=Qt.AlignCenter)
-        
-        # Title
-        title = self.data.get('title', 'Başlık Yok')
-        title_lbl = QLabel(title)
-        title_lbl.setStyleSheet("color: white; font-weight: bold; font-size: 14px;") # Font büyütüldü
-        title_lbl.setWordWrap(True)
-        title_lbl.setFixedHeight(35)
-        layout.addWidget(title_lbl)
-        
-        # Rating & Date
-        meta_layout = QHBoxLayout()
-        rating = self.data.get('rating', 0) or 0
-        rating_lbl = QLabel(f"⭐ {rating:.1f}")
-        rating_lbl.setStyleSheet("color: #FFC107; font-size: 11px;")
-        
-        date_str = str(self.data.get('date', ''))[:4] if self.data.get('date') else ''
-        date_lbl = QLabel(date_str)
-        date_lbl.setStyleSheet("color: #888; font-size: 11px;")
-        
-        meta_layout.addWidget(rating_lbl)
-        meta_layout.addStretch()
-        meta_layout.addWidget(date_lbl)
-        layout.addLayout(meta_layout)
+from views.widgets.async_image import AsyncImage
+from views.widgets.suggestion_card import SuggestionCard
 
 
 class SuggestionPage(QWidget):
@@ -518,27 +415,22 @@ class SuggestionPage(QWidget):
             QMessageBox.warning(self, "Hata", "Rastgele öneri bulunamadı. Lütfen tekrar deneyin.")
 
     def _show_random_modal(self, data):
-        """Rastgele öneriyi modal pencerede gösterir."""
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
-        
         dialog = QDialog(self)
         dialog.setWindowTitle("Rastgele Öneri")
         dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         dialog.setFixedSize(450, 550)
         dialog.setStyleSheet("""
-            QDialog {
-                background-color: #1a1a2e;
-            }
-            QLabel {
-                color: white;
-            }
+            QDialog { background-color: #1a1a2e; }
+            QLabel { color: white; }
         """)
-        
         layout = QVBoxLayout(dialog)
         layout.setSpacing(15)
         layout.setContentsMargins(20, 20, 20, 20)
-        
-        # Kategori badge
+        self._build_random_dialog_content(layout, data)
+        self._build_random_dialog_buttons(layout, dialog)
+        dialog.exec_()
+
+    def _build_random_dialog_content(self, layout, data):
         category = data.get('random_category', data.get('type', 'İçerik'))
         cat_label = QLabel(f"📌 {category}")
         cat_label.setStyleSheet("""
@@ -551,44 +443,32 @@ class SuggestionPage(QWidget):
         """)
         cat_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(cat_label, alignment=Qt.AlignCenter)
-        
-        # Poster
+
         img_url = data.get('image')
         if img_url:
             img_label = AsyncImage(img_url, 200, 280)
             layout.addWidget(img_label, alignment=Qt.AlignCenter)
-        
-        # Başlık
-        title = data.get('title', 'Bilinmiyor')
-        title_label = QLabel(title)
-        title_label.setStyleSheet("""
-            font-size: 18px;
-            font-weight: bold;
-            color: #fff;
-        """)
+
+        title_label = QLabel(data.get('title', 'Bilinmiyor'))
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #fff;")
         title_label.setWordWrap(True)
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
-        
-        # Rating & Date
+
         meta_layout = QHBoxLayout()
-        
         rating = data.get('rating', 0) or 0
         rating_label = QLabel(f"⭐ {rating:.1f}/10")
         rating_label.setStyleSheet("color: #FFC107; font-size: 14px; font-weight: bold;")
-        
         date_str = str(data.get('date', ''))[:4] if data.get('date') else ''
         date_label = QLabel(f"📅 {date_str}" if date_str else "")
         date_label.setStyleSheet("color: #aaa; font-size: 14px;")
-        
         meta_layout.addStretch()
         meta_layout.addWidget(rating_label)
         meta_layout.addSpacing(20)
         meta_layout.addWidget(date_label)
         meta_layout.addStretch()
         layout.addLayout(meta_layout)
-        
-        # Açıklama
+
         desc = data.get('description', '')
         if desc:
             desc_label = QLabel(desc[:200])
@@ -596,12 +476,12 @@ class SuggestionPage(QWidget):
             desc_label.setWordWrap(True)
             desc_label.setAlignment(Qt.AlignCenter)
             layout.addWidget(desc_label)
-        
+
         layout.addStretch()
-        
-        # Butonlar
+
+    def _build_random_dialog_buttons(self, layout, dialog):
         btn_layout = QHBoxLayout()
-        
+
         btn_another = QPushButton("🔄 Başka Öneri")
         btn_another.setCursor(Qt.PointingHandCursor)
         btn_another.setStyleSheet("""
@@ -616,7 +496,7 @@ class SuggestionPage(QWidget):
             QPushButton:hover { background-color: #546e7a; }
         """)
         btn_another.clicked.connect(lambda: self._refresh_random_modal(dialog))
-        
+
         btn_close = QPushButton("✓ Tamam")
         btn_close.setCursor(Qt.PointingHandCursor)
         btn_close.setStyleSheet("""
@@ -631,12 +511,10 @@ class SuggestionPage(QWidget):
             QPushButton:hover { background-color: #43a047; }
         """)
         btn_close.clicked.connect(dialog.accept)
-        
+
         btn_layout.addWidget(btn_another)
         btn_layout.addWidget(btn_close)
         layout.addLayout(btn_layout)
-        
-        dialog.exec_()
 
     def _refresh_random_modal(self, dialog):
         """Modal içinde yeni rastgele öneri getir."""

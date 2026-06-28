@@ -1,8 +1,7 @@
 # views/pages/add_page.py
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, 
-                             QTextEdit, QComboBox, QPushButton, QMessageBox, 
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit,
+                             QTextEdit, QComboBox, QPushButton, QMessageBox,
                              QDateEdit, QFormLayout, QFrame, QShortcut, QCompleter, QCheckBox, QHBoxLayout)
-from PyQt5.QtCore import QDate, Qt, QLocale, QTimer
 from PyQt5.QtCore import QDate, Qt, QLocale, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
 from utils import get_resource_path
@@ -16,20 +15,18 @@ class AddPage(QWidget):
         super().__init__()
         self.controller = controller
         self.init_ui()
-        
+
         # Klavye Kısayolu: Ctrl+S
         self.shortcut_save = QShortcut(QKeySequence("Ctrl+S"), self)
         self.shortcut_save.activated.connect(self.handle_save)
 
     def init_ui(self):
-        # Ana Layout (Sayfayı ortalamak için)
         main_layout = QVBoxLayout(self)
-        main_layout.setAlignment(Qt.AlignCenter) # İçeriği dikeyde ve yatayda ortala
+        main_layout.setAlignment(Qt.AlignCenter)
 
-        # --- Form Kartı (Card) ---
         card = QFrame()
-        card.setObjectName("AddCard") # Özel stil için ID
-        card.setFixedSize(520, 620) # Biraz daha geniş
+        card.setObjectName("AddCard")
+        card.setFixedSize(520, 620)
         card.setStyleSheet("""
             QFrame#AddCard {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
@@ -38,12 +35,19 @@ class AddPage(QWidget):
                 border: 3px solid #E2E8F0;
             }
         """)
-        
+
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(35, 25, 35, 30)
         card_layout.setSpacing(15)
 
-        # --- Başarı Mesajı Alanı ---
+        self._build_header(card_layout)
+        self._build_form(card_layout)
+        self._build_buttons(card_layout)
+        self._build_footer(card_layout)
+
+        main_layout.addWidget(card)
+
+    def _build_header(self, card_layout):
         self.lbl_success = QLabel("")
         self.lbl_success.setAlignment(Qt.AlignCenter)
         self.lbl_success.setStyleSheet("""
@@ -61,7 +65,6 @@ class AddPage(QWidget):
         self.lbl_success.hide()
         card_layout.addWidget(self.lbl_success)
 
-        # Başlık
         title = QLabel("YENİ FAALİYET EKLE")
         title_font = QFont()
         title_font.setFamily("Segoe UI")
@@ -71,8 +74,7 @@ class AddPage(QWidget):
         title.setStyleSheet("color: #1E293B; background: transparent; border: none;")
         title.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(title)
-        
-        # Açıklama metni
+
         desc = QLabel("Faaliyet bilgilerini aşağıdaki formu doldurarak ekleyebilirsiniz")
         desc.setStyleSheet("""
             QLabel {
@@ -86,62 +88,13 @@ class AddPage(QWidget):
         desc.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(desc)
 
-        # Form Elemanları
+    def _build_form(self, card_layout):
         form_layout = QFormLayout()
         form_layout.setSpacing(16)
         form_layout.setVerticalSpacing(12)
         form_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        
-        # Form elemanları için genel stil
-        input_style = f"""
-            QComboBox, QLineEdit, QDateEdit, QTextEdit {{
-                background-color: #FFFFFF;
-                border: 2px solid #E2E8F0;
-                border-radius: 10px;
-                padding: 12px 15px;
-                font-size: 14px;
-                color: #334155;
-                selection-background-color: #3B82F6;
-                selection-color: white;
-            }}
-            QComboBox:focus, QLineEdit:focus, QDateEdit:focus, QTextEdit:focus {{
-                border: 2px solid #3B82F6;
-                background-color: #F8FAFC;
-            }}
-            QComboBox:hover, QLineEdit:hover, QDateEdit:hover {{
-                border: 2px solid #CBD5E1;
-            }}
-            QComboBox::drop-down {{
-                border: none;
-                width: 40px;
-            }}
-            QComboBox::down-arrow {{
-                image: url('{arrow_url}');
-                width: 16px;
-                height: 16px;
-            }}
-            QComboBox QAbstractItemView {{
-                border: 2px solid #E2E8F0;
-                border-radius: 8px;
-                background-color: white;
-                selection-background-color: #3B82F6;
-                selection-color: white;
-                padding: 8px;
-                font-size: 14px;
-            }}
-            QComboBox QAbstractItemView::item {{
-                padding: 10px 15px;
-                border-radius: 5px;
-                margin: 2px;
-            }}
-            QComboBox QAbstractItemView::item:hover {{
-                background-color: #F1F5F9;
-            }}
-        """
 
-
-
-        # 1. Tür - Modern Combobox
+        # 1. Tür
         self.combo_type = QComboBox()
         self.combo_type.setMinimumHeight(42)
         self.combo_type.setStyleSheet(f"""
@@ -195,9 +148,7 @@ class AddPage(QWidget):
                 color: white;
             }}
         """)
-
-        # Türleri yükle
-        self.load_types() 
+        self.load_types()
         form_layout.addRow(self.create_label("Tür:"), self.combo_type)
 
         # 2. Ad
@@ -226,19 +177,17 @@ class AddPage(QWidget):
             }
         """)
         form_layout.addRow(self.create_label("Ad:"), self.input_name)
-        
-        # Otomatik Tamamlamayı Başlat
         self.setup_autocomplete()
 
-        # 3. Tarih - Modern DatePicker
+        # 3. Tarih
         date_layout = QHBoxLayout()
         date_layout.setContentsMargins(0, 0, 0, 0)
         date_layout.setSpacing(10)
-        
+
         self.input_date = QDateEdit()
         self.input_date.setCalendarPopup(True)
         self.input_date.setLocale(QLocale(QLocale.Turkish, QLocale.Turkey))
-        self.input_date.setDisplayFormat("d MMMM yyyy") 
+        self.input_date.setDisplayFormat("d MMMM yyyy")
         self.input_date.setDate(QDate.currentDate())
         self.input_date.setMinimumHeight(42)
         self.input_date.setStyleSheet(f"""
@@ -271,11 +220,8 @@ class AddPage(QWidget):
             }}
         """)
 
-        
-        # Bitiş Tarihi Checkbox - Modern toggle
-        self.chk_range = QCheckBox("Bitiş Tarihi")
-        # Checkbox Stili
         check_url = get_resource_path("icons/check.svg").replace("\\", "/")
+        self.chk_range = QCheckBox("Bitiş Tarihi")
         self.chk_range.setStyleSheet(f"""
             QCheckBox {{
                 color: #475569;
@@ -299,19 +245,17 @@ class AddPage(QWidget):
                 border-color: #94A3B8;
             }}
         """)
-
         self.chk_range.toggled.connect(self.on_range_toggled)
-        
+
         date_layout.addWidget(self.input_date, 70)
         date_layout.addWidget(self.chk_range, 30)
-        
         form_layout.addRow(self.create_label("Tarih:"), date_layout)
-        
+
         # 3.1 Bitiş Tarihi
         self.input_end_date = QDateEdit()
         self.input_end_date.setCalendarPopup(True)
         self.input_end_date.setLocale(QLocale(QLocale.Turkish, QLocale.Turkey))
-        self.input_end_date.setDisplayFormat("d MMMM yyyy") 
+        self.input_end_date.setDisplayFormat("d MMMM yyyy")
         self.input_end_date.setDate(QDate.currentDate().addDays(1))
         self.input_end_date.setMinimumHeight(42)
         self.input_end_date.setStyleSheet(f"""
@@ -344,18 +288,12 @@ class AddPage(QWidget):
             }}
         """)
 
-        
-        # Label ve widget'ı saklamak için referansları tutuyoruz
         self.lbl_end_date = self.create_label("Bitiş:")
-        
-        # Form layout'a ekle ama gizle
         form_layout.addRow(self.lbl_end_date, self.input_end_date)
-        
-        # İlk başta gizle
         self.lbl_end_date.hide()
         self.input_end_date.hide()
 
-        # 4. Yorum - Modern TextEdit
+        # 4. Yorum
         self.input_comment = QTextEdit()
         self.input_comment.setMaximumHeight(100)
         self.input_comment.setPlaceholderText("Düşünceleriniz, notlarınız, izlenimleriniz...")
@@ -382,7 +320,7 @@ class AddPage(QWidget):
         """)
         form_layout.addRow(self.create_label("Yorum:"), self.input_comment)
 
-        # 5. Puan - Star Rating gibi combobox
+        # 5. Puan
         self.combo_rating = QComboBox()
         self.combo_rating.addItem("Seçiniz")
         self.combo_rating.addItems([str(i) for i in range(1, 11)])
@@ -437,18 +375,16 @@ class AddPage(QWidget):
                 color: #92400E;
             }}
         """)
-
         form_layout.addRow(self.create_label("Puan:"), self.combo_rating)
 
         card_layout.addLayout(form_layout)
 
-        # Kaydet Butonu - Modern gradient button
+    def _build_buttons(self, card_layout):
         card_layout.addSpacing(20)
-        
+
         button_layout = QHBoxLayout()
         button_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Temizle butonu
+
         self.btn_clear = QPushButton("Temizle")
         self.btn_clear.setCursor(Qt.PointingHandCursor)
         self.btn_clear.setMinimumHeight(48)
@@ -473,8 +409,7 @@ class AddPage(QWidget):
                 background: #CBD5E1;
             }
         """)
-        
-        # Kaydet butonu
+
         self.btn_save = QPushButton("Kaydet")
         self.btn_save.setCursor(Qt.PointingHandCursor)
         self.btn_save.setMinimumHeight(48)
@@ -504,14 +439,13 @@ class AddPage(QWidget):
                 color: #CBD5E1;
             }
         """)
-        
+
         button_layout.addWidget(self.btn_clear)
         button_layout.addWidget(self.btn_save)
         button_layout.setAlignment(Qt.AlignCenter)
-        
         card_layout.addLayout(button_layout)
-        
-        # Alt bilgi
+
+    def _build_footer(self, card_layout):
         footer = QLabel("📌 Tüm alanları doldurup kaydedebilirsiniz")
         footer.setStyleSheet("""
             QLabel {
@@ -525,10 +459,7 @@ class AddPage(QWidget):
         footer.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(footer)
 
-        main_layout.addWidget(card)
-
     def create_label(self, text):
-        """Modern form etiketi oluşturur"""
         label = QLabel(text)
         label.setStyleSheet("""
             QLabel {
@@ -543,7 +474,6 @@ class AddPage(QWidget):
         return label
 
     def setup_autocomplete(self):
-        """Veritabanından isimleri çekip otomatik tamamlayıcıya yükler."""
         if hasattr(self.controller, 'get_all_activity_names'):
             self.controller.get_all_activity_names(self.on_names_loaded)
 
@@ -576,33 +506,41 @@ class AddPage(QWidget):
             self.input_name.setCompleter(self.completer)
 
     def on_range_toggled(self, checked):
-        """Bitiş tarihi alanını göster/gizle."""
         if checked:
             self.lbl_end_date.show()
             self.input_end_date.show()
-            # Bitiş tarihini başlangıçtan sonraya ayarla (eğer gerideyse)
             if self.input_end_date.date() <= self.input_date.date():
                 self.input_end_date.setDate(self.input_date.date().addDays(1))
         else:
             self.lbl_end_date.hide()
             self.input_end_date.hide()
 
+    def _validate(self, name: str, comment: str) -> tuple:
+        if not name:
+            return False, "Faaliyet adı boş bırakılamaz."
+        if len(name) > 200:
+            return False, "Faaliyet adı en fazla 200 karakter olabilir."
+        if len(comment) > 2000:
+            return False, "Yorum en fazla 2000 karakter olabilir."
+        return True, ""
+
     def handle_save(self):
-        """Kaydetme işlemi."""
         type_val = self.combo_type.currentText()
-        name_val = self.input_name.text()
-        date_val = self.input_date.date().toString("yyyy-MM-dd") # YYYY-MM-DD formatında tam tarih
-        
+        name_val = self.input_name.text().strip()
+        date_val = self.input_date.date().toString("yyyy-MM-dd")
+
         end_date_val = None
         if self.chk_range.isChecked():
             end_date_val = self.input_end_date.date().toString("yyyy-MM-dd")
-            
-        comment_val = self.input_comment.toPlainText()
-        rating_val = self.combo_rating.currentText()
-        
-        # Puan değeri direkt alındı
 
-        # Butonu deaktif et
+        comment_val = self.input_comment.toPlainText().strip()
+        rating_val = self.combo_rating.currentText()
+
+        valid, msg = self._validate(name_val, comment_val)
+        if not valid:
+            QMessageBox.warning(self, "Hata", msg)
+            return
+
         self.btn_save.setEnabled(False)
         self.btn_save.setText("Kaydediliyor...")
 
@@ -615,34 +553,27 @@ class AddPage(QWidget):
     def on_save_finished(self, result):
         self.btn_save.setEnabled(True)
         self.btn_save.setText("Kaydet")
-        
-        # Validasyon hatası veya başarılı işlem
+
         success, message = result
 
         if success:
-            # 1. Başarı Mesajını Göster
             self.show_success_message(f"✅ {message}")
-            
-            # 2. Status Bar'a da yaz (İsteğe bağlı)
+
             window = self.window()
             if window and hasattr(window, 'statusBar') and window.statusBar():
                 window.statusBar().showMessage(f"✅ {message}", 3000)
-                
+
             self.clear_inputs()
-            self.setup_autocomplete() 
+            self.setup_autocomplete()
         else:
             QMessageBox.warning(self, "Hata", message)
 
     def show_success_message(self, message):
-        """Başarı mesajını kartın tepesinde gösterir ve sonra gizler."""
         self.lbl_success.setText(message)
         self.lbl_success.show()
-        
-        # 2.5 saniye (2500 ms) sonra mesajı gizle
         QTimer.singleShot(2500, self.lbl_success.hide)
 
     def clear_inputs(self):
-        """Formu temizler."""
         self.input_name.clear()
         self.input_comment.clear()
         self.combo_rating.setCurrentIndex(0)
@@ -650,12 +581,9 @@ class AddPage(QWidget):
         self.input_date.setDate(QDate.currentDate())
         self.chk_range.setChecked(False)
         self.input_end_date.setDate(QDate.currentDate().addDays(1))
-        
-        # Focus'u ilk alana getir
         self.input_name.setFocus()
 
     def load_types(self):
-        """Veritabanından türleri çeker."""
         if hasattr(self.controller, 'get_all_activity_types'):
             self.controller.get_all_activity_types(self.on_types_loaded)
 
@@ -664,8 +592,7 @@ class AddPage(QWidget):
         self.combo_type.clear()
         if types:
             self.combo_type.addItems(types)
-        
-        # Eğer eski seçili metin hala varsa onu seç
+
         index = self.combo_type.findText(current_text)
         if index >= 0:
             self.combo_type.setCurrentIndex(index)
@@ -673,6 +600,5 @@ class AddPage(QWidget):
             self.combo_type.setCurrentIndex(0)
 
     def refresh_data(self):
-        """Sayfa her görüntülendiğinde verileri (özellikle türleri) yenile"""
         self.load_types()
         self.setup_autocomplete()

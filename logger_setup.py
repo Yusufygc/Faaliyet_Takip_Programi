@@ -1,9 +1,12 @@
 # logger_setup.py
 import logging
+import logging.handlers
 import sys
 import os
 
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+_LOG_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
+_LOG_BACKUP_COUNT = 3
 
 
 def _get_log_file_path():
@@ -19,23 +22,29 @@ def _get_log_file_path():
 
 def setup_logger():
     """Logger yapılandırmasını oluşturur ve döndürür."""
-    logger = logging.getLogger("FaaliyetTakip")
+    from constants import APP_NAME
+    logger = logging.getLogger(APP_NAME)
     logger.setLevel(logging.DEBUG)
 
-    # Console Handler
+    # Console Handler — INFO ve üzeri (DEBUG iç detayları kullanıcıya gösterme)
     c_handler = logging.StreamHandler(sys.stdout)
-    c_handler.setLevel(logging.DEBUG)
+    c_handler.setLevel(logging.INFO)
     c_handler.setFormatter(logging.Formatter(LOG_FORMAT))
     logger.addHandler(c_handler)
 
-    # Dosya Handler — INFO+ AppData/FaaliyetTakip/app.log
+    # Dosya Handler — RotatingFileHandler: 5 MB × 3 backup
     try:
-        f_handler = logging.FileHandler(_get_log_file_path(), encoding="utf-8")
+        f_handler = logging.handlers.RotatingFileHandler(
+            _get_log_file_path(),
+            maxBytes=_LOG_MAX_BYTES,
+            backupCount=_LOG_BACKUP_COUNT,
+            encoding="utf-8"
+        )
         f_handler.setLevel(logging.INFO)
         f_handler.setFormatter(logging.Formatter(LOG_FORMAT))
         logger.addHandler(f_handler)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[logger_setup] Dosya handler oluşturulamadı: {e}", file=sys.stderr)
 
     return logger
 

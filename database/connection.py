@@ -2,6 +2,7 @@
 import sqlite3
 import os
 import sys
+from contextlib import contextmanager
 from constants import DB_FILENAME, DATA_DIR_NAME
 from logger_setup import logger
 
@@ -61,3 +62,25 @@ def get_connection():
     except Exception as e:
         logger.error(f"Veritabanı bağlantısı alınırken hata oluştu: {e}")
         return None
+
+
+@contextmanager
+def get_db():
+    """Repository metodları için bağlantı context manager'ı.
+
+    Kullanım:
+        with get_db() as conn:
+            conn.execute(sql, params)
+
+    Başarıda commit, hata durumunda rollback yapar ve bağlantıyı kapatır.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()

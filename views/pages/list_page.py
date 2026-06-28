@@ -49,13 +49,18 @@ class ListPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(20)
+        self._build_header(layout)
+        self._build_filter(layout)
+        self._build_table(layout)
+        self._build_pagination(layout)
+        self.load_types()
+        self.refresh_data()
 
-        # ─── 1. Header (Başlık ve Toplam) ───
+    def _build_header(self, layout):
         header_layout = QHBoxLayout()
         title = QLabel("Faaliyet Listesi")
         title.setStyleSheet(f"font-size: 28px; font-weight: 800; color: {COLORS['text_main']}; letter-spacing: 0.5px;")
-        
-        # Toplam Sayı Rozeti
+
         self.badge_total = QLabel("0 Kayıt")
         self.badge_total.setStyleSheet(f"""
             background-color: {COLORS['primary_light']};
@@ -65,14 +70,14 @@ class ListPage(QWidget):
             border-radius: 16px;
             font-size: 14px;
         """)
-        
+
         header_layout.addWidget(title)
         header_layout.addSpacing(15)
         header_layout.addWidget(self.badge_total)
         header_layout.addStretch()
         layout.addLayout(header_layout)
 
-        # ─── 2. Filtre Kartı ───
+    def _build_filter(self, layout):
         filter_frame = QFrame()
         filter_frame.setStyleSheet(f"""
             QFrame {{
@@ -81,18 +86,16 @@ class ListPage(QWidget):
                 border: 1px solid {COLORS['border']};
             }}
         """)
-        # Gölge
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(25)
-        shadow.setColor(QColor(0,0,0,12))
-        shadow.setOffset(0,5)
+        shadow.setColor(QColor(0, 0, 0, 12))
+        shadow.setOffset(0, 5)
         filter_frame.setGraphicsEffect(shadow)
 
         filter_layout = QHBoxLayout(filter_frame)
         filter_layout.setContentsMargins(20, 15, 20, 15)
         filter_layout.setSpacing(20)
-        
-        # Ortak Input Stili
+
         input_style = f"""
             background-color: #FAFAFA;
             border: 1px solid {COLORS['border']};
@@ -102,23 +105,19 @@ class ListPage(QWidget):
             font-size: 14px;
         """
 
-        # Tür Filtresi
         lbl_type = QLabel("Tür:")
         lbl_type.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
         self.combo_filter_type = QComboBox()
         self.combo_filter_type.addItem("Hepsi")
-        self.combo_filter_type.setStyleSheet(self._get_combo_style()) # Yeni Minimal Stil
+        self.combo_filter_type.setStyleSheet(self._get_combo_style())
         self.combo_filter_type.currentIndexChanged.connect(self.on_filter_changed)
-        
-        # Tarih Filtresi
+
         lbl_date = QLabel("Tarih:")
         lbl_date.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
         self.date_widget = MonthYearWidget()
-        # Widget içindeki comboboxları da aynı stile zorlayalım
-        self.date_widget.setStyleSheet(self._get_combo_style()) 
+        self.date_widget.setStyleSheet(self._get_combo_style())
         self.date_widget.dateChanged.connect(self.on_filter_changed)
 
-        # Arama
         lbl_search = QLabel("Ara:")
         lbl_search.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
         self.input_search = QLineEdit()
@@ -135,43 +134,42 @@ class ListPage(QWidget):
         """)
         self.input_search.textChanged.connect(lambda: self.search_timer.start())
 
-        # Temizle Butonu
         btn_clear = QPushButton("Temizle")
         btn_clear.setCursor(Qt.PointingHandCursor)
         btn_clear.setFixedWidth(100)
         btn_clear.setStyleSheet(f"""
             QPushButton {{
-                background-color: #FDEDEC; color: #E74C3C; border: none; border-radius: 8px; 
+                background-color: #FDEDEC; color: #E74C3C; border: none; border-radius: 8px;
                 padding: 10px; font-weight: bold; font-size: 13px;
             }}
             QPushButton:hover {{ background-color: #FADBD8; }}
         """)
         btn_clear.clicked.connect(self.reset_filters)
 
-        # Layout'a Ekleme
+        def _divider():
+            line = QFrame()
+            line.setFixedWidth(1)
+            line.setFixedHeight(20)
+            line.setStyleSheet(f"background: {COLORS['border']};")
+            return line
+
         filter_layout.addWidget(lbl_type)
         filter_layout.addWidget(self.combo_filter_type)
         filter_layout.addSpacing(15)
-        # Çizgi Ayıraç
-        line1 = QFrame(); line1.setFixedWidth(1); line1.setFixedHeight(20); line1.setStyleSheet(f"background: {COLORS['border']};")
-        filter_layout.addWidget(line1)
+        filter_layout.addWidget(_divider())
         filter_layout.addSpacing(5)
-        
         filter_layout.addWidget(lbl_date)
         filter_layout.addWidget(self.date_widget)
         filter_layout.addSpacing(15)
-        
-        line2 = QFrame(); line2.setFixedWidth(1); line2.setFixedHeight(20); line2.setStyleSheet(f"background: {COLORS['border']};")
-        filter_layout.addWidget(line2)
+        filter_layout.addWidget(_divider())
         filter_layout.addSpacing(5)
-
         filter_layout.addWidget(lbl_search)
-        filter_layout.addWidget(self.input_search, 1) # Esnek genişlik
+        filter_layout.addWidget(self.input_search, 1)
         filter_layout.addWidget(btn_clear)
-        
+
         layout.addWidget(filter_frame)
 
-        # ─── 3. Tablo Kartı ───
+    def _build_table(self, layout):
         table_container = QFrame()
         table_container.setStyleSheet(f"""
             QFrame {{
@@ -180,26 +178,23 @@ class ListPage(QWidget):
                 border: 1px solid {COLORS['border']};
             }}
         """)
-        # Tabloya da hafif gölge
         t_shadow = QGraphicsDropShadowEffect()
         t_shadow.setBlurRadius(20)
-        t_shadow.setColor(QColor(0,0,0,8))
-        t_shadow.setOffset(0,4)
+        t_shadow.setColor(QColor(0, 0, 0, 8))
+        t_shadow.setOffset(0, 4)
         table_container.setGraphicsEffect(t_shadow)
-        
+
         table_layout = QVBoxLayout(table_container)
-        table_layout.setContentsMargins(0, 0, 0, 0) # Kenarlık yok, tam dolacak
+        table_layout.setContentsMargins(0, 0, 0, 0)
 
         self.table = QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["TÜR", "FAALİYET ADI", "TARİH", "YORUM", "PUAN"])
-        
-        # Tablo Modern Stil
-        self.table.setShowGrid(False) # Grid çizgilerini kaldır
+        self.table.setShowGrid(False)
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.setFocusPolicy(Qt.NoFocus) # Seçim çerçevesini kaldır
+        self.table.setFocusPolicy(Qt.NoFocus)
         self.table.setStyleSheet(f"""
             QTableWidget {{
                 background-color: white;
@@ -217,18 +212,16 @@ class ListPage(QWidget):
                 background-color: {COLORS['primary_light']};
                 color: {COLORS['primary']};
             }}
-            /* Alternatif Satır Rengi */
             QTableWidget::item:alternate {{
                 background-color: {COLORS['table_alt_row']};
             }}
         """)
 
-        # Header Stili (Ortalı ve Büyük)
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
-        header.setDefaultAlignment(Qt.AlignCenter) # BAŞLIKLARI ORTALA
+        header.setDefaultAlignment(Qt.AlignCenter)
         header.setFixedHeight(50)
         header.setStyleSheet(f"""
             QHeaderView::section {{
@@ -237,29 +230,26 @@ class ListPage(QWidget):
                 padding: 0 10px;
                 border: none;
                 border-bottom: 2px solid {COLORS['border']};
-                font-weight: 800; /* Extra Bold */
+                font-weight: 800;
                 font-size: 13px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
             }}
         """)
-        # Dikey header'ı gizle
         self.table.verticalHeader().setVisible(False)
-        
-        # Etkileşimler
+
         self.table.doubleClicked.connect(self.open_edit_dialog)
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.open_context_menu)
-        
+
         table_layout.addWidget(self.table)
         layout.addWidget(table_container)
 
-        # ─── 4. Sayfalama (Pagination) ───
+    def _build_pagination(self, layout):
         pagination_widget = QWidget()
         pagination_layout = QGridLayout(pagination_widget)
         pagination_layout.setContentsMargins(10, 5, 10, 0)
-        
-        # Sol: Sayfa Başına
+
         left_box = QHBoxLayout()
         lbl_pp = QLabel("Sayfa başına:")
         lbl_pp.setStyleSheet(f"color: {COLORS['text_sub']}; font-weight: bold; font-size: 13px;")
@@ -270,17 +260,15 @@ class ListPage(QWidget):
         self.combo_per_page.currentTextChanged.connect(self.on_per_page_changed)
         left_box.addWidget(lbl_pp)
         left_box.addWidget(self.combo_per_page)
-        
-        # Orta: Navigasyon
+
         center_box = QHBoxLayout()
-        
-        # Buton Oluşturucu
+
         def create_nav_btn(text, callback):
             btn = QPushButton(text)
             btn.setCursor(Qt.PointingHandCursor)
             btn.setStyleSheet(f"""
                 QPushButton {{
-                    background-color: white; border: 1px solid {COLORS['border']}; 
+                    background-color: white; border: 1px solid {COLORS['border']};
                     border-radius: 8px; padding: 8px 20px; color: {COLORS['text_main']};
                     font-weight: 600; font-size: 13px;
                 }}
@@ -292,23 +280,19 @@ class ListPage(QWidget):
 
         self.btn_prev = create_nav_btn("◄ Önceki", self.prev_page)
         self.btn_next = create_nav_btn("Sonraki ►", self.next_page)
-        
+
         self.lbl_page_info = QLabel("Sayfa 1 / 1")
         self.lbl_page_info.setStyleSheet(f"font-weight: 800; color: {COLORS['text_main']}; margin: 0 20px; font-size: 14px;")
-        
+
         center_box.addWidget(self.btn_prev)
         center_box.addWidget(self.lbl_page_info)
         center_box.addWidget(self.btn_next)
 
-        # Grid Yerleşimi
         pagination_layout.addLayout(left_box, 0, 0, Qt.AlignLeft)
         pagination_layout.addLayout(center_box, 0, 1, Qt.AlignCenter)
-        pagination_layout.addWidget(QWidget(), 0, 2) # Dengeleyici
-        
-        layout.addWidget(pagination_widget)
+        pagination_layout.addWidget(QWidget(), 0, 2)
 
-        self.load_types()
-        self.refresh_data()
+        layout.addWidget(pagination_widget)
 
     def _get_combo_style(self):
         """Minimal Combobox: Buton ve ok yok, sadece metin."""

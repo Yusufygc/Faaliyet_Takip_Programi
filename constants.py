@@ -18,6 +18,10 @@ DB_FILENAME = "faaliyetler.db"
 LOG_FILENAME = "app.log"
 THEME_NAME = "Fusion"
 
-
 # Dizin Adları
 DATA_DIR_NAME = "FaaliyetTakip"
+
+# Keyring sabitleri — tek kaynak, tüm kontrolcüler buradan import eder
+KEYRING_APP_NAME = APP_NAME
+KEYRING_KEY_TMDB = "tmdb_api_key"
+KEYRING_KEY_RAWG = "rawg_api_key"

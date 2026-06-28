@@ -9,6 +9,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import os
 from datetime import datetime
 from utils import get_resource_path
+from logger_setup import logger
 
 
 class PDFService:
@@ -33,9 +34,9 @@ class PDFService:
                 pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', bold_font))
                 self.font_registered = True
             else:
-                print("UYARI: Font dosyaları bulunamadı. Türkçe karakterler bozuk çıkabilir.")
+                logger.warning("Font dosyaları bulunamadı. Türkçe karakterler bozuk çıkabilir.")
         except Exception as e:
-            print(f"Font yükleme hatası: {e}")
+            logger.error(f"Font yükleme hatası: {e}")
 
     def create_report(self, file_path, title, data_summary, data_details):
         """PDF raporunu oluşturur ve kaydeder."""
@@ -124,6 +125,5 @@ class PDFService:
             return True, "PDF başarıyla oluşturuldu."
 
         except Exception as e:
-            import traceback
-            traceback.print_exc() # Hatanın detayını konsola bas
+            logger.error(f"PDF oluşturulurken hata: {e}", exc_info=True)
             return False, f"PDF oluşturulurken hata: {e}"

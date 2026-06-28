@@ -68,8 +68,6 @@ class SettingsPage(QWidget):
         """Faaliyet türleri yönetimi için kart oluşturur."""
         card = QFrame()
         card.setObjectName("Card")
-        # Maksimum genişliği kaldırıyoruz veya grid'e uyumlu yapıyoruz
-        # card.setMaximumWidth(650) 
         card.setStyleSheet("""
             QFrame#Card {
                 background-color: #FFFFFF;
@@ -77,42 +75,40 @@ class SettingsPage(QWidget):
                 border-radius: 12px;
             }
         """)
-        
+
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(15)
         shadow.setXOffset(0)
         shadow.setYOffset(3)
         shadow.setColor(QColor(0, 0, 0, 30))
         card.setGraphicsEffect(shadow)
-        
+
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 15, 18, 15)
         card_layout.setSpacing(10)
 
-        # Alt Başlık
         sub_title = QLabel("📋 Faaliyet Türleri")
-        sub_title.setStyleSheet("""
-            font-size: 18px; 
-            font-weight: bold; 
-            color: #34495E;
-            border: none;
-        """)
+        sub_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #34495E; border: none;")
         card_layout.addWidget(sub_title)
 
-        # Açıklama
         desc = QLabel("Türleri ekleyin, düzenleyin veya silin.")
         desc.setStyleSheet("color: #95A5A6; font-size: 14px; border: none;")
         desc.setWordWrap(True)
         card_layout.addWidget(desc)
 
-        # --- Arama Kutusu ---
+        card_layout.addLayout(self._build_types_search())
+        card_layout.addLayout(self._build_types_content())
+
+        return card
+
+    def _build_types_search(self):
         search_layout = QHBoxLayout()
         search_layout.setSpacing(8)
-        
+
         search_icon = QLabel("🔍")
         search_icon.setStyleSheet("border: none; font-size: 16px;")
         search_layout.addWidget(search_icon)
-        
+
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Tür ara...")
         self.search_input.textChanged.connect(self.filter_types)
@@ -130,17 +126,19 @@ class SettingsPage(QWidget):
             }
         """)
         search_layout.addWidget(self.search_input)
-        card_layout.addLayout(search_layout)
+        return search_layout
 
-        # İçerik Alanı (Liste ve Butonlar)
+    def _build_types_content(self):
         content_layout = QHBoxLayout()
         content_layout.setSpacing(12)
-        
-        # Liste Alanı (Liste + Sayfalama)
+        content_layout.addLayout(self._build_types_list_area(), 1)
+        content_layout.addLayout(self._build_types_action_buttons())
+        return content_layout
+
+    def _build_types_list_area(self):
         list_container = QVBoxLayout()
         list_container.setSpacing(6)
-        
-        # Liste
+
         self.type_list = QListWidget()
         self.type_list.setMinimumHeight(self.MIN_LIST_HEIGHT)
         self.type_list.setMaximumHeight(self.MAX_LIST_HEIGHT)
@@ -157,91 +155,72 @@ class SettingsPage(QWidget):
                 border-radius: 4px;
                 margin: 2px;
             }
-            QListWidget::item:hover {
-                background-color: #EBF5FB;
-            }
-            QListWidget::item:selected {
-                background-color: #3498DB;
-                color: white;
-            }
+            QListWidget::item:hover { background-color: #EBF5FB; }
+            QListWidget::item:selected { background-color: #3498DB; color: white; }
         """)
         list_container.addWidget(self.type_list)
-        
-        # Sayfalama Kontrolleri
+
+        nav_btn_style = """
+            QPushButton {
+                background-color: #ECF0F1;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                color: #2C3E50;
+            }
+            QPushButton:hover { background-color: #BDC3C7; }
+            QPushButton:disabled { color: #BDC3C7; background-color: #F5F5F5; }
+        """
+
         self.pagination_frame = QFrame()
         self.pagination_frame.setStyleSheet("border: none;")
         pagination_layout = QHBoxLayout(self.pagination_frame)
         pagination_layout.setContentsMargins(0, 0, 0, 0)
         pagination_layout.setSpacing(5)
-        
+
         self.btn_prev = QPushButton("◀")
         self.btn_prev.setFixedSize(36, 36)
         self.btn_prev.setCursor(Qt.PointingHandCursor)
         self.btn_prev.clicked.connect(self.prev_page)
-        self.btn_prev.setStyleSheet("""
-            QPushButton {
-                background-color: #ECF0F1;
-                border: none;
-                border-radius: 8px;
-                font-size: 14px;
-                color: #2C3E50;
-            }
-            QPushButton:hover { background-color: #BDC3C7; }
-            QPushButton:disabled { color: #BDC3C7; background-color: #F5F5F5; }
-        """)
+        self.btn_prev.setStyleSheet(nav_btn_style)
         pagination_layout.addWidget(self.btn_prev)
-        
+
         self.page_label = QLabel("1/1")
         self.page_label.setStyleSheet("font-size: 13px; color: #7F8C8D; border: none;")
         self.page_label.setAlignment(Qt.AlignCenter)
         self.page_label.setMinimumWidth(50)
         pagination_layout.addWidget(self.page_label)
-        
+
         self.btn_next = QPushButton("▶")
         self.btn_next.setFixedSize(36, 36)
         self.btn_next.setCursor(Qt.PointingHandCursor)
         self.btn_next.clicked.connect(self.next_page)
-        self.btn_next.setStyleSheet("""
-            QPushButton {
-                background-color: #ECF0F1;
-                border: none;
-                border-radius: 8px;
-                font-size: 14px;
-                color: #2C3E50;
-            }
-            QPushButton:hover { background-color: #BDC3C7; }
-            QPushButton:disabled { color: #BDC3C7; background-color: #F5F5F5; }
-        """)
+        self.btn_next.setStyleSheet(nav_btn_style)
         pagination_layout.addWidget(self.btn_next)
-        
+
         pagination_layout.addStretch()
-        
-        # Toplam sayı etiketi
+
         self.total_label = QLabel("0 tür")
         self.total_label.setStyleSheet("font-size: 13px; color: #95A5A6; border: none;")
         pagination_layout.addWidget(self.total_label)
-        
-        list_container.addWidget(self.pagination_frame)
-        content_layout.addLayout(list_container, 1)
 
-        # İşlem Butonları
+        list_container.addWidget(self.pagination_frame)
+        return list_container
+
+    def _build_types_action_buttons(self):
         btn_layout = QVBoxLayout()
         btn_layout.setAlignment(Qt.AlignTop)
         btn_layout.setSpacing(8)
-        
+
         self.btn_add = self.create_btn("➕ Ekle", "#27AE60", "#219A52", self.add_type)
         self.btn_edit = self.create_btn("✏️ Düzenle", "#E67E22", "#D35400", self.edit_type)
         self.btn_delete = self.create_btn("🗑️ Sil", "#E74C3C", "#C0392B", self.delete_type)
-        
+
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_edit)
         btn_layout.addWidget(self.btn_delete)
         btn_layout.addStretch()
-
-        content_layout.addLayout(btn_layout)
-        card_layout.addLayout(content_layout)
-        
-        return card
+        return btn_layout
 
     def _create_api_stats_card(self):
         """API Anahtarları yönetimi için kart oluşturur."""
@@ -344,8 +323,9 @@ class SettingsPage(QWidget):
 
     def on_keys_loaded(self, keys):
         if keys:
-            self.txt_tmdb.setText(keys.get("tmdb_api_key", ""))
-            self.txt_rawg.setText(keys.get("rawg_api_key", ""))
+            from constants import KEYRING_KEY_TMDB, KEYRING_KEY_RAWG
+            self.txt_tmdb.setText(keys.get(KEYRING_KEY_TMDB, ""))
+            self.txt_rawg.setText(keys.get(KEYRING_KEY_RAWG, ""))
 
     def save_api_keys(self):
         """API anahtarlarını kaydeder."""
