@@ -32,19 +32,18 @@ class SuggestionPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
         layout.setContentsMargins(20, 20, 20, 20)
-        
-        # =====================================================================
-        # 1. HEADER
-        # =====================================================================
+        self._build_header(layout)
+        self._build_filters(layout)
+        self._build_content(layout)
+
+    def _build_header(self, layout):
         header_layout = QHBoxLayout()
-        
+
         title = QLabel("🚀 Keşfet & Öneriler")
-        title.setStyleSheet("font-size: 26px; font-weight: bold; color: #333;") # Başlık büyütüldü
+        title.setStyleSheet("font-size: 26px; font-weight: bold; color: #333;")
         header_layout.addWidget(title)
-        
         header_layout.addStretch()
-        
-        # Rastgele Öneri butonu
+
         self.btn_random = QPushButton("🎲 Rastgele Öneri")
         self.btn_random.setCursor(Qt.PointingHandCursor)
         self.btn_random.setStyleSheet("""
@@ -61,8 +60,7 @@ class SuggestionPage(QWidget):
         """)
         self.btn_random.clicked.connect(self.on_random_clicked)
         header_layout.addWidget(self.btn_random)
-        
-        # Yenile butonu
+
         self.btn_refresh = QPushButton("🔄 Yenile")
         self.btn_refresh.setCursor(Qt.PointingHandCursor)
         self.btn_refresh.setStyleSheet("""
@@ -80,10 +78,8 @@ class SuggestionPage(QWidget):
         self.btn_refresh.clicked.connect(self.on_refresh_clicked)
         header_layout.addWidget(self.btn_refresh)
         layout.addLayout(header_layout)
-        
-        # =====================================================================
-        # 2. FİLTRELER - Periyot, Kategori, Tür, Türkçe
-        # =====================================================================
+
+    def _build_filters(self, layout):
         filter_frame = QFrame()
         filter_frame.setStyleSheet("""
             QFrame {
@@ -94,184 +90,137 @@ class SuggestionPage(QWidget):
         """)
         filter_layout = QHBoxLayout(filter_frame)
         filter_layout.setSpacing(15)
-        
-        # -- Periyot Seçimi --
+
         period_label = QLabel("📅 Dönem:")
         period_label.setStyleSheet("font-weight: bold; color: #333;")
         filter_layout.addWidget(period_label)
-        
+
         self.period_combo = QComboBox()
         self.period_combo.setMinimumWidth(200)
         self._style_combobox(self.period_combo)
-        
         for key, name in self.controller.get_all_period_names():
             self.period_combo.addItem(name, key)
-        
         self.period_combo.currentIndexChanged.connect(self.on_period_changed)
         filter_layout.addWidget(self.period_combo)
-        
+
         filter_layout.addSpacing(15)
-        
-        # -- Kategori Butonları --
+
         self.cat_btns = {}
-        categories = ["Film", "Dizi", "Oyun", "Kitap"]
-        
-        for cat in categories:
+        for cat in ["Film", "Dizi", "Oyun", "Kitap"]:
             btn = QPushButton(cat)
             btn.setCheckable(True)
             btn.setCursor(Qt.PointingHandCursor)
-            btn.setFixedSize(90, 40) # Kategori butonları büyütüldü
+            btn.setFixedSize(90, 40)
             btn.clicked.connect(lambda checked, c=cat: self.on_category_changed(c))
             filter_layout.addWidget(btn)
             self.cat_btns[cat] = btn
-            
         self.cat_btns["Film"].setChecked(True)
         self.update_cat_styles()
-        
+
         filter_layout.addSpacing(15)
-        
-        # -- Tür Seçimi --
+
         genre_label = QLabel("🎭 Tür:")
         genre_label.setStyleSheet("font-weight: bold; color: #333;")
         filter_layout.addWidget(genre_label)
-        
+
         self.genre_combo = QComboBox()
         self.genre_combo.setMinimumWidth(120)
         self._style_combobox(self.genre_combo)
         self.genre_combo.currentIndexChanged.connect(self.on_genre_changed)
         filter_layout.addWidget(self.genre_combo)
-        
+
         filter_layout.addSpacing(15)
-        
-        # -- Türkçe Yapımlar Checkbox --
+
         self.turkish_checkbox = QCheckBox("🇹🇷 Türkçe Yapımlar")
         self.turkish_checkbox.setStyleSheet("""
-            QCheckBox {
-                color: #333;
-                font-weight: bold;
-            }
-            QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-            }
+            QCheckBox { color: #333; font-weight: bold; }
+            QCheckBox::indicator { width: 18px; height: 18px; }
             QCheckBox::indicator:checked {
-                background-color: #e53935;
-                border: 2px solid #c62828;
-                border-radius: 3px;
+                background-color: #e53935; border: 2px solid #c62828; border-radius: 3px;
             }
             QCheckBox::indicator:unchecked {
-                background-color: white;
-                border: 2px solid #ccc;
-                border-radius: 3px;
+                background-color: white; border: 2px solid #ccc; border-radius: 3px;
             }
         """)
         self.turkish_checkbox.stateChanged.connect(self.on_turkish_filter_changed)
         filter_layout.addWidget(self.turkish_checkbox)
-        
+
         filter_layout.addStretch()
         layout.addWidget(filter_frame)
-        
-        # =====================================================================
-        # 3. İÇERİK ALANI
-        # =====================================================================
+
+    def _build_content(self, layout):
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setStyleSheet("""
-            QScrollArea { 
-                border: none; 
-                background: transparent; 
-            }
+            QScrollArea { border: none; background: transparent; }
             QScrollBar:vertical {
-                background: #f1f1f1;
-                width: 14px;
-                margin: 0px 0px 0px 0px;
-                border-radius: 7px;
+                background: #f1f1f1; width: 14px; border-radius: 7px;
             }
             QScrollBar::handle:vertical {
-                background: #bdbdbd;
-                min-height: 30px;
-                border-radius: 7px;
+                background: #bdbdbd; min-height: 30px; border-radius: 7px;
             }
-            QScrollBar::handle:vertical:hover {
-                background: #9e9e9e;
-            }
-            QScrollBar::sub-line:vertical, QScrollBar::add-line:vertical {
-                height: 0px;
-            }
+            QScrollBar::handle:vertical:hover { background: #9e9e9e; }
+            QScrollBar::sub-line:vertical, QScrollBar::add-line:vertical { height: 0px; }
         """)
-        
+
         self.content_widget = QWidget()
         self.content_widget.setStyleSheet("background: transparent;")
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setSpacing(20)
-        
-        # Grid for cards
+
         self.grid_widget = QWidget()
         self.grid = QGridLayout(self.grid_widget)
         self.grid.setSpacing(20)
         self.grid.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.content_layout.addWidget(self.grid_widget)
-        
-        # =====================================================================
-        # 4. PAGINATION ALANI
-        # =====================================================================
+
+        self.content_layout.addWidget(self._build_pagination())
+        self.content_layout.addStretch()
+
+        self.scroll.setWidget(self.content_widget)
+        layout.addWidget(self.scroll)
+
+    def _build_pagination(self):
         self.pagination_widget = QWidget()
         self.pagination_widget.setStyleSheet("background: transparent;")
         pagination_layout = QHBoxLayout(self.pagination_widget)
         pagination_layout.setContentsMargins(0, 10, 0, 10)
-        
-        # Eski verileri göster butonu
+
         self.btn_show_cached = QPushButton("📂 Eski Verileri Göster")
         self.btn_show_cached.setCursor(Qt.PointingHandCursor)
         self.btn_show_cached.setStyleSheet("""
             QPushButton {
-                background-color: #607d8b;
-                color: white;
-                border: none;
-                padding: 12px 25px;
-                border-radius: 10px;
-                font-weight: bold;
-                font-size: 14px;
+                background-color: #607d8b; color: white; border: none;
+                padding: 12px 25px; border-radius: 10px; font-weight: bold; font-size: 14px;
             }
             QPushButton:hover { background-color: #546e7a; }
             QPushButton:disabled { background-color: #cfd8dc; color: #90a4ae; }
         """)
         self.btn_show_cached.clicked.connect(self.on_show_cached_clicked)
         pagination_layout.addWidget(self.btn_show_cached)
-        
+
         pagination_layout.addStretch()
-        
-        # Sayfa bilgisi
+
         self.page_label = QLabel("Sayfa: 1")
         self.page_label.setStyleSheet("color: #666; font-size: 14px; font-weight: bold;")
         pagination_layout.addWidget(self.page_label)
-        
+
         pagination_layout.addStretch()
-        
-        # Daha fazla göster butonu
+
         self.btn_load_more = QPushButton("➕ Daha Fazla Göster")
         self.btn_load_more.setCursor(Qt.PointingHandCursor)
         self.btn_load_more.setStyleSheet("""
             QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                padding: 12px 25px;
-                border-radius: 10px;
-                font-weight: bold;
-                font-size: 14px;
+                background-color: #4CAF50; color: white; border: none;
+                padding: 12px 25px; border-radius: 10px; font-weight: bold; font-size: 14px;
             }
             QPushButton:hover { background-color: #43a047; }
             QPushButton:disabled { background-color: #c8e6c9; color: #81c784; }
         """)
         self.btn_load_more.clicked.connect(self.on_load_more_clicked)
         pagination_layout.addWidget(self.btn_load_more)
-        
-        self.content_layout.addWidget(self.pagination_widget)
-        self.content_layout.addStretch()
-        
-        self.scroll.setWidget(self.content_widget)
-        layout.addWidget(self.scroll)
+
+        return self.pagination_widget
 
     def _style_combobox(self, combo):
         """ComboBox stilini uygular."""
