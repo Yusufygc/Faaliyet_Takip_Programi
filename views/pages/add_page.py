@@ -88,98 +88,91 @@ class AddPage(QWidget):
         desc.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(desc)
 
+    # --- shared widget styles ---
+
+    def _combo_style(self):
+        return f"""
+            QComboBox {{
+                background-color: #FFFFFF; border: 2px solid #E2E8F0;
+                border-radius: 10px; padding: 12px 15px;
+                font-size: 14px; color: #334155;
+            }}
+            QComboBox:focus {{ border: 2px solid #3B82F6; background-color: #F8FAFC; }}
+            QComboBox:hover {{ border: 2px solid #CBD5E1; }}
+            QComboBox::drop-down {{
+                border: none; width: 40px;
+                border-left: 1px solid #E2E8F0;
+                border-radius: 0 8px 8px 0; background-color: #F8FAFC;
+            }}
+            QComboBox::down-arrow {{ image: url('{arrow_url}'); width: 16px; height: 16px; }}
+            QComboBox QAbstractItemView {{
+                border: 2px solid #E2E8F0; border-radius: 8px;
+                background-color: white; selection-background-color: #3B82F6;
+                selection-color: white; padding: 8px; font-size: 14px; margin-top: 5px;
+            }}
+            QComboBox QAbstractItemView::item {{
+                padding: 12px 15px; border-radius: 5px; margin: 2px;
+            }}
+            QComboBox QAbstractItemView::item:hover {{ background-color: #F1F5F9; }}
+            QComboBox QAbstractItemView::item:selected {{ background-color: #3B82F6; color: white; }}
+        """
+
+    def _date_style(self):
+        return f"""
+            QDateEdit {{
+                background-color: #FFFFFF; border: 2px solid #E2E8F0;
+                border-radius: 10px; padding: 12px 15px;
+                font-size: 14px; color: #334155;
+            }}
+            QDateEdit:focus {{ border: 2px solid #3B82F6; background-color: #F8FAFC; }}
+            QDateEdit:hover {{ border: 2px solid #CBD5E1; }}
+            QDateEdit::drop-down {{
+                border: none; width: 40px;
+                border-left: 1px solid #E2E8F0;
+                border-radius: 0 8px 8px 0; background-color: #F8FAFC;
+            }}
+            QDateEdit::down-arrow {{ image: url('{arrow_url}'); width: 16px; height: 16px; }}
+        """
+
+    # --- form build ---
+
     def _build_form(self, card_layout):
         form_layout = QFormLayout()
         form_layout.setSpacing(16)
         form_layout.setVerticalSpacing(12)
         form_layout.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self._build_type_field(form_layout)
+        self._build_name_field(form_layout)
+        self._build_date_fields(form_layout)
+        self._build_comment_field(form_layout)
+        self._build_rating_field(form_layout)
+        card_layout.addLayout(form_layout)
 
-        # 1. Tür
+    def _build_type_field(self, form_layout):
         self.combo_type = QComboBox()
         self.combo_type.setMinimumHeight(42)
-        self.combo_type.setStyleSheet(f"""
-            QComboBox {{
-                background-color: #FFFFFF;
-                border: 2px solid #E2E8F0;
-                border-radius: 10px;
-                padding: 12px 15px;
-                font-size: 14px;
-                color: #334155;
-            }}
-            QComboBox:focus {{
-                border: 2px solid #3B82F6;
-                background-color: #F8FAFC;
-            }}
-            QComboBox:hover {{
-                border: 2px solid #CBD5E1;
-            }}
-            QComboBox::drop-down {{
-                border: none;
-                width: 40px;
-                border-left: 1px solid #E2E8F0;
-                border-radius: 0 8px 8px 0;
-                background-color: #F8FAFC;
-            }}
-            QComboBox::down-arrow {{
-                image: url('{arrow_url}');
-                width: 16px;
-                height: 16px;
-            }}
-            QComboBox QAbstractItemView {{
-                border: 2px solid #E2E8F0;
-                border-radius: 8px;
-                background-color: white;
-                selection-background-color: #3B82F6;
-                selection-color: white;
-                padding: 8px;
-                font-size: 14px;
-                margin-top: 5px;
-            }}
-            QComboBox QAbstractItemView::item {{
-                padding: 12px 15px;
-                border-radius: 5px;
-                margin: 2px;
-            }}
-            QComboBox QAbstractItemView::item:hover {{
-                background-color: #F1F5F9;
-            }}
-            QComboBox QAbstractItemView::item:selected {{
-                background-color: #3B82F6;
-                color: white;
-            }}
-        """)
+        self.combo_type.setStyleSheet(self._combo_style())
         self.load_types()
         form_layout.addRow(self.create_label("Tür:"), self.combo_type)
 
-        # 2. Ad
+    def _build_name_field(self, form_layout):
         self.input_name = QLineEdit()
         self.input_name.setPlaceholderText("Örn: Inception, Breaking Bad, Kitap Adı...")
         self.input_name.setMinimumHeight(42)
         self.input_name.setStyleSheet("""
             QLineEdit {
-                background-color: #FFFFFF;
-                border: 2px solid #E2E8F0;
-                border-radius: 10px;
-                padding: 12px 15px;
-                font-size: 14px;
-                color: #334155;
+                background-color: #FFFFFF; border: 2px solid #E2E8F0;
+                border-radius: 10px; padding: 12px 15px;
+                font-size: 14px; color: #334155;
             }
-            QLineEdit:focus {
-                border: 2px solid #3B82F6;
-                background-color: #F8FAFC;
-            }
-            QLineEdit:hover {
-                border: 2px solid #CBD5E1;
-            }
-            QLineEdit::placeholder {
-                color: #94A3B8;
-                font-style: italic;
-            }
+            QLineEdit:focus { border: 2px solid #3B82F6; background-color: #F8FAFC; }
+            QLineEdit:hover { border: 2px solid #CBD5E1; }
+            QLineEdit::placeholder { color: #94A3B8; font-style: italic; }
         """)
         form_layout.addRow(self.create_label("Ad:"), self.input_name)
         self.setup_autocomplete()
 
-        # 3. Tarih
+    def _build_date_fields(self, form_layout):
         date_layout = QHBoxLayout()
         date_layout.setContentsMargins(0, 0, 0, 0)
         date_layout.setSpacing(10)
@@ -190,60 +183,20 @@ class AddPage(QWidget):
         self.input_date.setDisplayFormat("d MMMM yyyy")
         self.input_date.setDate(QDate.currentDate())
         self.input_date.setMinimumHeight(42)
-        self.input_date.setStyleSheet(f"""
-            QDateEdit {{
-                background-color: #FFFFFF;
-                border: 2px solid #E2E8F0;
-                border-radius: 10px;
-                padding: 12px 15px;
-                font-size: 14px;
-                color: #334155;
-            }}
-            QDateEdit:focus {{
-                border: 2px solid #3B82F6;
-                background-color: #F8FAFC;
-            }}
-            QDateEdit:hover {{
-                border: 2px solid #CBD5E1;
-            }}
-            QDateEdit::drop-down {{
-                border: none;
-                width: 40px;
-                border-left: 1px solid #E2E8F0;
-                border-radius: 0 8px 8px 0;
-                background-color: #F8FAFC;
-            }}
-            QDateEdit::down-arrow {{
-                image: url('{arrow_url}');
-                width: 16px;
-                height: 16px;
-            }}
-        """)
+        self.input_date.setStyleSheet(self._date_style())
 
         check_url = get_resource_path("icons/check.svg").replace("\\", "/")
         self.chk_range = QCheckBox("Bitiş Tarihi")
         self.chk_range.setStyleSheet(f"""
-            QCheckBox {{
-                color: #475569;
-                font-weight: 500;
-                font-size: 14px;
-                spacing: 8px;
-            }}
+            QCheckBox {{ color: #475569; font-weight: 500; font-size: 14px; spacing: 8px; }}
             QCheckBox::indicator {{
-                width: 20px;
-                height: 20px;
-                border-radius: 6px;
-                border: 2px solid #CBD5E1;
-                background-color: white;
+                width: 20px; height: 20px; border-radius: 6px;
+                border: 2px solid #CBD5E1; background-color: white;
             }}
             QCheckBox::indicator:checked {{
-                background-color: #3B82F6;
-                border-color: #3B82F6;
-                image: url({check_url});
+                background-color: #3B82F6; border-color: #3B82F6; image: url({check_url});
             }}
-            QCheckBox::indicator:hover {{
-                border-color: #94A3B8;
-            }}
+            QCheckBox::indicator:hover {{ border-color: #94A3B8; }}
         """)
         self.chk_range.toggled.connect(self.on_range_toggled)
 
@@ -251,133 +204,42 @@ class AddPage(QWidget):
         date_layout.addWidget(self.chk_range, 30)
         form_layout.addRow(self.create_label("Tarih:"), date_layout)
 
-        # 3.1 Bitiş Tarihi
         self.input_end_date = QDateEdit()
         self.input_end_date.setCalendarPopup(True)
         self.input_end_date.setLocale(QLocale(QLocale.Turkish, QLocale.Turkey))
         self.input_end_date.setDisplayFormat("d MMMM yyyy")
         self.input_end_date.setDate(QDate.currentDate().addDays(1))
         self.input_end_date.setMinimumHeight(42)
-        self.input_end_date.setStyleSheet(f"""
-            QDateEdit {{
-                background-color: #FFFFFF;
-                border: 2px solid #E2E8F0;
-                border-radius: 10px;
-                padding: 12px 15px;
-                font-size: 14px;
-                color: #334155;
-            }}
-            QDateEdit:focus {{
-                border: 2px solid #3B82F6;
-                background-color: #F8FAFC;
-            }}
-            QDateEdit:hover {{
-                border: 2px solid #CBD5E1;
-            }}
-            QDateEdit::drop-down {{
-                border: none;
-                width: 40px;
-                border-left: 1px solid #E2E8F0;
-                border-radius: 0 8px 8px 0;
-                background-color: #F8FAFC;
-            }}
-            QDateEdit::down-arrow {{
-                image: url('{arrow_url}');
-                width: 16px;
-                height: 16px;
-            }}
-        """)
+        self.input_end_date.setStyleSheet(self._date_style())
 
         self.lbl_end_date = self.create_label("Bitiş:")
         form_layout.addRow(self.lbl_end_date, self.input_end_date)
         self.lbl_end_date.hide()
         self.input_end_date.hide()
 
-        # 4. Yorum
+    def _build_comment_field(self, form_layout):
         self.input_comment = QTextEdit()
         self.input_comment.setMaximumHeight(100)
         self.input_comment.setPlaceholderText("Düşünceleriniz, notlarınız, izlenimleriniz...")
         self.input_comment.setStyleSheet("""
             QTextEdit {
-                background-color: #FFFFFF;
-                border: 2px solid #E2E8F0;
-                border-radius: 10px;
-                padding: 12px 15px;
-                font-size: 14px;
-                color: #334155;
+                background-color: #FFFFFF; border: 2px solid #E2E8F0;
+                border-radius: 10px; padding: 12px 15px;
+                font-size: 14px; color: #334155;
             }
-            QTextEdit:focus {
-                border: 2px solid #3B82F6;
-                background-color: #F8FAFC;
-            }
-            QTextEdit:hover {
-                border: 2px solid #CBD5E1;
-            }
-            QTextEdit::placeholder {
-                color: #94A3B8;
-                font-style: italic;
-            }
+            QTextEdit:focus { border: 2px solid #3B82F6; background-color: #F8FAFC; }
+            QTextEdit:hover { border: 2px solid #CBD5E1; }
+            QTextEdit::placeholder { color: #94A3B8; font-style: italic; }
         """)
         form_layout.addRow(self.create_label("Yorum:"), self.input_comment)
 
-        # 5. Puan
+    def _build_rating_field(self, form_layout):
         self.combo_rating = QComboBox()
         self.combo_rating.addItem("Seçiniz")
         self.combo_rating.addItems([str(i) for i in range(1, 11)])
         self.combo_rating.setMinimumHeight(42)
-        self.combo_rating.setStyleSheet(f"""
-            QComboBox {{
-                background-color: #FFFFFF;
-                border: 2px solid #E2E8F0;
-                border-radius: 10px;
-                padding: 12px 15px;
-                font-size: 14px;
-                color: #334155;
-            }}
-            QComboBox:focus {{
-                border: 2px solid #3B82F6;
-                background-color: #F8FAFC;
-            }}
-            QComboBox:hover {{
-                border: 2px solid #CBD5E1;
-            }}
-            QComboBox::drop-down {{
-                border: none;
-                width: 40px;
-                border-left: 1px solid #E2E8F0;
-                border-radius: 0 8px 8px 0;
-                background-color: #F8FAFC;
-            }}
-            QComboBox::down-arrow {{
-                image: url('{arrow_url}');
-                width: 16px;
-                height: 16px;
-            }}
-            QComboBox QAbstractItemView {{
-                border: 2px solid #E2E8F0;
-                border-radius: 8px;
-                background-color: white;
-                selection-background-color: #3B82F6;
-                selection-color: white;
-                padding: 8px;
-                font-size: 14px;
-            }}
-            QComboBox QAbstractItemView::item {{
-                padding: 10px 15px;
-                border-radius: 5px;
-                margin: 2px;
-            }}
-            QComboBox QAbstractItemView::item:hover {{
-                background-color: #FEF3C7;
-            }}
-            QComboBox QAbstractItemView::item:selected {{
-                background-color: linear-gradient(to right, #FBBF24, #F59E0B);
-                color: #92400E;
-            }}
-        """)
+        self.combo_rating.setStyleSheet(self._combo_style())
         form_layout.addRow(self.create_label("Puan:"), self.combo_rating)
-
-        card_layout.addLayout(form_layout)
 
     def _build_buttons(self, card_layout):
         card_layout.addSpacing(20)
