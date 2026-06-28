@@ -7,6 +7,32 @@ from PyQt5.QtGui import QFont
 
 
 class EditDialog(QDialog):
+
+    _INPUT_STYLE = """
+        QLineEdit, QComboBox, QDateEdit, QTextEdit {
+            background-color: #FFFFFF; border: 2px solid #E2E8F0;
+            border-radius: 8px; padding: 8px 12px;
+            font-size: 14px; color: #334155;
+        }
+        QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QTextEdit:focus {
+            border: 2px solid #3B82F6; background-color: #F8FAFC;
+        }
+        QLineEdit:hover, QComboBox:hover, QDateEdit:hover, QTextEdit:hover {
+            border: 2px solid #CBD5E1;
+        }
+        QComboBox::drop-down, QDateEdit::drop-down {
+            border: none; width: 30px; background-color: transparent;
+        }
+        QComboBox::down-arrow, QDateEdit::down-arrow {
+            image: url(icons/down_arrow.svg); width: 14px; height: 14px;
+        }
+        QComboBox QAbstractItemView {
+            border: 2px solid #E2E8F0; border-radius: 8px;
+            background-color: white; selection-background-color: #3B82F6;
+            selection-color: white; padding: 4px;
+        }
+    """
+
     def __init__(self, controller, activity, parent=None):
         super().__init__(parent)
         self.controller = controller
@@ -17,6 +43,11 @@ class EditDialog(QDialog):
         self.setStyleSheet("QDialog { background-color: #F8FAFC; }")
         self.init_ui()
         self.load_types()
+
+    def _create_label(self, text):
+        lbl = QLabel(text)
+        lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #475569;")
+        return lbl
 
     def load_types(self):
         if hasattr(self.controller, 'get_all_activity_types'):
@@ -29,141 +60,98 @@ class EditDialog(QDialog):
         self.load_data()
 
     def init_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(25, 25, 25, 25)
-        main_layout.setSpacing(20)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(25, 25, 25, 25)
+        layout.setSpacing(20)
+        self._build_title(layout)
+        self._build_form(layout)
+        self._build_buttons(layout)
 
+    def _build_title(self, layout):
         title = QLabel("Faaliyet Düzenle")
         title.setStyleSheet("""
-            font-family: 'Segoe UI';
-            font-size: 24px;
-            font-weight: bold;
-            color: #1E293B;
-            margin-bottom: 10px;
+            font-family: 'Segoe UI'; font-size: 24px; font-weight: bold;
+            color: #1E293B; margin-bottom: 10px;
         """)
         title.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(title)
+        layout.addWidget(title)
 
+    def _build_form(self, layout):
         form_frame = QFrame()
         form_frame.setStyleSheet("""
-            QFrame {
-                background-color: #FFFFFF;
-                border: 1px solid #E2E8F0;
-                border-radius: 12px;
-            }
+            QFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; }
         """)
-        form_layout_container = QVBoxLayout(form_frame)
-        form_layout_container.setContentsMargins(20, 25, 20, 25)
+        container = QVBoxLayout(form_frame)
+        container.setContentsMargins(20, 25, 20, 25)
 
-        form_layout = QFormLayout()
-        form_layout.setSpacing(15)
-        form_layout.setLabelAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-
-        self.input_style = """
-            QLineEdit, QComboBox, QDateEdit, QTextEdit {
-                background-color: #FFFFFF;
-                border: 2px solid #E2E8F0;
-                border-radius: 8px;
-                padding: 8px 12px;
-                font-size: 14px;
-                color: #334155;
-            }
-            QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QTextEdit:focus {
-                border: 2px solid #3B82F6;
-                background-color: #F8FAFC;
-            }
-            QLineEdit:hover, QComboBox:hover, QDateEdit:hover, QTextEdit:hover {
-                border: 2px solid #CBD5E1;
-            }
-            QComboBox::drop-down, QDateEdit::drop-down {
-                border: none;
-                width: 30px;
-                background-color: transparent;
-            }
-            QComboBox::down-arrow, QDateEdit::down-arrow {
-                image: url(icons/down_arrow.svg);
-                width: 14px;
-                height: 14px;
-            }
-            QComboBox QAbstractItemView {
-                border: 2px solid #E2E8F0;
-                border-radius: 8px;
-                background-color: white;
-                selection-background-color: #3B82F6;
-                selection-color: white;
-                padding: 4px;
-            }
-        """
-
-        def create_label(text):
-            lbl = QLabel(text)
-            lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #475569;")
-            return lbl
+        form = QFormLayout()
+        form.setSpacing(15)
+        form.setLabelAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
         self.combo_type = QComboBox()
         self.combo_type.setMinimumHeight(40)
-        self.combo_type.setStyleSheet(self.input_style)
-        form_layout.addRow(create_label("Tür:"), self.combo_type)
+        self.combo_type.setStyleSheet(self._INPUT_STYLE)
+        form.addRow(self._create_label("Tür:"), self.combo_type)
 
         self.input_name = QLineEdit()
         self.input_name.setMinimumHeight(40)
-        self.input_name.setStyleSheet(self.input_style)
-        form_layout.addRow(create_label("Ad:"), self.input_name)
+        self.input_name.setStyleSheet(self._INPUT_STYLE)
+        form.addRow(self._create_label("Ad:"), self.input_name)
 
-        date_container = QHBoxLayout()
-        date_container.setSpacing(10)
+        # Tarih + bitiş tarihi checkbox
+        date_row = QHBoxLayout()
+        date_row.setSpacing(10)
 
         self.input_date = QDateEdit()
         self.input_date.setCalendarPopup(True)
         self.input_date.setDisplayFormat("d MMMM yyyy")
         self.input_date.setMinimumHeight(40)
-        self.input_date.setStyleSheet(self.input_style)
+        self.input_date.setStyleSheet(self._INPUT_STYLE)
 
         self.chk_range = QCheckBox("Bitiş Tarihi")
         self.chk_range.setStyleSheet("""
             QCheckBox { color: #475569; font-size: 14px; spacing: 8px; }
             QCheckBox::indicator {
-                width: 18px; height: 18px;
-                border-radius: 4px; border: 2px solid #CBD5E1; background-color: white;
+                width: 18px; height: 18px; border-radius: 4px;
+                border: 2px solid #CBD5E1; background-color: white;
             }
             QCheckBox::indicator:checked {
-                background-color: #3B82F6; border-color: #3B82F6;
-                image: url(icons/check.svg);
+                background-color: #3B82F6; border-color: #3B82F6; image: url(icons/check.svg);
             }
         """)
         self.chk_range.toggled.connect(self.on_range_toggled)
+        date_row.addWidget(self.input_date, 60)
+        date_row.addWidget(self.chk_range, 40)
+        form.addRow(self._create_label("Tarih:"), date_row)
 
-        date_container.addWidget(self.input_date, 60)
-        date_container.addWidget(self.chk_range, 40)
-        form_layout.addRow(create_label("Tarih:"), date_container)
-
-        self.lbl_end_date = create_label("Bitiş:")
+        self.lbl_end_date = self._create_label("Bitiş:")
         self.input_end_date = QDateEdit()
         self.input_end_date.setCalendarPopup(True)
         self.input_end_date.setDisplayFormat("d MMMM yyyy")
         self.input_end_date.setMinimumHeight(40)
-        self.input_end_date.setStyleSheet(self.input_style)
-        form_layout.addRow(self.lbl_end_date, self.input_end_date)
+        self.input_end_date.setStyleSheet(self._INPUT_STYLE)
+        form.addRow(self.lbl_end_date, self.input_end_date)
         self.lbl_end_date.hide()
         self.input_end_date.hide()
 
         self.input_comment = QTextEdit()
         self.input_comment.setMinimumHeight(80)
-        self.input_comment.setStyleSheet(self.input_style)
-        form_layout.addRow(create_label("Yorum:"), self.input_comment)
+        self.input_comment.setStyleSheet(self._INPUT_STYLE)
+        form.addRow(self._create_label("Yorum:"), self.input_comment)
 
         self.combo_rating = QComboBox()
         self.combo_rating.setMinimumHeight(40)
         self.combo_rating.addItem("Seçiniz")
         self.combo_rating.addItems([str(i) for i in range(1, 11)])
-        self.combo_rating.setStyleSheet(self.input_style)
-        form_layout.addRow(create_label("Puan:"), self.combo_rating)
+        self.combo_rating.setStyleSheet(self._INPUT_STYLE)
+        form.addRow(self._create_label("Puan:"), self.combo_rating)
 
-        form_layout_container.addLayout(form_layout)
-        main_layout.addWidget(form_frame)
+        container.addLayout(form)
+        layout.addWidget(form_frame)
 
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(15)
+    def _build_buttons(self, layout):
+        button_row = QHBoxLayout()
+        button_row.setSpacing(15)
 
         btn_cancel = QPushButton("İptal")
         btn_cancel.setMinimumHeight(45)
@@ -194,9 +182,9 @@ class EditDialog(QDialog):
             QPushButton:pressed { background-color: #1D4ED8; padding-top: 2px; }
         """)
 
-        button_layout.addWidget(btn_cancel)
-        button_layout.addWidget(self.btn_save)
-        main_layout.addLayout(button_layout)
+        button_row.addWidget(btn_cancel)
+        button_row.addWidget(self.btn_save)
+        layout.addLayout(button_row)
 
     def load_data(self):
         index = self.combo_type.findText(self.activity.type)
