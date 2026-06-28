@@ -55,7 +55,9 @@ def init_db():
 def get_connection():
     """Veritabanına yeni bir bağlantı döndürür."""
     try:
-        return sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
     except Exception as e:
         logger.error(f"Veritabanı bağlantısı alınırken hata oluştu: {e}")
         return None

@@ -8,6 +8,7 @@ Pagination ve Türkçe içerik filtresi destekler.
 import requests
 import datetime
 import os
+from logger_setup import logger
 from services.recommendation_config import (
     PERIODS, PERIOD_ORDER, FILM_GENRES, DIZI_GENRES, OYUN_GENRES, KITAP_GENRES,
     CULT_MOVIE_IDS, CULT_SERIES_IDS, MIN_VOTE_COUNT, MIN_RATING_ALL_TIME
@@ -118,7 +119,7 @@ class ApiService:
             else:
                 return self._fetch_movies_popular(genre_id, page, is_turkish)
         except Exception as e:
-            print(f"Movie API Error: {e}")
+            logger.error(f"Movie API Error: {e}")
             return []
 
     def _fetch_movies_by_date(self, period, genre_id=None, page=1, is_turkish=False):
@@ -244,7 +245,7 @@ class ApiService:
                     parsed = self._parse_movie_item(item)
                     if parsed['image']:
                         results.append(parsed)
-            except:
+            except Exception:
                 continue
         return results
 
@@ -345,7 +346,7 @@ class ApiService:
             else:
                 return self._fetch_series_popular(genre_id, page, is_turkish)
         except Exception as e:
-            print(f"Series API Error: {e}")
+            logger.error(f"Series API Error: {e}")
             return []
 
     def _fetch_series_by_date(self, period, genre_id=None, page=1, is_turkish=False):
@@ -470,7 +471,7 @@ class ApiService:
                     parsed = self._parse_series_item(item)
                     if parsed['image']:
                         results.append(parsed)
-            except:
+            except Exception:
                 continue
         return results
 
@@ -566,7 +567,7 @@ class ApiService:
             else:
                 return self._fetch_games_popular(genre_slug, page)
         except Exception as e:
-            print(f"Game API Error: {e}")
+            logger.error(f"Game API Error: {e}")
             return []
 
     def _fetch_games_by_date(self, period, genre_slug=None, page=1):
@@ -789,7 +790,7 @@ class ApiService:
             return results
             
         except Exception as e:
-            print(f"Google Books API Error: {e}")
+            logger.error(f"Google Books API Error: {e}")
             return []
 
     # =========================================================================
@@ -846,7 +847,7 @@ class ApiService:
             return self._get_fallback_random(category)
             
         except Exception as e:
-            print(f"Random recommendation error: {e}")
+            logger.error(f"Random recommendation error: {e}")
             return self._get_fallback_random(category)
     
     def _get_fallback_random(self, category=None):
@@ -862,8 +863,8 @@ class ApiService:
                 selected['random_category'] = cat
                 selected['random_period'] = 'must_see'
                 return selected
-        except:
+        except Exception:
             pass
-        
+
         return None
 

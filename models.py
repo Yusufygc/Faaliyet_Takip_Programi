@@ -24,11 +24,16 @@ class Activity:
     @classmethod
     def from_row(cls, row):
         """Veritabanından gelen bir satırı Activity nesnesine çevirir."""
-        # Row sırası repository select sorgusuna göre değişebilir ama genelde:
-        # id, type, name, date, comment, rating, end_date
-        # Eğer eski bir sorgu ise end_date olmayabilir, güvenli olması için *row kullanıyoruz
-        # Ancak repository güncellendiğinde sıra önemli.
-        return cls(*row)
+        keys = row.keys() if hasattr(row, 'keys') else []
+        return cls(
+            id=row['id'],
+            type=row['type'],
+            name=row['name'],
+            date=row['date'],
+            comment=row['comment'],
+            rating=row['rating'],
+            end_date=row['end_date'] if 'end_date' in keys else None,
+        )
 
     def __str__(self):
         puan = self.rating if self.rating else 'N/A'
@@ -46,7 +51,7 @@ class Folder:
 
     @classmethod
     def from_row(cls, row):
-        return cls(*row)
+        return cls(id=row['id'], name=row['name'], created_at=row['created_at'])
 
 @dataclass
 class Plan:
@@ -66,4 +71,16 @@ class Plan:
     @classmethod
     def from_row(cls, row):
         """Veritabanı satırından Plan oluşturur."""
-        return cls(*row)
+        return cls(
+            id=row['id'],
+            title=row['title'],
+            description=row['description'],
+            scope=row['scope'],
+            year=row['year'],
+            month=row['month'],
+            status=row['status'],
+            progress=row['progress'],
+            priority=row['priority'],
+            created_at=row['created_at'],
+            folder_id=row['folder_id'] if 'folder_id' in row.keys() else None,
+        )

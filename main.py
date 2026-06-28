@@ -7,12 +7,25 @@ import traceback
 # Matplotlib Backend Ayarı - CRASH FIX
 try:
     matplotlib.use('Qt5Agg')
-except:
+except Exception:
     pass
 
+def _get_crash_log_path():
+    from constants import DATA_DIR_NAME
+    if sys.platform == "win32":
+        base = os.environ.get('LOCALAPPDATA') or os.path.expanduser("~")
+    else:
+        base = os.path.join(os.path.expanduser("~"), ".config")
+    log_dir = os.path.join(base, DATA_DIR_NAME)
+    os.makedirs(log_dir, exist_ok=True)
+    return os.path.join(log_dir, "crash_log.txt")
+
 def log_error(msg):
-    with open("crash_log.txt", "a") as f:
-        f.write(msg + "\n")
+    try:
+        with open(_get_crash_log_path(), "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
 
 try:
     from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -33,7 +46,7 @@ def main():
     try:
         myappid = 'myy.faaliyettakip.v1.0'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-    except:
+    except Exception:
         pass
 
     try:

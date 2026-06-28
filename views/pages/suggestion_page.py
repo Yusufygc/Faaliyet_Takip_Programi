@@ -20,6 +20,7 @@ class AsyncImage(QLabel):
     
     def __init__(self, url, width=100, height=150):
         super().__init__()
+        self._workers = []
         self.setFixedSize(width, height)
         self.setStyleSheet("background-color: #333; border-radius: 8px;")
         self.setAlignment(Qt.AlignCenter)
@@ -27,12 +28,13 @@ class AsyncImage(QLabel):
         self.url = url
         if url:
             self.load_image()
-            
+
     def load_image(self):
         worker = DbWorker(self.fetch_image)
         worker.finished.connect(self.set_image)
+        worker.finished.connect(lambda: self._workers.remove(worker) if worker in self._workers else None)
+        self._workers.append(worker)
         worker.start()
-        self._worker = worker
 
     def fetch_image(self):
         try:
@@ -41,7 +43,7 @@ class AsyncImage(QLabel):
                 img = QImage()
                 img.loadFromData(response.content)
                 return img
-        except:
+        except Exception:
             return None
         return None
 

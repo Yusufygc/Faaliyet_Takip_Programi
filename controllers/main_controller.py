@@ -1,5 +1,7 @@
 # controllers/main_controller.py
 from database.repository import ActivityRepository
+from database.plan_repository import PlanRepository
+from database.type_repository import TypeRepository
 from models import Activity, ActivityFilter, Plan
 from utils import is_valid_yyyymm, extract_year_month
 from datetime import datetime
@@ -14,10 +16,11 @@ class MainController:
     """
 
     def __init__(self):
-        # Repository nesnesini başlatıyoruz
         self.repository = ActivityRepository()
-        self.workers = set() # Aktif worker'ları takip etmek için
-        
+        self.plan_repo = PlanRepository()
+        self.type_repo = TypeRepository()
+        self.workers = set()
+
         # Başlangıçta türleri senkronize et
         self.synchronize_types()
 
@@ -225,14 +228,14 @@ class MainController:
 
     def get_all_activity_types(self, callback):
         """Tüm türleri asenkron getirir."""
-        self._run_async(self.repository.get_all_types, callback)
+        self._run_async(self.type_repo.get_all_types, callback)
 
     def add_activity_type(self, name, callback):
         """Yeni tür ekleme (Asenkron)."""
         if not name or not name.strip():
             callback((False, "Tür adı boş olamaz."))
             return
-        self._run_async(self.repository.add_type, callback, name.strip())
+        self._run_async(self.type_repo.add_type, callback, name.strip())
 
     def update_activity_type(self, old_name, new_name, callback):
         """Tür güncelleme (Asenkron)."""
@@ -242,16 +245,16 @@ class MainController:
         if old_name == new_name:
             callback((False, "Herhangi bir değişiklik yapılmadı."))
             return
-            
-        self._run_async(self.repository.update_type, callback, old_name, new_name.strip())
+
+        self._run_async(self.type_repo.update_type, callback, old_name, new_name.strip())
 
     def delete_activity_type(self, name, callback):
         """Tür silme (Asenkron)."""
-        self._run_async(self.repository.delete_type, callback, name)
+        self._run_async(self.type_repo.delete_type, callback, name)
 
     def synchronize_types(self):
         """Eksik türleri senkronize et (Arka planda çalışır, callback gerekmez)."""
-        self._run_async(self.repository.synchronize_types, None)
+        self._run_async(self.type_repo.synchronize_types, None)
 
     # --- Plan / Hedef İşlemleri ---
 
@@ -260,14 +263,13 @@ class MainController:
         if not title:
             callback((False, "Başlık boş olamaz."))
             return
-            
+
         created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # Yeni plan status='planned', progress=0 başlar
         plan = Plan(None, title, description, scope, year, month, 'planned', 0, priority, created_at, folder_id)
-        
+
         def op():
-            return self.repository.add_plan(plan), "Plan eklendi."
-            
+            return self.plan_repo.add_plan(plan), "Plan eklendi."
+
         self._run_async(lambda: op(), lambda res: callback((res[0], res[1]) if isinstance(res, tuple) else (res, "")))
 
     def update_plan(self, plan_id, title, description, status, progress, priority, folder_id, callback):
@@ -276,50 +278,43 @@ class MainController:
             callback((False, "Başlık boş olamaz."))
             return
 
-        # Modeli oluştur (ID ve diğer alanlarla)
-        # Not: Created_at, Scope, Year, Month değişmez varsayıyoruz düzenlemede
-        # Hızlı çözüm: Repository sadece ilgili alanları güncelliyor, o yüzden dummy değerler verebiliriz
-        # ama en doğrusu repository update metoduna uygun nesne yollamak.
-        # Repository update_plan sql: title=?, description=?, status=?, progress=?, priority=?, folder_id=? WHERE id=?
-        # Diğer alanlar (scope, year, month) kullanılmıyor.
-        
         plan = Plan(plan_id, title, description, "", 0, 0, status, progress, priority, "", folder_id)
-        
+
         def op():
-            return self.repository.update_plan(plan), "Plan güncellendi."
-            
+            return self.plan_repo.update_plan(plan), "Plan güncellendi."
+
         self._run_async(lambda: op(), lambda res: callback((res[0], res[1])))
 
     def update_plan_progress(self, plan_id, progress, status, callback):
         """İlerleme durumu günceller."""
         def op():
-            return self.repository.update_plan_progress(plan_id, progress, status)
+            return self.plan_repo.update_plan_progress(plan_id, progress, status)
         self._run_async(op, callback)
 
     def delete_plan(self, plan_id, callback):
         """Plan siler."""
         def op():
-            return self.repository.delete_plan(plan_id), "Plan silindi."
+            return self.plan_repo.delete_plan(plan_id), "Plan silindi."
         self._run_async(lambda: op(), lambda res: callback((res[0], res[1])))
 
     def get_plans(self, scope, year, month, callback):
         """Planları getirir."""
-        self._run_async(self.repository.get_plans, callback, scope, year, month)
+        self._run_async(self.plan_repo.get_plans, callback, scope, year, month)
 
     # --- Folder (Klasör) İşlemleri ---
 
     def get_folders(self, callback):
         """Klasörleri getirir."""
-        self._run_async(self.repository.get_folders, callback)
+        self._run_async(self.plan_repo.get_folders, callback)
 
     def add_folder(self, name, callback):
         """Yeni klasör ekler."""
         if not name or not name.strip():
             callback((False, "Klasör adı boş olamaz."))
             return
-        
+
         def op():
-            return self.repository.add_folder(name.strip()), "Klasör eklendi."
+            return self.plan_repo.add_folder(name.strip()), "Klasör eklendi."
         self._run_async(lambda: op(), lambda res: callback(res))
 
     def update_folder(self, folder_id, name, callback):
@@ -327,34 +322,53 @@ class MainController:
         if not name or not name.strip():
             callback((False, "Klasör adı boş olamaz."))
             return
-            
+
         def op():
-            return self.repository.update_folder(folder_id, name.strip()), "Klasör güncellendi."
+            return self.plan_repo.update_folder(folder_id, name.strip()), "Klasör güncellendi."
         self._run_async(lambda: op(), lambda res: callback(res))
 
     def delete_folder(self, folder_id, callback):
         """Klasör siler."""
         def op():
-            return self.repository.delete_folder(folder_id), "Klasör silindi."
+            return self.plan_repo.delete_folder(folder_id), "Klasör silindi."
         self._run_async(lambda: op(), lambda res: callback(res))
 
     # --- API Anahtarı Yönetimi ---
 
+    _KEYRING_APP = "FaaliyetTakip"
+
     def get_api_keys(self, callback):
-        """Kaydedilmiş API anahtarlarını getirir."""
+        """Kaydedilmiş API anahtarlarını getirir (keyring → DB fallback + lazy migration)."""
         def op():
-            tmdb = self.repository.get_setting("tmdb_api_key") or ""
-            rawg = self.repository.get_setting("rawg_api_key") or ""
-            return {"tmdb_api_key": tmdb, "rawg_api_key": rawg}
+            import keyring
+            tmdb = keyring.get_password(self._KEYRING_APP, "tmdb_api_key")
+            rawg = keyring.get_password(self._KEYRING_APP, "rawg_api_key")
+            # Keyring'de yoksa DB'den oku ve keyring'e migrate et
+            if tmdb is None:
+                tmdb = self.type_repo.get_setting("tmdb_api_key") or ""
+                if tmdb:
+                    keyring.set_password(self._KEYRING_APP, "tmdb_api_key", tmdb)
+                    self.type_repo.set_setting("tmdb_api_key", "")
+            if rawg is None:
+                rawg = self.type_repo.get_setting("rawg_api_key") or ""
+                if rawg:
+                    keyring.set_password(self._KEYRING_APP, "rawg_api_key", rawg)
+                    self.type_repo.set_setting("rawg_api_key", "")
+            return {"tmdb_api_key": tmdb or "", "rawg_api_key": rawg or ""}
         self._run_async(op, callback)
 
     def save_api_keys(self, tmdb_key, rawg_key, callback):
-        """API anahtarlarını kaydeder."""
+        """API anahtarlarını keyring'e kaydeder."""
         def op():
-            r1 = self.repository.set_setting("tmdb_api_key", tmdb_key.strip())
-            r2 = self.repository.set_setting("rawg_api_key", rawg_key.strip())
-            if r1 and r2:
+            try:
+                import keyring
+                keyring.set_password(self._KEYRING_APP, "tmdb_api_key", tmdb_key.strip())
+                keyring.set_password(self._KEYRING_APP, "rawg_api_key", rawg_key.strip())
+                # DB'deki eski plaintext kopyayı temizle
+                self.type_repo.set_setting("tmdb_api_key", "")
+                self.type_repo.set_setting("rawg_api_key", "")
                 return True, "API anahtarları başarıyla kaydedildi."
-            else:
+            except Exception as e:
+                logger.error(f"API key kayıt hatası: {e}")
                 return False, "Kayıt sırasında hata oluştu."
         self._run_async(op, callback)

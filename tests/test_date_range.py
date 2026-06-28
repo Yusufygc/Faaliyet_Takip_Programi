@@ -8,7 +8,7 @@ from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from database.repository import ActivityRepository
-from models import Activity
+from models import Activity, ActivityFilter
 from database.connection import init_db, get_connection
 
 class TestDateRange(unittest.TestCase):
@@ -47,27 +47,24 @@ class TestDateRange(unittest.TestCase):
         self.create_activity("A3", "2023-03-01")
 
         # Test 1: Ocak 2023 Filtresi -> A1 ve A2 gelmeli
-        activities, count = self.repo.get_all_filtered(date_filter="2023-01")
+        activities, count = self.repo.get_all_filtered(ActivityFilter(date_filter="2023-01"))
         names = [a.name for a in activities if a.name in ["A1", "A2", "A3"]]
         self.assertIn("A1", names)
         self.assertIn("A2", names)
         self.assertNotIn("A3", names)
-        print(f"Filter 2023-01 Results: {names}")
 
-        # Test 2: Şubat 2023 Filtresi -> A2 gelmeli (Sadece başı ocakta ama şubata sarkıyor)
-        activities, count = self.repo.get_all_filtered(date_filter="2023-02")
+        # Test 2: Şubat 2023 Filtresi -> A2 gelmeli (başı ocakta ama şubata sarkıyor)
+        activities, count = self.repo.get_all_filtered(ActivityFilter(date_filter="2023-02"))
         names = [a.name for a in activities if a.name in ["A1", "A2", "A3"]]
         self.assertNotIn("A1", names)
-        self.assertIn("A2", names) # BAŞARISIZ OLABİLİR EĞER MANTIK YANLIŞSA
+        self.assertIn("A2", names)
         self.assertNotIn("A3", names)
-        print(f"Filter 2023-02 Results: {names}")
 
         # Test 3: Mart 2023 Filtresi -> A3 gelmeli
-        activities, count = self.repo.get_all_filtered(date_filter="2023-03")
+        activities, count = self.repo.get_all_filtered(ActivityFilter(date_filter="2023-03"))
         names = [a.name for a in activities if a.name in ["A1", "A2", "A3"]]
         self.assertNotIn("A2", names)
         self.assertIn("A3", names)
-        print(f"Filter 2023-03 Results: {names}")
 
 if __name__ == '__main__':
     unittest.main()
