@@ -8,7 +8,7 @@ from PyQt5.QtGui import QColor, QFont, QIcon, QBrush
 import math
 
 from views.widgets import MonthYearWidget
-from views.pages.edit_dialog import EditDialog
+from views.dialogs.edit_dialog import EditDialog
 from views.styles import COLORS as GLOBAL_COLORS
 
 # ═══════════════════════════════════════════════════════════════════════════════
