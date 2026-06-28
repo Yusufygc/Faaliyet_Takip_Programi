@@ -96,7 +96,7 @@ def __init__(self):
     self._cleanup_old_cache()   # Süresi dolmuş cache'i arka planda temizle
 ```
 
-**Not:** `MainController` API anahtarlarını `keyring`'den okurken, `RecommendationController` hâlâ DB `settings` tablosundan okumaktadır. `settings` tablosu keyring migration sonrası temizlendiğinden bu path boş dönebilir — API anahtarlarının çalışmaması durumunda ilk bakılacak yer burasıdır.
+**Düzeltildi (2026-06-28):** Başlangıçta `ActivityRepository.get_setting()` çağrısı vardı (`get_setting` sadece `TypeRepository`'de tanımlı); `AttributeError` ile çöküyordu. `TypeRepository` + keyring öncelikli okuma ile düzeltildi.
 
 ### Metodlar
 

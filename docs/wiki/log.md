@@ -6,6 +6,12 @@ Bağlantılar: [[index]] | [[Rules]]
 
 ---
 
+## [2026-06-28] FIX | RecommendationController başlatma hatası giderildi
+
+`ActivityRepository` üzerinde `get_setting` çağrısı `AttributeError` atıyordu.
+`TypeRepository` + keyring öncelikli okuma ile düzeltildi (`MainController` ile tutarlı).
+Lint sırasında tespit edilmişti ([[kontrolcüler]] sayfasında belgelenmişti).
+
 ## [2026-06-28] LINT | Wiki sağlık kontrolü — 4 sorun düzeltildi
 
 - `ui_katmani.md` → `[[modeller]]` bağlantısı eklendi (Plans sayfası Folder modeli kullanıyor)
