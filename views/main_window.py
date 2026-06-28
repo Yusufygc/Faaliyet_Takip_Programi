@@ -234,6 +234,10 @@ class MainWindow(QMainWindow):
         self.stats_page.open_trend_analysis.connect(self.open_trend_analysis)
         self.trend_analysis_page.back_clicked.connect(self.close_trend_analysis)
 
+        # Observer: aktivite veya plan değişince aktif sayfayı yenile
+        self.controller.activity_changed.connect(self._on_activity_changed)
+        self.controller.plan_changed.connect(self._on_plan_changed)
+
     def switch_page(self, index):
         self.stacked_widget.setCurrentIndex(index)
         self.update_active_button(index)
@@ -265,6 +269,21 @@ class MainWindow(QMainWindow):
         idx = (self.stacked_widget.currentIndex() - 1 + self.stacked_widget.count()) % self.stacked_widget.count()
         self.switch_page(idx)
     
+    def _refresh_current(self, page):
+        """Sayfa şu an aktifse yeniler."""
+        if self.stacked_widget.currentWidget() is page:
+            if hasattr(page, 'refresh_data'):
+                page.refresh_data()
+            elif hasattr(page, 'refresh_statistics'):
+                page.refresh_statistics()
+
+    def _on_activity_changed(self):
+        for page in (self.list_page, self.stats_page, self.compare_page, self.pdf_page):
+            self._refresh_current(page)
+
+    def _on_plan_changed(self):
+        self._refresh_current(self.plans_page)
+
     def open_trend_analysis(self):
         """İstatistik sayfasından trend analizi sayfasına geç"""
         self.stacked_widget.setCurrentWidget(self.trend_analysis_page)
