@@ -1,5 +1,5 @@
 # views/widgets/plan_card.py
-from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
                              QProgressBar, QSizePolicy, QMessageBox)
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from models import Plan

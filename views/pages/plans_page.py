@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                             QPushButton, QComboBox, QScrollArea, QFrame,
+                             QPushButton, QScrollArea, QFrame,
                              QDialog, QMessageBox, QGraphicsDropShadowEffect,
                              QGridLayout)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 from datetime import datetime
+from views.widgets.styled_combo import StyledComboBox
 from views.widgets.plan_colors import COLORS, PRIORITY_CFG
 from views.widgets.folder_widget import FolderWidget
 from views.widgets.plan_card import PlanCard
@@ -152,49 +153,12 @@ class PlansPage(QWidget):
             b.setStyleSheet(f"background: transparent; color: {COLORS['text_sub']}; font-weight: 500; border: none; padding: 0 15px;")
 
     def _make_header_combo(self, items):
-        c = QComboBox()
+        c = StyledComboBox()
         c.addItems(items)
         c.setCursor(Qt.PointingHandCursor)
-        c.setStyleSheet(f"""
-            QComboBox {{
-                background: transparent;
-                border: none;
-                color: {COLORS['text_main']};
-                font-weight: bold;
-                padding: 4px 10px;
-                min-width: 50px;
-            }}
-            QComboBox::drop-down {{
-                border: none;
-                width: 0px;
-            }}
-            QComboBox::down-arrow {{
-                image: none;
-            }}
-            QComboBox:hover {{
-                background-color: #F5F7FA;
-                border-radius: 12px;
-                color: {COLORS['primary']};
-            }}
-            QComboBox QAbstractItemView {{
-                background: white;
-                border: 1px solid {COLORS['border']};
-                border-radius: 12px;
-                padding: 5px;
-                outline: none;
-                min-width: 120px;
-            }}
-            QComboBox QAbstractItemView::item {{
-                height: 32px;
-                padding-left: 10px;
-                color: {COLORS['text_main']};
-                border-radius: 6px;
-            }}
-            QComboBox QAbstractItemView::item:selected {{
-                background-color: {COLORS['primary']}1A;
-                color: {COLORS['primary']};
-            }}
-        """)
+        # Flat varyant: stil merkezi (styles/inputs.qss) tarafından uygulanır.
+        c.setProperty("variant", "flat")
+        c.setMinimumWidth(50)
         return c
 
     def set_scope(self, scope):

@@ -1,8 +1,9 @@
 # views/widgets/plan_dialog.py
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-                             QLineEdit, QTextEdit, QComboBox, QSlider, QPushButton)
+                             QLineEdit, QTextEdit, QSlider, QPushButton)
 from PyQt5.QtCore import Qt
 from models import Plan
+from views.widgets.styled_combo import StyledComboBox
 
 
 class PlanDialog(QDialog):
@@ -25,7 +26,7 @@ class PlanDialog(QDialog):
 
         if self.folders:
             layout.addWidget(self._make_label("KLASÖR / PROJE"))
-            self.cmb_folder = QComboBox()
+            self.cmb_folder = StyledComboBox()
             self.cmb_folder.addItem("Genel (Klasörsüz)", None)
 
             selected_idx = 0
@@ -54,7 +55,7 @@ class PlanDialog(QDialog):
         layout.addWidget(self.inp_desc)
 
         layout.addWidget(self._make_label("ÖNCELİK"))
-        self.cmb_priority = QComboBox()
+        self.cmb_priority = StyledComboBox()
         self.cmb_priority.addItems(["Düşük Öncelik", "Orta Öncelik", "Yüksek Öncelik"])
 
         priority_map = {'low': 0, 'medium': 1, 'high': 2}
@@ -64,7 +65,7 @@ class PlanDialog(QDialog):
 
         if self.plan:
             layout.addWidget(self._make_label("DURUM"))
-            self.cmb_status = QComboBox()
+            self.cmb_status = StyledComboBox()
             self.cmb_status.addItems(["Planlandı", "Sürüyor", "Tamamlandı", "Arşiv"])
 
             st_map = {'planned': 0, 'in_progress': 1, 'completed': 2, 'archived': 3}

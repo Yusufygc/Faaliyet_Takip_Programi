@@ -7,6 +7,7 @@ from PyQt5.QtGui import QKeySequence, QFont
 from utils import get_resource_path
 import os
 from styles import load
+from views.widgets.styled_combo import StyledComboBox
 
 
 
@@ -37,7 +38,6 @@ class AddPage(QWidget):
         self._build_header(card_layout)
         self._build_form(card_layout)
         self._build_buttons(card_layout)
-        self._build_footer(card_layout)
 
         main_layout.addWidget(card)
 
@@ -97,7 +97,7 @@ class AddPage(QWidget):
         card_layout.addLayout(form_layout)
 
     def _build_type_field(self, form_layout):
-        self.combo_type = QComboBox()
+        self.combo_type = StyledComboBox()
         self.combo_type.setMinimumHeight(42)
         self.load_types()
         form_layout.addRow(self.create_label("Tür:"), self.combo_type)
@@ -159,7 +159,7 @@ class AddPage(QWidget):
         form_layout.addRow(self.create_label("Yorum:"), self.input_comment)
 
     def _build_rating_field(self, form_layout):
-        self.combo_rating = QComboBox()
+        self.combo_rating = StyledComboBox()
         self.combo_rating.addItem("Seçiniz")
         self.combo_rating.addItems([str(i) for i in range(1, 11)])
         self.combo_rating.setMinimumHeight(42)
@@ -189,20 +189,6 @@ class AddPage(QWidget):
         button_layout.addWidget(self.btn_save)
         button_layout.setAlignment(Qt.AlignCenter)
         card_layout.addLayout(button_layout)
-
-    def _build_footer(self, card_layout):
-        footer = QLabel("Tüm alanları doldurup kaydedebilirsiniz")
-        footer.setStyleSheet("""
-            QLabel {
-                color: #94A3B8;
-                font-size: 12px;
-                background: transparent;
-                border: none;
-                margin-top: 15px;
-            }
-        """)
-        footer.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(footer)
 
     def create_label(self, text):
         label = QLabel(text)

@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QLabel, QLineEdit,
                              QFormLayout, QDateEdit, QCheckBox, QHBoxLayout, QFrame)
 from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtGui import QFont
+from views.widgets.styled_combo import StyledComboBox
 
 
 class EditDialog(QDialog):
@@ -60,7 +61,7 @@ class EditDialog(QDialog):
         form.setSpacing(15)
         form.setLabelAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
-        self.combo_type = QComboBox()
+        self.combo_type = StyledComboBox()
         self.combo_type.setMinimumHeight(40)
         form.addRow(self._create_label("Tür:"), self.combo_type)
 
@@ -106,7 +107,7 @@ class EditDialog(QDialog):
         self.input_comment.setMinimumHeight(80)
         form.addRow(self._create_label("Yorum:"), self.input_comment)
 
-        self.combo_rating = QComboBox()
+        self.combo_rating = StyledComboBox()
         self.combo_rating.setMinimumHeight(40)
         self.combo_rating.addItem("Seçiniz")
         self.combo_rating.addItems([str(i) for i in range(1, 11)])

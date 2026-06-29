@@ -1,7 +1,8 @@
 # views/widgets/month_year_widget.py
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox
+from PyQt5.QtWidgets import QWidget, QHBoxLayout
 from PyQt5.QtCore import pyqtSignal
 from datetime import datetime
+from views.widgets.styled_combo import StyledComboBox
 
 
 class MonthYearWidget(QWidget):
@@ -15,14 +16,14 @@ class MonthYearWidget(QWidget):
 
         self._year_only_forced = False
 
-        self.combo_year = QComboBox()
+        self.combo_year = StyledComboBox()
         current_year = datetime.now().year
 
         self.combo_year.addItem("Tüm Yıllar")
         self.combo_year.addItems([str(y) for y in range(2020, current_year + 2)])
         self.combo_year.setCurrentText(str(current_year))
 
-        self.combo_month = QComboBox()
+        self.combo_month = StyledComboBox()
         self.combo_month.addItem("Tüm Aylar")
         self.combo_month.addItems([f"{m:02d}" for m in range(1, 13)])
 

@@ -41,7 +41,69 @@ except Exception as e:
     sys.exit(1)
 
 
+def patch_cursors():
+    from PyQt5.QtWidgets import QPushButton, QToolButton, QCheckBox, QRadioButton, QComboBox, QTableWidget, QListWidget, QHeaderView
+    from PyQt5.QtCore import Qt
+
+    # 1. QPushButton
+    orig_push = QPushButton.__init__
+    def new_push(self, *args, **kwargs):
+        orig_push(self, *args, **kwargs)
+        self.setCursor(Qt.PointingHandCursor)
+    QPushButton.__init__ = new_push
+
+    # 2. QToolButton
+    orig_tool = QToolButton.__init__
+    def new_tool(self, *args, **kwargs):
+        orig_tool(self, *args, **kwargs)
+        self.setCursor(Qt.PointingHandCursor)
+    QToolButton.__init__ = new_tool
+
+    # 3. QCheckBox
+    orig_check = QCheckBox.__init__
+    def new_check(self, *args, **kwargs):
+        orig_check(self, *args, **kwargs)
+        self.setCursor(Qt.PointingHandCursor)
+    QCheckBox.__init__ = new_check
+
+    # 4. QRadioButton
+    orig_radio = QRadioButton.__init__
+    def new_radio(self, *args, **kwargs):
+        orig_radio(self, *args, **kwargs)
+        self.setCursor(Qt.PointingHandCursor)
+    QRadioButton.__init__ = new_radio
+
+    # 5. QComboBox
+    orig_combo = QComboBox.__init__
+    def new_combo(self, *args, **kwargs):
+        orig_combo(self, *args, **kwargs)
+        self.setCursor(Qt.PointingHandCursor)
+    QComboBox.__init__ = new_combo
+
+    # 6. QTableWidget (Viewport)
+    orig_table = QTableWidget.__init__
+    def new_table(self, *args, **kwargs):
+        orig_table(self, *args, **kwargs)
+        self.viewport().setCursor(Qt.PointingHandCursor)
+    QTableWidget.__init__ = new_table
+
+    # 7. QListWidget (Viewport)
+    orig_list = QListWidget.__init__
+    def new_list(self, *args, **kwargs):
+        orig_list(self, *args, **kwargs)
+        self.viewport().setCursor(Qt.PointingHandCursor)
+    QListWidget.__init__ = new_list
+
+    # 8. QHeaderView
+    orig_header = QHeaderView.__init__
+    def new_header(self, *args, **kwargs):
+        orig_header(self, *args, **kwargs)
+        self.setCursor(Qt.PointingHandCursor)
+    QHeaderView.__init__ = new_header
+
+
 def main():
+    patch_cursors()
     # Gorev cubugu ikonu icin App ID ayarla
     try:
         myappid = 'myy.faaliyettakip.v1.0'

@@ -1,9 +1,10 @@
 # views/pages/analysis_page/trend_analysis_widget.py
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                             QComboBox, QFrame, QGraphicsDropShadowEffect,
+                             QFrame, QGraphicsDropShadowEffect,
                              QSizePolicy, QGridLayout, QListWidget, QListWidgetItem)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QCursor
+from views.widgets.styled_combo import StyledComboBox
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -50,25 +51,18 @@ class TrendAnalysisWidget(QFrame):
         fw_layout = QHBoxLayout(filter_widget)
         fw_layout.setContentsMargins(5, 5, 5, 5)
 
-        self.cmb_year = QComboBox()
+        self.cmb_year = StyledComboBox()
         self.cmb_year.addItems([str(y) for y in range(self.current_year - 2, self.current_year + 3)])
         self.cmb_year.setCurrentText(str(self.current_year))
         self.cmb_year.currentIndexChanged.connect(self.load_data)
 
-        self.cmb_category = QComboBox()
+        self.cmb_category = StyledComboBox()
         self.cmb_category.addItem("Hepsi")
         self.cmb_category.currentIndexChanged.connect(self.load_data)
 
-        combo_style = """
-            QComboBox {
-                background: white; border: 1px solid #E2E8F0; border-radius: 6px;
-                padding: 4px 10px; font-size: 12px; color: #475569; min-width: 80px;
-            }
-            QComboBox::drop-down { border: none; width: 20px; }
-            QComboBox::down-arrow { image: url(icons/down_arrow.svg); width: 12px; height: 12px; }
-        """
-        self.cmb_year.setStyleSheet(combo_style)
-        self.cmb_category.setStyleSheet(combo_style)
+        # Stil merkezi (styles/inputs.qss → QComboBox) tarafından uygulanır.
+        self.cmb_year.setMinimumWidth(80)
+        self.cmb_category.setMinimumWidth(80)
 
         fw_layout.addWidget(QLabel("Yıl: ", parent=filter_widget))
         fw_layout.addWidget(self.cmb_year)

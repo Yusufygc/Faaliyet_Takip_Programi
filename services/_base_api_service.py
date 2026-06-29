@@ -1,5 +1,6 @@
 # services/_base_api_service.py
 import time
+import threading
 import requests
 import datetime
 from logger_setup import logger
@@ -10,6 +11,23 @@ ITEMS_PER_PAGE = 12
 
 _MAX_RETRIES = 3
 _BASE_DELAY = 1.0  # saniye
+
+# İstekler arası minimum bekleme (host başına) — 429 baskısını düşürür.
+_MIN_REQUEST_INTERVAL = 0.4  # saniye
+_last_request_times: dict[str, float] = {}
+_throttle_lock = threading.Lock()
+
+
+def _throttle(url: str) -> None:
+    """Aynı host'a art arda istek arasında en az _MIN_REQUEST_INTERVAL bekletir."""
+    from urllib.parse import urlparse
+    host = urlparse(url).netloc
+    with _throttle_lock:
+        now = time.monotonic()
+        wait = _MIN_REQUEST_INTERVAL - (now - _last_request_times.get(host, 0))
+        if wait > 0:
+            time.sleep(wait)
+        _last_request_times[host] = time.monotonic()
 
 
 class _BaseApiService:
@@ -53,6 +71,7 @@ class _BaseApiService:
         """
         last_exc = None
         for attempt in range(_MAX_RETRIES):
+            _throttle(url)
             try:
                 resp = requests.get(url, params=params, timeout=timeout)
             except requests.Timeout:

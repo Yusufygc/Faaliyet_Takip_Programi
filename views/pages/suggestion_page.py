@@ -2,7 +2,8 @@
 
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QScrollArea, QFrame, QGridLayout,
-                             QComboBox, QCheckBox, QDialog)
+                             QCheckBox, QDialog)
+from views.widgets.styled_combo import StyledComboBox
 from PyQt5.QtCore import Qt, QSize
 from services.icon_service import IconService
 from controllers.recommendation_controller import RecommendationController
@@ -97,7 +98,7 @@ class SuggestionPage(QWidget):
         period_label.setStyleSheet("font-weight: bold; color: #333;")
         filter_layout.addWidget(period_label)
 
-        self.period_combo = QComboBox()
+        self.period_combo = StyledComboBox()
         self.period_combo.setMinimumWidth(200)
         for key, name in self.controller.get_all_period_names():
             self.period_combo.addItem(name, key)
@@ -124,7 +125,7 @@ class SuggestionPage(QWidget):
         genre_label.setStyleSheet("font-weight: bold; color: #333;")
         filter_layout.addWidget(genre_label)
 
-        self.genre_combo = QComboBox()
+        self.genre_combo = StyledComboBox()
         self.genre_combo.setMinimumWidth(120)
         self.genre_combo.currentIndexChanged.connect(self.on_genre_changed)
         filter_layout.addWidget(self.genre_combo)

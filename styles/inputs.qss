@@ -1,4 +1,4 @@
-QLineEdit, QComboBox, QDateEdit, QTextEdit {
+QLineEdit, QDateEdit, QTextEdit {
     background-color: $C_BG_WHITE;
     border: 2px solid $C_BORDER;
     border-radius: $R_MD;
@@ -7,38 +7,150 @@ QLineEdit, QComboBox, QDateEdit, QTextEdit {
     color: $C_TEXT_MID;
 }
 
-QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QTextEdit:focus {
+QLineEdit:focus, QDateEdit:focus, QTextEdit:focus {
     border: 2px solid $C_PRIMARY;
     background-color: $C_BG_LIGHT;
 }
 
-QLineEdit:hover, QComboBox:hover, QDateEdit:hover, QTextEdit:hover {
+QLineEdit:hover, QDateEdit:hover, QTextEdit:hover {
     border: 2px solid $C_BORDER_LIGHT;
 }
 
-QLineEdit:disabled, QComboBox:disabled, QDateEdit:disabled, QTextEdit:disabled {
+QLineEdit:disabled, QDateEdit:disabled, QTextEdit:disabled {
     background-color: $C_BG_SUBTLE;
     color: $C_TEXT_LIGHT;
     border-color: $C_BORDER;
 }
 
-QComboBox::drop-down, QDateEdit::drop-down {
+QDateEdit::drop-down {
     border: none;
     width: 30px;
     background-color: transparent;
 }
 
-QComboBox::down-arrow, QDateEdit::down-arrow {
+QDateEdit::down-arrow {
     image: url(icons/down_arrow.svg);
     width: 14px;
     height: 14px;
 }
 
-QComboBox QAbstractItemView {
-    border: 2px solid $C_BORDER;
-    border-radius: $R_MD;
+/* ==========================================================================
+   M E R K E Z İ   Q C O M B O B O X   S T İ L İ
+   ========================================================================== */
+
+QComboBox {
     background-color: $C_BG_WHITE;
-    selection-background-color: $C_PRIMARY;
-    selection-color: white;
-    padding: 4px;
+    border: 1px solid $C_BORDER;
+    border-radius: $R_MD; /* 8px */
+    padding: 8px 36px 8px 12px; /* Sağ tarafta oktan uzaklaşma */
+    font-size: $F_BASE;
+    color: $C_TEXT_MID;
+}
+
+QComboBox:hover {
+    border: 1px solid $C_BORDER_LIGHT;
+}
+
+QComboBox:focus {
+    border: 1px solid $C_PRIMARY;
+    background-color: $C_BG_LIGHT;
+}
+
+QComboBox:disabled {
+    background-color: $C_BG_SUBTLE;
+    color: $C_TEXT_LIGHT;
+    border-color: $C_BORDER;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 30px;
+    background-color: transparent;
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+}
+
+QComboBox::down-arrow {
+    image: url(icons/down_arrow.svg);
+    width: 12px;
+    height: 12px;
+}
+
+/* ── Flat Varyant: başlık / sayfalama gibi metin-buton görünümlü combolar ──
+   Kullanım (Python): combo.setProperty("variant", "flat")
+   Kutu yerine şeffaf zemin; hover'da pastel arka plan. Ok ve popup stili
+   temel QComboBox kurallarından miras alınır. */
+QComboBox[variant="flat"] {
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: 6px 28px 6px 10px;
+    color: $C_TEXT_DARK;
+    font-weight: $FW_BOLD;
+}
+
+QComboBox[variant="flat"]:hover {
+    background-color: $C_BG_SUBTLE;
+    color: $C_PRIMARY;
+    border: 1px solid transparent;
+}
+
+QComboBox[variant="flat"]:focus {
+    background-color: $C_BG_SUBTLE;
+    border: 1px solid transparent;
+}
+
+/* ── Açılır Liste Taşıyıcı Çerçevesi (Popup Menu) ─────────────────────── */
+QComboBox QAbstractItemView {
+    outline: none;
+    border: 1px solid $C_BORDER;
+    border-radius: $R_MD; /* 8px */
+    background-color: $C_BG_WHITE;
+    padding: 6px 4px;
+    /* Seçim vurguları item düzeyinde yapılacağı için list-level seçimi sıfırla */
+    selection-background-color: transparent;
+}
+
+/* ── Liste Elemanları (Dropdown Items) ────────────────────────────────── */
+QComboBox QAbstractItemView::item {
+    height: 34px;
+    padding: 6px 12px; /* Dikey 6px, Yatay 12px boşluk */
+    margin: 2px 4px; /* Elemanlar arası dikey/yatay boşluk */
+    border-radius: $R_SM; /* 6px */
+    color: $C_TEXT_MID;
+    background-color: transparent;
+}
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: $C_BG_SUBTLE; /* Pastel yumuşak gri-mavi */
+    color: $C_PRIMARY;
+}
+
+QComboBox QAbstractItemView::item:selected {
+    background-color: #EFF6FF; /* Şık ve hafif mavi arka plan */
+    color: $C_PRIMARY;
+    font-weight: $FW_SEMIBOLD;
+}
+
+/* ── Modern ve İnce Kaydırma Çubuğu (Vertical ScrollBar) ──────────────── */
+QComboBox QAbstractItemView QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 4px 2px;
+    border: none;
+}
+
+QComboBox QAbstractItemView QScrollBar::handle:vertical {
+    background: $C_BORDER_LIGHT;
+    border-radius: 3px;
+    min-height: 24px;
+}
+
+QComboBox QAbstractItemView QScrollBar::handle:vertical:hover {
+    background: $C_PRIMARY;
+}
+
+QComboBox QAbstractItemView QScrollBar::add-line:vertical,
+QComboBox QAbstractItemView QScrollBar::sub-line:vertical {
+    height: 0px;
+    background: none;
 }

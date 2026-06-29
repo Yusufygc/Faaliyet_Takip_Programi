@@ -3,7 +3,7 @@ from PyQt5.QtCore import QThread, pyqtSignal, QTimer
 from logger_setup import logger
 from exceptions import DatabaseError, ApiError, RateLimitError
 
-_DEFAULT_TIMEOUT_MS = 30_000  # 30 saniye
+_DEFAULT_TIMEOUT_MS = 12_000  # 12 saniye — image 8s + semaphore 8s bekleme içerir
 
 
 class DbWorker(QThread):

@@ -8,6 +8,7 @@ from PyQt5.QtGui import QColor, QFont, QIcon, QBrush
 import math
 
 from views.widgets import MonthYearWidget
+from views.widgets.styled_combo import StyledComboBox
 from views.dialogs.edit_dialog import EditDialog
 # ═══════════════════════════════════════════════════════════════════════════════
 # STYLE CONSTANTS
@@ -90,15 +91,14 @@ class ListPage(QWidget):
 
         lbl_type = QLabel("Tür:")
         lbl_type.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
-        self.combo_filter_type = QComboBox()
+        self.combo_filter_type = StyledComboBox()
         self.combo_filter_type.addItem("Hepsi")
-        self.combo_filter_type.setStyleSheet(self._get_combo_style())
+        self.combo_filter_type.setMinimumWidth(140)
         self.combo_filter_type.currentIndexChanged.connect(self.on_filter_changed)
 
         lbl_date = QLabel("Tarih:")
         lbl_date.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
         self.date_widget = MonthYearWidget()
-        self.date_widget.setStyleSheet(self._get_combo_style())
         self.date_widget.dateChanged.connect(self.on_filter_changed)
 
         lbl_search = QLabel("Ara:")
@@ -221,9 +221,9 @@ class ListPage(QWidget):
         left_box = QHBoxLayout()
         lbl_pp = QLabel("Sayfa başına:")
         lbl_pp.setStyleSheet(f"color: {COLORS['text_sub']}; font-weight: bold; font-size: 13px;")
-        self.combo_per_page = QComboBox()
+        self.combo_per_page = StyledComboBox()
         self.combo_per_page.addItems(["15", "30", "50", "100"])
-        self.combo_per_page.setStyleSheet(self._get_combo_style())
+        self.combo_per_page.setProperty("variant", "flat")
         self.combo_per_page.setFixedWidth(70)
         self.combo_per_page.currentTextChanged.connect(self.on_per_page_changed)
         left_box.addWidget(lbl_pp)
@@ -253,57 +253,6 @@ class ListPage(QWidget):
         pagination_layout.addWidget(QWidget(), 0, 2)
 
         layout.addWidget(pagination_widget)
-
-    def _get_combo_style(self):
-        """Minimal Combobox: Buton ve ok yok, sadece metin."""
-        return f"""
-            QComboBox {{
-                background-color: transparent;
-                border: none;
-                border-radius: 8px;
-                padding: 6px 12px;
-                color: {COLORS['text_main']};
-                font-weight: 700;
-                font-size: 14px;
-                min-width: 60px;
-            }}
-            /* Üzerine gelince belirginleşsin */
-            QComboBox:hover {{ 
-                background-color: #F0F2F5; 
-                color: {COLORS['primary']};
-            }}
-            
-            /* Dropdown butonunu ve oku tamamen gizle */
-            QComboBox::drop-down {{
-                width: 0px;
-                border: none;
-            }}
-            QComboBox::down-arrow {{
-                image: none;
-            }}
-            
-            /* Açılan Liste */
-            QComboBox QAbstractItemView {{
-                background-color: white; 
-                border: 1px solid {COLORS['border']}; 
-                border-radius: 12px; 
-                padding: 8px; 
-                outline: none;
-                min-width: 140px;
-            }}
-            QComboBox QAbstractItemView::item {{
-                height: 36px; 
-                padding-left: 15px; 
-                color: {COLORS['text_main']};
-                font-size: 14px;
-                border-radius: 6px;
-            }}
-            QComboBox QAbstractItemView::item:selected {{
-                background-color: {COLORS['primary_light']}; 
-                color: {COLORS['primary']};
-                font-weight: bold;
-            }}
-        """
 
     def load_types(self):
         if hasattr(self.controller, 'get_all_activity_types'):
