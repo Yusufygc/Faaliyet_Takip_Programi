@@ -43,6 +43,11 @@ class ActivityRepository:
                     logger.info("Şema güncelleniyor: plans tablosuna 'folder_id' kolonu ekleniyor...")
                     cursor.execute("ALTER TABLE plans ADD COLUMN folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL")
 
+                cursor.execute("UPDATE activities SET date = date || '-01' WHERE length(date) = 7")
+                normalized = cursor.rowcount
+                if normalized > 0:
+                    logger.info(f"Tarih formati normalize edildi: {normalized} kayit YYYY-MM -> YYYY-MM-01")
+
         except Exception as e:
             logger.error(f"Hata (ActivityRepository.check_and_migrate_schema): {e}")
 
@@ -178,7 +183,7 @@ class ActivityRepository:
                 params.append(date_prefix + "%")
             else:
                 if not date_prefix or not is_valid_yyyymm(date_prefix): return []
-                query += " WHERE date = ?"
+                query += " WHERE substr(date, 1, 7) = ?"
                 params.append(date_prefix)
 
         query += " GROUP BY type ORDER BY COUNT(*) DESC"
@@ -202,7 +207,7 @@ class ActivityRepository:
                 params.append(date_prefix + "%")
             else:
                 if not date_prefix or not is_valid_yyyymm(date_prefix): return []
-                query += " AND date = ?"
+                query += " AND substr(date, 1, 7) = ?"
                 params.append(date_prefix)
 
         query += " ORDER BY date DESC"
