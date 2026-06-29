@@ -1,7 +1,7 @@
 # views/main_window.py
 # -*- coding: utf-8 -*-
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QPushButton, QStackedWidget, QLabel, QFrame, QStatusBar, 
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+                             QPushButton, QStackedWidget, QLabel, QFrame,
                              QShortcut, QSizePolicy, QGraphicsDropShadowEffect)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence, QIcon, QColor
@@ -35,12 +35,6 @@ class MainWindow(QMainWindow):
         
         self.setWindowIcon(QIcon(icon_path))
 
-        # Status Bar
-        self.status_bar = QStatusBar()
-        self.status_bar.setStyleSheet("background-color: #F8FAFC; color: #64748B; border-top: 1px solid #E2E8F0;")
-        self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("Sistem Hazır", 3000)
-
         self.controller = MainController()
 
         # Ana Widget
@@ -56,7 +50,7 @@ class MainWindow(QMainWindow):
         # 2. İçerik Alanı
         self.content_area = QWidget()
         self.content_layout = QVBoxLayout(self.content_area)
-        self.content_layout.setContentsMargins(25, 25, 25, 25) 
+        self.content_layout.setContentsMargins(25, 25, 25, 0)
         
         self.stacked_widget = QStackedWidget()
         self.content_layout.addWidget(self.stacked_widget)

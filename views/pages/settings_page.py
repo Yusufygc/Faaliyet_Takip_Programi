@@ -226,7 +226,16 @@ class SettingsPage(QWidget):
         self.txt_rawg.setEchoMode(QLineEdit.Password)
         form_layout.addWidget(rawg_lbl)
         form_layout.addWidget(self.txt_rawg)
-        
+
+        # Google Books
+        gbooks_lbl = QLabel("Google Books API Key (Kitap):")
+        gbooks_lbl.setStyleSheet("font-weight: bold; color: #555;")
+        self.txt_google_books = QLineEdit()
+        self.txt_google_books.setPlaceholderText("Google Books API Anahtarını giriniz...")
+        self.txt_google_books.setEchoMode(QLineEdit.Password)
+        form_layout.addWidget(gbooks_lbl)
+        form_layout.addWidget(self.txt_google_books)
+
         # Kaydet Butonu
         btn_save = QPushButton("Kaydet")
         btn_save.setIcon(IconService.get("save"))
@@ -247,26 +256,24 @@ class SettingsPage(QWidget):
 
     def on_keys_loaded(self, keys):
         if keys:
-            from constants import KEYRING_KEY_TMDB, KEYRING_KEY_RAWG
+            from constants import KEYRING_KEY_TMDB, KEYRING_KEY_RAWG, KEYRING_KEY_GOOGLE_BOOKS
             self.txt_tmdb.setText(keys.get(KEYRING_KEY_TMDB, ""))
             self.txt_rawg.setText(keys.get(KEYRING_KEY_RAWG, ""))
+            self.txt_google_books.setText(keys.get(KEYRING_KEY_GOOGLE_BOOKS, ""))
 
     def save_api_keys(self):
         """API anahtarlarını kaydeder."""
         tmdb = self.txt_tmdb.text()
         rawg = self.txt_rawg.text()
-        self.controller.save_api_keys(tmdb, rawg, self.on_save_keys_finished)
+        gbooks = self.txt_google_books.text()
+        self.controller.save_api_keys(tmdb, rawg, gbooks, self.on_save_keys_finished)
 
     def on_save_keys_finished(self, result):
         success, msg = result
         if success:
-            if self.window().statusBar():
-                self.window().statusBar().showMessage(msg, 3000)
-            
-            # Label'ları (Input alanlarını) temizle
             self.txt_tmdb.clear()
             self.txt_rawg.clear()
-            
+            self.txt_google_books.clear()
             QMessageBox.information(self, "Bilgi", "Ayarlar kaydedildi.\nDeğişikliklerin tam olarak yansıması için uygulamayı yeniden başlatmanız gerekebilir.")
         else:
             QMessageBox.warning(self, "Hata", msg)

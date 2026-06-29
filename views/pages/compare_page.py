@@ -7,6 +7,7 @@ from PyQt5.QtGui import QFont
 from services.icon_service import IconService
 from datetime import datetime, timedelta
 from views.dialogs.compare_selection_dialog import CompareSelectionDialog
+from views.widgets.table_utils import configure_table
 
 
 class ComparePage(QWidget):
@@ -242,56 +243,8 @@ class ComparePage(QWidget):
 
         # Tablo
         table = QTableWidget()
-        table.setColumnCount(0) # Başlangıçta boş, load_types ile dolacak
-        # table.setHorizontalHeaderLabels(...) 
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        table.verticalHeader().setVisible(False)
-        table.setEditTriggers(QTableWidget.NoEditTriggers)
-        table.setSelectionBehavior(QTableWidget.SelectItems)
-        table.setShowGrid(False)
-        table.setAlternatingRowColors(False)
-        
-        table.setStyleSheet("""
-            QTableWidget {
-                background-color: #FAFAFA;
-                border: none;
-                border-radius: 10px;
-            }
-            QHeaderView::section {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #F8F9FA, stop:1 #E9ECEF);
-                padding: 10px 6px;
-                border: none;
-                border-bottom: 3px solid #667EEA;
-                font-weight: bold;
-                color: #2C3E50;
-                font-size: 11px;
-            }
-            QTableWidget::item {
-                padding: 8px 6px;
-                margin: 3px;
-                background-color: white;
-                border-radius: 6px;
-                border: 1px solid #E8E8E8;
-                color: #2C3E50;
-                font-size: 10px;
-            }
-            QTableWidget::item:hover {
-                background-color: #EBF5FB;
-                border: 1px solid #3498DB;
-            }
-            QTableWidget::item:selected {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #D6EAF8, stop:1 #AED6F1);
-                border: 1px solid #2980B9;
-                color: #154360;
-                font-weight: bold;
-                outline: none;
-            }
-            QTableWidget:focus {
-                outline: none;
-            }
-        """)
+        table.setColumnCount(0)  # Başlangıçta boş, load_types ile dolacak
+        configure_table(table, selection_behavior=QTableWidget.SelectItems)
         
         layout.addWidget(table, 1)
 

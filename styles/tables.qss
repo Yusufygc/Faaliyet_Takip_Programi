@@ -1,10 +1,60 @@
+/* ── QTableWidget / QTableView ──────────────────────────────────────────── */
+QTableWidget, QTableView {
+    background-color: $C_BG_WHITE;
+    border: none;
+    border-radius: $R_MD;
+    gridline-color: transparent;
+    selection-background-color: transparent;
+    selection-color: $C_TEXT_MID;
+    outline: 0;
+}
+
+QTableWidget::item, QTableView::item {
+    padding: 10px 12px;
+    color: $C_TEXT_MID;
+    border: none;
+    border-bottom: 1px solid #E5E7EB;
+    background-color: transparent;
+}
+
+QTableWidget::item:hover, QTableView::item:hover {
+    background-color: #F3F4F6;
+    color: $C_TEXT_DARK;
+}
+
+QTableWidget::item:selected, QTableView::item:selected {
+    background-color: #EFF6FF;
+    color: $C_PRIMARY;
+    font-weight: $FW_SEMIBOLD;
+}
+
+/* ── QHeaderView ─────────────────────────────────────────────────────────── */
+QHeaderView {
+    border: none;
+    background-color: transparent;
+}
+
+QHeaderView::section {
+    background-color: #F9FAFB;
+    color: $C_TEXT_DARK;
+    padding: 8px 12px;
+    border: none;
+    border-bottom: 2px solid $C_BORDER;
+    font-weight: $FW_BOLD;
+    font-size: $F_SM;
+}
+
+QHeaderView::section:horizontal:first { border-top-left-radius: $R_MD; }
+QHeaderView::section:horizontal:last  { border-top-right-radius: $R_MD; }
+
+/* ── QListWidget ─────────────────────────────────────────────────────────── */
 QListWidget {
     border: 1px solid $C_BORDER;
     border-radius: $R_MD;
     padding: 6px;
     font-size: $F_BASE;
     background-color: $C_BG_WHITE;
-    outline: none;
+    outline: 0;
 }
 
 QListWidget::item {
@@ -14,53 +64,5 @@ QListWidget::item {
     color: $C_TEXT_MID;
 }
 
-QListWidget::item:hover {
-    background-color: $C_BG_SUBTLE;
-}
-
-QListWidget::item:selected {
-    background-color: $C_PRIMARY;
-    color: white;
-}
-
-QTableWidget {
-    background-color: $C_BG_WHITE;
-    border: 1px solid $C_BORDER;
-    border-radius: $R_MD;
-    gridline-color: $C_BG_SUBTLE;
-    selection-background-color: $C_PRIMARY;
-    selection-color: white;
-}
-
-QTableWidget::item {
-    padding: 6px 10px;
-    color: $C_TEXT_MID;
-    border: none;
-}
-
-QTableWidget::item:selected {
-    background-color: $C_PRIMARY;
-    color: white;
-}
-
-QTableWidget::item:hover {
-    background-color: $C_BG_SUBTLE;
-}
-
-QHeaderView::section {
-    background-color: $C_BG_SUBTLE;
-    color: $C_TEXT_MUTED;
-    padding: 8px 10px;
-    border: none;
-    border-bottom: 2px solid $C_BORDER;
-    font-weight: $FW_SEMIBOLD;
-    font-size: $F_SM;
-}
-
-QHeaderView::section:horizontal:first {
-    border-top-left-radius: $R_MD;
-}
-
-QHeaderView::section:horizontal:last {
-    border-top-right-radius: $R_MD;
-}
+QListWidget::item:hover    { background-color: $C_BG_SUBTLE; }
+QListWidget::item:selected { background-color: $C_PRIMARY; color: white; }

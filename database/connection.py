@@ -30,20 +30,28 @@ def get_db_path():
 
 DB_PATH = get_db_path()
 
+def _configure_conn(conn: sqlite3.Connection) -> None:
+    """WAL modu ve performans pragmaları."""
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+
+
 def init_db():
     """Veritabanını ve 'activities' tablosunu oluşturur (eğer yoksa)."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=15.0)
+        _configure_conn(conn)
         cursor = conn.cursor()
 
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS activities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT NOT NULL,         -- dizi, film, kitap, vs.
+            type TEXT NOT NULL,
             name TEXT NOT NULL,
-            date TEXT NOT NULL,         -- YYYY-MM formatında
+            date TEXT NOT NULL,
             comment TEXT,
-            rating INTEGER             -- 1-10 arasında
+            rating INTEGER CHECK(rating IS NULL OR (rating >= 1 AND rating <= 10)),
+            end_date TEXT
         )
         ''')
         conn.commit()
@@ -56,7 +64,8 @@ def init_db():
 def get_connection():
     """Veritabanına yeni bir bağlantı döndürür."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=15.0)
+        _configure_conn(conn)
         conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
@@ -74,7 +83,8 @@ def get_db():
 
     Başarıda commit, hata durumunda rollback yapar ve bağlantıyı kapatır.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15.0)
+    _configure_conn(conn)
     conn.row_factory = sqlite3.Row
     try:
         yield conn

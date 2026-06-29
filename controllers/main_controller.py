@@ -141,5 +141,5 @@ class MainController(QObject):
     def get_api_keys(self, callback):
         return self._settings.get_api_keys(callback)
 
-    def save_api_keys(self, tmdb_key, rawg_key, callback):
-        return self._settings.save_api_keys(tmdb_key, rawg_key, callback)
+    def save_api_keys(self, tmdb_key, rawg_key, google_books_key, callback):
+        return self._settings.save_api_keys(tmdb_key, rawg_key, google_books_key, callback)

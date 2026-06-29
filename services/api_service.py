@@ -34,29 +34,29 @@ class ApiService:
             category = random.choice(['Film', 'Dizi', 'Oyun', 'Kitap'])
 
         period = random.choice(['all_time_best', 'must_see', 'cult_classics', 'hidden_gems'])
-        page = random.randint(1, 3)
 
         try:
-            results = self.get_recommendations(category, period, None, page, False)
-            if results:
-                selected = random.choice(results)
-                selected['random_category'] = category
-                selected['random_period'] = period
-                return selected
-            return self._get_fallback_random(category)
+            # Sayfa 1 sonuç sayısını total_pages proxy olarak kullan.
+            # Tam sayfa (12 kayıt) dönüyorsa sayfa 2-3 muhtemelen var.
+            from services._base_api_service import ITEMS_PER_PAGE
+            page1 = self.get_recommendations(category, period, None, 1, False)
+            if not page1:
+                logger.error(f"Random öneri bulunamadı: {category}/{period}")
+                return None
+
+            max_page = 3 if len(page1) >= ITEMS_PER_PAGE else 1
+            page = random.randint(1, max_page)
+
+            results = page1
+            if page > 1:
+                extra = self.get_recommendations(category, period, None, page, False)
+                if extra:
+                    results = extra
+
+            selected = random.choice(results)
+            selected['random_category'] = category
+            selected['random_period'] = period
+            return selected
         except Exception as e:
             logger.error(f"Random recommendation error: {e}")
-            return self._get_fallback_random(category)
-
-    def _get_fallback_random(self, category=None):
-        cat = category or 'Film'
-        try:
-            results = self.get_recommendations(cat, 'must_see', None, 1, False)
-            if results:
-                selected = random.choice(results)
-                selected['random_category'] = cat
-                selected['random_period'] = 'must_see'
-                return selected
-        except Exception:
-            pass
-        return None
+            return None

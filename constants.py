@@ -25,3 +25,4 @@ DATA_DIR_NAME = "FaaliyetTakip"
 KEYRING_APP_NAME = APP_NAME
 KEYRING_KEY_TMDB = "tmdb_api_key"
 KEYRING_KEY_RAWG = "rawg_api_key"
+KEYRING_KEY_GOOGLE_BOOKS = "google_books_api_key"

@@ -1,5 +1,5 @@
 QScrollBar:vertical {
-    background-color: $C_BG_LIGHT;
+    background-color: transparent;
     width: 8px;
     border-radius: 4px;
     margin: 0;
@@ -18,7 +18,7 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
 }
 
 QScrollBar:horizontal {
-    background-color: $C_BG_LIGHT;
+    background-color: transparent;
     height: 8px;
     border-radius: 4px;
     margin: 0;

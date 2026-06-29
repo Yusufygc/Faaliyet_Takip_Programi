@@ -1,7 +1,7 @@
 # views/pages/stats_page.py
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QTableWidget, QTableWidgetItem, QHeaderView,
-                             QFrame, QSplitter, QSizePolicy, QPushButton)
+                             QFrame, QScrollArea, QSizePolicy, QPushButton)
 from PyQt5.QtCore import Qt, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -20,13 +20,28 @@ class StatsPage(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        main_layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QFrame.NoFrame)
+        self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self._content = QWidget()
+        main_layout = QVBoxLayout(self._content)
         main_layout.setSpacing(20)
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+
         self._build_header(main_layout)
         self._build_filter(main_layout)
         self._build_kpi_cards(main_layout)
         self._build_content_area(main_layout)
+        main_layout.addStretch()
+
+        self._scroll.setWidget(self._content)
+        outer.addWidget(self._scroll)
         self.refresh_statistics()
 
     # --- build helpers ---
@@ -101,23 +116,12 @@ class StatsPage(QWidget):
         self.lbl_no_data.hide()
         layout.addWidget(self.lbl_no_data)
 
-        self.splitter = QSplitter(Qt.Vertical)
-        self.splitter.setHandleWidth(2)
-        self.splitter.setStyleSheet("""
-            QSplitter::handle {
-                background-color: #E2E8F0;
-                margin: 10px 0px;
-            }
-        """)
-
-        self.splitter.addWidget(self._build_table_container())
-        self.splitter.addWidget(self._build_graph_container())
-        self.splitter.setSizes([350, 450])
-
-        layout.addWidget(self.splitter)
+        layout.addWidget(self._build_table_container())
+        layout.addWidget(self._build_graph_container())
 
     def _build_table_container(self):
         self.table_container = QWidget()
+        self.table_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         table_layout = QVBoxLayout(self.table_container)
         table_layout.setContentsMargins(0, 5, 0, 5)
 
@@ -132,6 +136,7 @@ class StatsPage(QWidget):
         self.table.setAlternatingRowColors(True)
         self.table.setShowGrid(False)
         self.table.setFocusPolicy(Qt.NoFocus)
+        self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.table.setStyleSheet("""
             QTableWidget {
                 border: 2px solid #E2E8F0;
@@ -163,7 +168,6 @@ class StatsPage(QWidget):
             }
         """)
         self.table.doubleClicked.connect(self.open_details)
-        self.table.setMinimumHeight(250)
         table_layout.addWidget(self.table)
 
         return self.table_container
@@ -182,7 +186,7 @@ class StatsPage(QWidget):
         self.figure.patch.set_facecolor('#FFFFFF')
         self.canvas = FigureCanvas(self.figure)
         self.canvas.setStyleSheet("background-color: transparent;")
-        self.canvas.setMinimumHeight(320)
+        self.canvas.setFixedHeight(380)
 
         card_inner_layout.addWidget(self.canvas)
         graph_layout.addWidget(graph_card)
@@ -196,13 +200,11 @@ class StatsPage(QWidget):
         frame.setStyleSheet(f"""
             QFrame {{
                 background-color: white;
-                border: 2px solid #E2E8F0;
+                border: 2px solid {color};
                 border-radius: 12px;
-                border-left: 6px solid {color};
             }}
             QFrame:hover {{
-                border: 2px solid {color};
-                border-left: 6px solid {color};
+                background-color: #F8FAFC;
             }}
         """)
         layout = QVBoxLayout(frame)
@@ -227,10 +229,6 @@ class StatsPage(QWidget):
         date_str = self.date_picker.get_date_str()
         ignore_dates = (date_str == "")
         year_only = (len(date_str) == 4)
-
-        window = self.window()
-        if window and hasattr(window, 'statusBar') and window.statusBar():
-            window.statusBar().showMessage("İstatistikler hesaplanıyor...", 1000)
 
         self.controller.get_dashboard_stats(
             self.on_stats_loaded,
@@ -279,18 +277,20 @@ class StatsPage(QWidget):
         self.card_avg.value_label.setText(f"{global_avg:.1f}")
         self.card_top.value_label.setText(f"{most_active_cat[0]}")
 
-        if not final_data:
-            self.splitter.hide()
-            self.lbl_no_data.show()
-        else:
-            self.splitter.show()
-            self.lbl_no_data.hide()
+        has_data = bool(final_data)
+        self.table_container.setVisible(has_data)
+        self.graph_container.setVisible(has_data)
+        self.lbl_no_data.setVisible(not has_data)
+
+        if has_data:
             self.update_table(final_data)
             self.update_graphs(final_data)
 
-        window = self.window()
-        if window and hasattr(window, 'statusBar') and window.statusBar():
-            window.statusBar().showMessage("İstatistikler güncellendi.", 2000)
+
+    def _update_table_height(self) -> None:
+        header_h = self.table.horizontalHeader().height()
+        rows_h = sum(self.table.rowHeight(i) for i in range(self.table.rowCount()))
+        self.table.setFixedHeight(header_h + rows_h + 4)
 
     def update_table(self, data):
         self.table.setRowCount(0)
@@ -318,6 +318,8 @@ class StatsPage(QWidget):
                 item_avg.setForeground(Qt.red)
 
             self.table.setItem(row_idx, 2, item_avg)
+
+        self._update_table_height()
 
     def update_graphs(self, data):
         self.figure.clear()

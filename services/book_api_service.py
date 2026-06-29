@@ -2,6 +2,7 @@
 from logger_setup import logger
 from services._base_api_service import _BaseApiService, ITEMS_PER_PAGE
 from services.recommendation_config import PERIODS
+from constants import KEYRING_KEY_GOOGLE_BOOKS
 from exceptions import RateLimitError, ApiError
 
 _GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes"
@@ -27,6 +28,9 @@ class BookApiService(_BaseApiService):
         }
         if lang_restrict:
             params['langRestrict'] = lang_restrict
+        api_key = self._get_key(KEYRING_KEY_GOOGLE_BOOKS)
+        if api_key:
+            params['key'] = api_key
 
         try:
             response = self._request_with_retry(_GOOGLE_BOOKS_URL, params, timeout=15)

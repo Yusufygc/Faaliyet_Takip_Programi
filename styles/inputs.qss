@@ -101,13 +101,15 @@ QComboBox[variant="flat"]:focus {
 
 /* ── Açılır Liste Taşıyıcı Çerçevesi (Popup Menu) ─────────────────────── */
 QComboBox QAbstractItemView {
-    outline: none;
+    outline: 0;
     border: 1px solid $C_BORDER;
     border-radius: $R_MD; /* 8px */
     background-color: $C_BG_WHITE;
     padding: 6px 4px;
+    min-width: 120px;
     /* Seçim vurguları item düzeyinde yapılacağı için list-level seçimi sıfırla */
     selection-background-color: transparent;
+    selection-color: $C_TEXT_MID;
 }
 
 /* ── Liste Elemanları (Dropdown Items) ────────────────────────────────── */
@@ -118,6 +120,7 @@ QComboBox QAbstractItemView::item {
     border-radius: $R_SM; /* 6px */
     color: $C_TEXT_MID;
     background-color: transparent;
+    outline: 0; /* Focused item'daki noktalı çerçeveyi kaldır */
 }
 
 QComboBox QAbstractItemView::item:hover {

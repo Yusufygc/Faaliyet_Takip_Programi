@@ -155,7 +155,8 @@ class SuggestionPage(QWidget):
         self.scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
 
         self.content_widget = QWidget()
-        self.content_widget.setStyleSheet("background: transparent;")
+        self.content_widget.setObjectName("suggestion_content")
+        self.content_widget.setStyleSheet("QWidget#suggestion_content { background: transparent; }")
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setSpacing(20)
 
@@ -173,7 +174,8 @@ class SuggestionPage(QWidget):
 
     def _build_pagination(self):
         self.pagination_widget = QWidget()
-        self.pagination_widget.setStyleSheet("background: transparent;")
+        self.pagination_widget.setObjectName("suggestion_pagination")
+        self.pagination_widget.setStyleSheet("QWidget#suggestion_pagination { background: transparent; }")
         pagination_layout = QHBoxLayout(self.pagination_widget)
         pagination_layout.setContentsMargins(0, 10, 0, 10)
 

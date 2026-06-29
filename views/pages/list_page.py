@@ -4,27 +4,13 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QTableWidgetItem, QHeaderView, QMessageBox, QFrame,
                              QMenu, QDialog, QGridLayout, QGraphicsDropShadowEffect, QAbstractItemView)
 from PyQt5.QtCore import Qt, QTimer, QSize
-from PyQt5.QtGui import QColor, QFont, QIcon, QBrush
+from PyQt5.QtGui import QColor, QFont, QIcon, QBrush, QPalette
 import math
 
 from views.widgets import MonthYearWidget
 from views.widgets.styled_combo import StyledComboBox
+from views.widgets.table_utils import configure_table
 from views.dialogs.edit_dialog import EditDialog
-# ═══════════════════════════════════════════════════════════════════════════════
-# STYLE CONSTANTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-COLORS = {
-    'bg_main':       '#F8FAFC',  # C_BG_LIGHT
-    'bg_card':       '#FFFFFF',  # C_BG_WHITE
-    'text_main':     '#1E293B',  # C_TEXT_DARK
-    'text_sub':      '#64748B',  # C_TEXT_LIGHT
-    'primary':       '#3B82F6',  # C_PRIMARY
-    'primary_light': '#EFF6FF',
-    'border':        '#E2E8F0',  # C_BORDER
-    'table_header':  '#F1F5F9',  # C_BG_SUBTLE
-    'table_alt_row': '#F8FAFC',  # C_BG_LIGHT
-}
 
 class ListPage(QWidget):
     def __init__(self, controller):
@@ -44,7 +30,10 @@ class ListPage(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.setStyleSheet(f"background-color: {COLORS['bg_main']};")
+        palette = self.palette()
+        palette.setColor(QPalette.Window, QColor("#F8FAFC"))
+        self.setAutoFillBackground(True)
+        self.setPalette(palette)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(20)
@@ -58,12 +47,12 @@ class ListPage(QWidget):
     def _build_header(self, layout):
         header_layout = QHBoxLayout()
         title = QLabel("Faaliyet Listesi")
-        title.setStyleSheet(f"font-size: 28px; font-weight: 800; color: {COLORS['text_main']}; letter-spacing: 0.5px;")
+        title.setStyleSheet("font-size: 28px; font-weight: 800; color: #1E293B; letter-spacing: 0.5px;")
 
         self.badge_total = QLabel("0 Kayıt")
-        self.badge_total.setStyleSheet(f"""
-            background-color: {COLORS['primary_light']};
-            color: {COLORS['primary']};
+        self.badge_total.setStyleSheet("""
+            background-color: #EFF6FF;
+            color: #3B82F6;
             font-weight: bold;
             padding: 6px 15px;
             border-radius: 16px;
@@ -90,19 +79,19 @@ class ListPage(QWidget):
         filter_layout.setSpacing(20)
 
         lbl_type = QLabel("Tür:")
-        lbl_type.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
+        lbl_type.setStyleSheet("font-weight: 700; color: #64748B; font-size: 14px; border: none;")
         self.combo_filter_type = StyledComboBox()
         self.combo_filter_type.addItem("Hepsi")
         self.combo_filter_type.setMinimumWidth(140)
         self.combo_filter_type.currentIndexChanged.connect(self.on_filter_changed)
 
         lbl_date = QLabel("Tarih:")
-        lbl_date.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
+        lbl_date.setStyleSheet("font-weight: 700; color: #64748B; font-size: 14px; border: none;")
         self.date_widget = MonthYearWidget()
         self.date_widget.dateChanged.connect(self.on_filter_changed)
 
         lbl_search = QLabel("Ara:")
-        lbl_search.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
+        lbl_search.setStyleSheet("font-weight: 700; color: #64748B; font-size: 14px; border: none;")
         self.input_search = QLineEdit()
         self.input_search.setPlaceholderText("Faaliyet adı ile ara...")
         self.input_search.setClearButtonEnabled(True)
@@ -124,7 +113,7 @@ class ListPage(QWidget):
             line = QFrame()
             line.setFixedWidth(1)
             line.setFixedHeight(20)
-            line.setStyleSheet(f"background: {COLORS['border']};")
+            line.setStyleSheet("background: #E2E8F0;")
             return line
 
         filter_layout.addWidget(lbl_type)
@@ -158,53 +147,11 @@ class ListPage(QWidget):
         self.table = QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["TÜR", "FAALİYET ADI", "TARİH", "YORUM", "PUAN"])
-        self.table.setShowGrid(False)
-        self.table.setAlternatingRowColors(True)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.setFocusPolicy(Qt.NoFocus)
-        self.table.setStyleSheet(f"""
-            QTableWidget {{
-                background-color: white;
-                border: none;
-                border-radius: 12px;
-                padding: 10px;
-                gridline-color: transparent;
-            }}
-            QTableWidget::item {{
-                padding: 10px;
-                border-bottom: 1px solid {COLORS['border']};
-                color: {COLORS['text_main']};
-            }}
-            QTableWidget::item:selected {{
-                background-color: {COLORS['primary_light']};
-                color: {COLORS['primary']};
-            }}
-            QTableWidget::item:alternate {{
-                background-color: {COLORS['table_alt_row']};
-            }}
-        """)
+        configure_table(self.table, row_height=52, resize_to_contents_cols=[0, 4])
 
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
         header.setDefaultAlignment(Qt.AlignCenter)
         header.setFixedHeight(50)
-        header.setStyleSheet(f"""
-            QHeaderView::section {{
-                background-color: {COLORS['table_header']};
-                color: {COLORS['text_sub']};
-                padding: 0 10px;
-                border: none;
-                border-bottom: 2px solid {COLORS['border']};
-                font-weight: 800;
-                font-size: 13px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }}
-        """)
-        self.table.verticalHeader().setVisible(False)
 
         self.table.doubleClicked.connect(self.open_edit_dialog)
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -220,11 +167,11 @@ class ListPage(QWidget):
 
         left_box = QHBoxLayout()
         lbl_pp = QLabel("Sayfa başına:")
-        lbl_pp.setStyleSheet(f"color: {COLORS['text_sub']}; font-weight: bold; font-size: 13px;")
+        lbl_pp.setStyleSheet("color: #64748B; font-weight: bold; font-size: 13px;")
         self.combo_per_page = StyledComboBox()
         self.combo_per_page.addItems(["15", "30", "50", "100"])
         self.combo_per_page.setProperty("variant", "flat")
-        self.combo_per_page.setFixedWidth(70)
+        self.combo_per_page.setFixedWidth(85)
         self.combo_per_page.currentTextChanged.connect(self.on_per_page_changed)
         left_box.addWidget(lbl_pp)
         left_box.addWidget(self.combo_per_page)
@@ -242,7 +189,7 @@ class ListPage(QWidget):
         self.btn_next = create_nav_btn("Sonraki ►", self.next_page)
 
         self.lbl_page_info = QLabel("Sayfa 1 / 1")
-        self.lbl_page_info.setStyleSheet(f"font-weight: 800; color: {COLORS['text_main']}; margin: 0 20px; font-size: 14px;")
+        self.lbl_page_info.setStyleSheet("font-weight: 800; color: #1E293B; margin: 0 20px; font-size: 14px;")
 
         center_box.addWidget(self.btn_prev)
         center_box.addWidget(self.lbl_page_info)
@@ -328,7 +275,7 @@ class ListPage(QWidget):
             item_type.setData(Qt.UserRole, activity.id)
             item_type.setTextAlignment(Qt.AlignCenter) # Ortala
             item_type.setFont(QFont("Segoe UI", 10, QFont.Bold)) # Font Büyüt
-            item_type.setForeground(QBrush(QColor(COLORS['primary'])))
+            item_type.setForeground(QBrush(QColor("#3B82F6")))
             self.table.setItem(row_idx, 0, item_type)
             
             # 2. Ad - ORTALI
@@ -344,14 +291,14 @@ class ListPage(QWidget):
             item_date = QTableWidgetItem(date_display)
             item_date.setTextAlignment(Qt.AlignCenter) # Ortala
             item_date.setFont(QFont("Segoe UI", 10)) # Font Büyüt
-            item_date.setForeground(QBrush(QColor(COLORS['text_sub'])))
+            item_date.setForeground(QBrush(QColor("#64748B")))
             self.table.setItem(row_idx, 2, item_date)
             
             # 4. Yorum - ORTALI (İsteğe bağlı, uzunsa sola yaslanabilir ama istek üzerine ortalandı)
             item_comment = QTableWidgetItem(activity.comment)
             item_comment.setTextAlignment(Qt.AlignCenter) # Ortala
             item_comment.setFont(QFont("Segoe UI", 10))
-            item_comment.setForeground(QBrush(QColor(COLORS['text_sub'])))
+            item_comment.setForeground(QBrush(QColor("#64748B")))
             self.table.setItem(row_idx, 3, item_comment)
             
             # 5. Puan (Renkli) - ORTALI
@@ -393,10 +340,10 @@ class ListPage(QWidget):
 
     def open_context_menu(self, position):
         menu = QMenu()
-        menu.setStyleSheet(f"""
-            QMenu {{ background-color: white; border: 1px solid {COLORS['border']}; border-radius: 8px; padding: 5px; }}
-            QMenu::item {{ padding: 8px 20px; font-size: 13px; color: {COLORS['text_main']}; }}
-            QMenu::item:selected {{ background-color: {COLORS['primary_light']}; color: {COLORS['primary']}; border-radius: 4px; }}
+        menu.setStyleSheet("""
+            QMenu { background-color: white; border: 1px solid #E2E8F0; border-radius: 8px; padding: 5px; }
+            QMenu::item { padding: 8px 20px; font-size: 13px; color: #1E293B; }
+            QMenu::item:selected { background-color: #EFF6FF; color: #3B82F6; border-radius: 4px; }
         """)
         from PyQt5.QtWidgets import QAction
         from services.icon_service import IconService
