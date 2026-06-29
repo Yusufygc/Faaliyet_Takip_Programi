@@ -23,38 +23,15 @@ class TrendAnalysisPage(QWidget):
         
         # --- Header Area (Başlık + Geri Butonu) ---
         header_frame = QFrame()
-        header_frame.setStyleSheet("""
-            QFrame {
-                background-color: white;
-                border: 2px solid #E2E8F0;
-                border-radius: 12px;
-            }
-        """)
+        header_frame.setObjectName("card_elevated")
         header_layout = QHBoxLayout(header_frame)
         header_layout.setContentsMargins(20, 15, 20, 15)
         header_layout.setSpacing(15)
         
         # Geri Butonu
         self.btn_back = QPushButton("← Geri")
+        self.btn_back.setObjectName("btn_secondary")
         self.btn_back.setCursor(Qt.PointingHandCursor)
-        self.btn_back.setStyleSheet("""
-            QPushButton {
-                background-color: #F1F5F9;
-                color: #475569;
-                border: 2px solid #E2E8F0;
-                border-radius: 8px;
-                padding: 8px 20px;
-                font-size: 14px;
-                font-weight: 600;
-            }
-            QPushButton:hover {
-                background-color: #E2E8F0;
-                border-color: #CBD5E1;
-            }
-            QPushButton:pressed {
-                background-color: #CBD5E1;
-            }
-        """)
         self.btn_back.clicked.connect(self.back_clicked.emit)
         header_layout.addWidget(self.btn_back)
         

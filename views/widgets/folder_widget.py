@@ -2,7 +2,6 @@
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QScrollArea, QPushButton,
                              QMenu, QAction, QInputDialog, QLineEdit, QMessageBox)
 from PyQt5.QtCore import Qt, pyqtSignal
-from views.widgets.plan_colors import COLORS
 
 
 class FolderWidget(QWidget):
@@ -62,19 +61,19 @@ class FolderWidget(QWidget):
         btn_add.setFixedSize(36, 36)
         btn_add.setCursor(Qt.PointingHandCursor)
         btn_add.setToolTip("Yeni Klasör Ekle")
-        btn_add.setStyleSheet(f"""
-            QPushButton {{
+        btn_add.setStyleSheet("""
+            QPushButton {
                 background-color: #E8F6F3;
-                color: {COLORS['primary']};
-                border: 1px dashed {COLORS['primary']};
+                color: #3B82F6;
+                border: 1px dashed #3B82F6;
                 border-radius: 18px;
                 font-size: 20px;
                 font-weight: bold;
                 padding-bottom: 3px;
-            }}
-            QPushButton:hover {{
-                background-color: {COLORS['primary']}20;
-            }}
+            }
+            QPushButton:hover {
+                background-color: #3B82F620;
+            }
         """)
         btn_add.clicked.connect(self._on_add_click)
         self.chip_layout.addWidget(btn_add)
@@ -86,11 +85,12 @@ class FolderWidget(QWidget):
         btn.setCursor(Qt.PointingHandCursor)
         btn.setFixedHeight(36)
 
-        bg = COLORS['primary'] if is_active else "white"
-        fg = "white" if is_active else COLORS['text_main']
-        border = COLORS['primary'] if is_active else COLORS['border']
+        bg = "#3B82F6" if is_active else "white"
+        fg = "white" if is_active else "#2C3E50"
+        border = "#3B82F6" if is_active else "#E0E6ED"
         weight = "bold" if is_active else "normal"
 
+        hover_bg = "#3B82F6" if is_active else "#F4F6F7"
         btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {bg};
@@ -102,8 +102,8 @@ class FolderWidget(QWidget):
                 font-weight: {weight};
             }}
             QPushButton:hover {{
-                border-color: {COLORS['primary']};
-                background-color: {COLORS['primary'] if is_active else "#F4F6F7"};
+                border-color: #3B82F6;
+                background-color: {hover_bg};
             }}
         """)
 
@@ -127,10 +127,10 @@ class FolderWidget(QWidget):
 
     def _show_context_menu(self, pos, folder_id, current_name):
         menu = QMenu(self)
-        menu.setStyleSheet(f"""
-            QMenu {{ background-color: white; border: 1px solid {COLORS['border']}; }}
-            QMenu::item {{ padding: 8px 20px; }}
-            QMenu::item:selected {{ background-color: {COLORS['bg_main']}; }}
+        menu.setStyleSheet("""
+            QMenu { background-color: white; border: 1px solid #E0E6ED; }
+            QMenu::item { padding: 8px 20px; }
+            QMenu::item:selected { background-color: #F4F7F6; }
         """)
 
         action_rename = QAction("✏️ Yeniden Adlandır", self)

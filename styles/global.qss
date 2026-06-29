@@ -1,0 +1,18 @@
+QWidget {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: $F_BASE;
+    color: $C_TEXT_DARK;
+}
+
+QMainWindow, QDialog {
+    background-color: $C_BG_LIGHT;
+}
+
+QToolTip {
+    background-color: $C_TEXT_DARK;
+    color: $C_BG_WHITE;
+    border: none;
+    padding: 4px 8px;
+    border-radius: $R_SM;
+    font-size: $F_SM;
+}

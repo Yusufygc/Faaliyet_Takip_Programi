@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
 from PyQt5.QtCore import Qt, pyqtSignal
 from models import Plan
 from views.widgets.modern_card import ModernCard
-from views.widgets.plan_colors import COLORS, PRIORITY_CFG
+from views.widgets.plan_colors import PRIORITY_CFG
 
 
 class PlanCard(ModernCard):
@@ -46,7 +46,7 @@ class PlanCard(ModernCard):
             date_str = f"{months[self.plan.month-1]} {self.plan.year}"
 
         lbl_date = QLabel(f"📅 {date_str}")
-        lbl_date.setStyleSheet(f"color: {COLORS['text_sub']}; font-size: 12px; font-weight: 600;")
+        lbl_date.setStyleSheet("color: #7F8C8D; font-size: 12px; font-weight: 600;")
 
         header.addWidget(lbl_priority)
         header.addStretch()
@@ -59,10 +59,10 @@ class PlanCard(ModernCard):
 
         lbl_title = QLabel(self.plan.title)
         lbl_title.setWordWrap(True)
-        lbl_title.setStyleSheet(f"""
+        lbl_title.setStyleSheet("""
             font-size: 18px;
             font-weight: 800;
-            color: {COLORS['text_main']};
+            color: #2C3E50;
             background: transparent;
         """)
 
@@ -70,9 +70,9 @@ class PlanCard(ModernCard):
             lbl_desc = QLabel(self.plan.description)
             lbl_desc.setWordWrap(True)
             lbl_desc.setMaximumHeight(40)
-            lbl_desc.setStyleSheet(f"""
+            lbl_desc.setStyleSheet("""
                 font-size: 13px;
-                color: {COLORS['text_sub']};
+                color: #7F8C8D;
                 line-height: 1.4;
                 background: transparent;
             """)
@@ -89,9 +89,9 @@ class PlanCard(ModernCard):
 
         pl_row = QHBoxLayout()
         pl_lbl = QLabel("İlerleme")
-        pl_lbl.setStyleSheet(f"color: {COLORS['text_sub']}; font-size: 11px; font-weight: 600;")
+        pl_lbl.setStyleSheet("color: #7F8C8D; font-size: 11px; font-weight: 600;")
         pl_val = QLabel(f"%{self.plan.progress}")
-        pl_val.setStyleSheet(f"color: {COLORS['primary']}; font-size: 12px; font-weight: 800;")
+        pl_val.setStyleSheet("color: #3B82F6; font-size: 12px; font-weight: 800;")
         pl_row.addWidget(pl_lbl)
         pl_row.addStretch()
         pl_row.addWidget(pl_val)
@@ -102,7 +102,7 @@ class PlanCard(ModernCard):
         pbar.setTextVisible(False)
         pbar.setFixedHeight(8)
 
-        bar_color = COLORS['success_gradient'] if self.plan.progress == 100 else COLORS['primary_gradient']
+        bar_color = "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #27AE60, stop:1 #2ECC71)" if self.plan.progress == 100 else "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #3B82F6, stop:1 #3498DB)"
         if self.plan.progress < 30:
             bar_color = "qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #E74C3C, stop:1 #C0392B)"
 
@@ -147,9 +147,9 @@ class PlanCard(ModernCard):
             btn.setStyleSheet(f"""
                 QPushButton {{
                     background-color: transparent;
-                    border: 1px solid {COLORS['border']};
+                    border: 1px solid #E0E6ED;
                     border-radius: 16px;
-                    color: {COLORS['text_sub']};
+                    color: #7F8C8D;
                     font-size: 14px;
                 }}
                 QPushButton:hover {{
@@ -179,7 +179,7 @@ class PlanCard(ModernCard):
         msg.setText(f"'{self.plan.title}' silinecek. Onaylıyor musunuz?")
         msg.setIcon(QMessageBox.Question)
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg.setStyleSheet(f"background-color: white; color: {COLORS['text_main']}; font-size: 13px;")
+        msg.setStyleSheet("background-color: white; color: #2C3E50; font-size: 13px;")
         if msg.exec_() == QMessageBox.Yes:
             self.deleted.emit(self.plan.id)
 

@@ -20,7 +20,7 @@ class PdfPage(QWidget):
 
         # --- Kart Tasarımı ---
         card = QFrame()
-        card.setObjectName("Card") # styles.py'daki stil
+        card.setObjectName("card")
         card.setFixedSize(450, 400)
         
         card_layout = QVBoxLayout(card)
@@ -53,7 +53,7 @@ class PdfPage(QWidget):
 
         # Oluştur Butonu
         btn_create = QPushButton("📄 Raporu Kaydet")
-        btn_create.setObjectName("SuccessBtn") # Yeşil buton
+        btn_create.setObjectName("btn_success")
         btn_create.setCursor(Qt.PointingHandCursor)
         btn_create.setMinimumHeight(50)
         btn_create.clicked.connect(self.generate_pdf)

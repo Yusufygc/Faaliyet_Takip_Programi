@@ -45,14 +45,7 @@ class StatsPage(QWidget):
 
     def _build_filter(self, layout):
         filter_frame = QFrame()
-        filter_frame.setObjectName("FilterCard")
-        filter_frame.setStyleSheet("""
-            QFrame#FilterCard {
-                background-color: white;
-                border: 2px solid #E2E8F0;
-                border-radius: 12px;
-            }
-        """)
+        filter_frame.setObjectName("filter_frame")
         filter_layout = QHBoxLayout(filter_frame)
         filter_layout.setContentsMargins(20, 15, 20, 15)
         filter_layout.setSpacing(15)
@@ -68,24 +61,8 @@ class StatsPage(QWidget):
         filter_layout.addStretch()
 
         self.btn_trend = QPushButton("📈 Zaman Serisi ve Trend Analizi")
+        self.btn_trend.setObjectName("btn_primary")
         self.btn_trend.setCursor(Qt.PointingHandCursor)
-        self.btn_trend.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #3B82F6, stop:1 #2563EB);
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 10px 20px;
-                font-size: 13px;
-                font-weight: 600;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2563EB, stop:1 #1D4ED8);
-            }
-            QPushButton:pressed {
-                background: #1E40AF;
-            }
-        """)
         self.btn_trend.clicked.connect(self.open_trend_analysis.emit)
         filter_layout.addWidget(self.btn_trend)
 
@@ -193,11 +170,7 @@ class StatsPage(QWidget):
         graph_layout.setContentsMargins(0, 10, 0, 0)
 
         graph_card = QFrame()
-        graph_card.setStyleSheet("""
-            background-color: white;
-            border: 2px solid #E2E8F0;
-            border-radius: 12px;
-        """)
+        graph_card.setObjectName("card_elevated")
         card_inner_layout = QVBoxLayout(graph_card)
         card_inner_layout.setContentsMargins(15, 15, 15, 15)
 

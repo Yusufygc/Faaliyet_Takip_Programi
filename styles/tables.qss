@@ -1,0 +1,66 @@
+QListWidget {
+    border: 1px solid $C_BORDER;
+    border-radius: $R_MD;
+    padding: 6px;
+    font-size: $F_BASE;
+    background-color: $C_BG_WHITE;
+    outline: none;
+}
+
+QListWidget::item {
+    padding: 6px 10px;
+    border-radius: $R_SM;
+    margin: 2px;
+    color: $C_TEXT_MID;
+}
+
+QListWidget::item:hover {
+    background-color: $C_BG_SUBTLE;
+}
+
+QListWidget::item:selected {
+    background-color: $C_PRIMARY;
+    color: white;
+}
+
+QTableWidget {
+    background-color: $C_BG_WHITE;
+    border: 1px solid $C_BORDER;
+    border-radius: $R_MD;
+    gridline-color: $C_BG_SUBTLE;
+    selection-background-color: $C_PRIMARY;
+    selection-color: white;
+}
+
+QTableWidget::item {
+    padding: 6px 10px;
+    color: $C_TEXT_MID;
+    border: none;
+}
+
+QTableWidget::item:selected {
+    background-color: $C_PRIMARY;
+    color: white;
+}
+
+QTableWidget::item:hover {
+    background-color: $C_BG_SUBTLE;
+}
+
+QHeaderView::section {
+    background-color: $C_BG_SUBTLE;
+    color: $C_TEXT_MUTED;
+    padding: 8px 10px;
+    border: none;
+    border-bottom: 2px solid $C_BORDER;
+    font-weight: $FW_SEMIBOLD;
+    font-size: $F_SM;
+}
+
+QHeaderView::section:horizontal:first {
+    border-top-left-radius: $R_MD;
+}
+
+QHeaderView::section:horizontal:last {
+    border-top-right-radius: $R_MD;
+}

@@ -49,8 +49,7 @@ class CompareSelectionDialog(QDialog):
         btn_layout.addWidget(btn_cancel)
 
         btn_compare = QPushButton("Karşılaştır")
-        btn_compare.setObjectName("PrimaryBtn") # styles.py'daki stil
-        btn_compare.setStyleSheet("background-color: #2980B9; color: white; font-weight: bold; border-radius: 5px;")
+        btn_compare.setObjectName("btn_primary")
         btn_compare.setFixedSize(120, 40)
         btn_compare.clicked.connect(self.validate_and_accept)
         btn_layout.addWidget(btn_compare)

@@ -6,7 +6,7 @@ from PyQt5.QtCore import QDate, Qt, QLocale, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
 from utils import get_resource_path
 import os
-from ..styles import arrow_url
+from styles import load
 
 
 
@@ -24,17 +24,11 @@ class AddPage(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignCenter)
 
+        self.setStyleSheet(load("add_page"))
+
         card = QFrame()
         card.setObjectName("AddCard")
         card.setFixedSize(520, 620)
-        card.setStyleSheet("""
-            QFrame#AddCard {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                                          stop:0 #FFFFFF, stop:1 #F8FAFC);
-                border-radius: 16px;
-                border: 3px solid #E2E8F0;
-            }
-        """)
 
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(35, 25, 35, 30)
@@ -88,52 +82,6 @@ class AddPage(QWidget):
         desc.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(desc)
 
-    # --- shared widget styles ---
-
-    def _combo_style(self):
-        return f"""
-            QComboBox {{
-                background-color: #FFFFFF; border: 2px solid #E2E8F0;
-                border-radius: 10px; padding: 12px 15px;
-                font-size: 14px; color: #334155;
-            }}
-            QComboBox:focus {{ border: 2px solid #3B82F6; background-color: #F8FAFC; }}
-            QComboBox:hover {{ border: 2px solid #CBD5E1; }}
-            QComboBox::drop-down {{
-                border: none; width: 40px;
-                border-left: 1px solid #E2E8F0;
-                border-radius: 0 8px 8px 0; background-color: #F8FAFC;
-            }}
-            QComboBox::down-arrow {{ image: url('{arrow_url}'); width: 16px; height: 16px; }}
-            QComboBox QAbstractItemView {{
-                border: 2px solid #E2E8F0; border-radius: 8px;
-                background-color: white; selection-background-color: #3B82F6;
-                selection-color: white; padding: 8px; font-size: 14px; margin-top: 5px;
-            }}
-            QComboBox QAbstractItemView::item {{
-                padding: 12px 15px; border-radius: 5px; margin: 2px;
-            }}
-            QComboBox QAbstractItemView::item:hover {{ background-color: #F1F5F9; }}
-            QComboBox QAbstractItemView::item:selected {{ background-color: #3B82F6; color: white; }}
-        """
-
-    def _date_style(self):
-        return f"""
-            QDateEdit {{
-                background-color: #FFFFFF; border: 2px solid #E2E8F0;
-                border-radius: 10px; padding: 12px 15px;
-                font-size: 14px; color: #334155;
-            }}
-            QDateEdit:focus {{ border: 2px solid #3B82F6; background-color: #F8FAFC; }}
-            QDateEdit:hover {{ border: 2px solid #CBD5E1; }}
-            QDateEdit::drop-down {{
-                border: none; width: 40px;
-                border-left: 1px solid #E2E8F0;
-                border-radius: 0 8px 8px 0; background-color: #F8FAFC;
-            }}
-            QDateEdit::down-arrow {{ image: url('{arrow_url}'); width: 16px; height: 16px; }}
-        """
-
     # --- form build ---
 
     def _build_form(self, card_layout):
@@ -151,7 +99,6 @@ class AddPage(QWidget):
     def _build_type_field(self, form_layout):
         self.combo_type = QComboBox()
         self.combo_type.setMinimumHeight(42)
-        self.combo_type.setStyleSheet(self._combo_style())
         self.load_types()
         form_layout.addRow(self.create_label("Tür:"), self.combo_type)
 
@@ -159,16 +106,6 @@ class AddPage(QWidget):
         self.input_name = QLineEdit()
         self.input_name.setPlaceholderText("Örn: Inception, Breaking Bad, Kitap Adı...")
         self.input_name.setMinimumHeight(42)
-        self.input_name.setStyleSheet("""
-            QLineEdit {
-                background-color: #FFFFFF; border: 2px solid #E2E8F0;
-                border-radius: 10px; padding: 12px 15px;
-                font-size: 14px; color: #334155;
-            }
-            QLineEdit:focus { border: 2px solid #3B82F6; background-color: #F8FAFC; }
-            QLineEdit:hover { border: 2px solid #CBD5E1; }
-            QLineEdit::placeholder { color: #94A3B8; font-style: italic; }
-        """)
         form_layout.addRow(self.create_label("Ad:"), self.input_name)
         self.setup_autocomplete()
 
@@ -183,7 +120,6 @@ class AddPage(QWidget):
         self.input_date.setDisplayFormat("d MMMM yyyy")
         self.input_date.setDate(QDate.currentDate())
         self.input_date.setMinimumHeight(42)
-        self.input_date.setStyleSheet(self._date_style())
 
         check_url = get_resource_path("icons/check.svg").replace("\\", "/")
         self.chk_range = QCheckBox("Bitiş Tarihi")
@@ -210,7 +146,6 @@ class AddPage(QWidget):
         self.input_end_date.setDisplayFormat("d MMMM yyyy")
         self.input_end_date.setDate(QDate.currentDate().addDays(1))
         self.input_end_date.setMinimumHeight(42)
-        self.input_end_date.setStyleSheet(self._date_style())
 
         self.lbl_end_date = self.create_label("Bitiş:")
         form_layout.addRow(self.lbl_end_date, self.input_end_date)
@@ -221,16 +156,6 @@ class AddPage(QWidget):
         self.input_comment = QTextEdit()
         self.input_comment.setMaximumHeight(100)
         self.input_comment.setPlaceholderText("Düşünceleriniz, notlarınız, izlenimleriniz...")
-        self.input_comment.setStyleSheet("""
-            QTextEdit {
-                background-color: #FFFFFF; border: 2px solid #E2E8F0;
-                border-radius: 10px; padding: 12px 15px;
-                font-size: 14px; color: #334155;
-            }
-            QTextEdit:focus { border: 2px solid #3B82F6; background-color: #F8FAFC; }
-            QTextEdit:hover { border: 2px solid #CBD5E1; }
-            QTextEdit::placeholder { color: #94A3B8; font-style: italic; }
-        """)
         form_layout.addRow(self.create_label("Yorum:"), self.input_comment)
 
     def _build_rating_field(self, form_layout):
@@ -238,7 +163,6 @@ class AddPage(QWidget):
         self.combo_rating.addItem("Seçiniz")
         self.combo_rating.addItems([str(i) for i in range(1, 11)])
         self.combo_rating.setMinimumHeight(42)
-        self.combo_rating.setStyleSheet(self._combo_style())
         form_layout.addRow(self.create_label("Puan:"), self.combo_rating)
 
     def _build_buttons(self, card_layout):
@@ -248,59 +172,18 @@ class AddPage(QWidget):
         button_layout.setContentsMargins(0, 0, 0, 0)
 
         self.btn_clear = QPushButton("Temizle")
+        self.btn_clear.setObjectName("btn_secondary")
         self.btn_clear.setCursor(Qt.PointingHandCursor)
         self.btn_clear.setMinimumHeight(48)
         self.btn_clear.setFixedWidth(150)
         self.btn_clear.clicked.connect(self.clear_inputs)
-        self.btn_clear.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #F1F5F9, stop:1 #E2E8F0);
-                color: #475569;
-                border-radius: 12px;
-                font-weight: 600;
-                font-size: 15px;
-                border: 2px solid #CBD5E1;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #E2E8F0, stop:1 #CBD5E1);
-                border: 2px solid #94A3B8;
-            }
-            QPushButton:pressed {
-                background: #CBD5E1;
-            }
-        """)
 
         self.btn_save = QPushButton("Kaydet")
+        self.btn_save.setObjectName("btn_primary")
         self.btn_save.setCursor(Qt.PointingHandCursor)
         self.btn_save.setMinimumHeight(48)
         self.btn_save.setFixedWidth(200)
         self.btn_save.clicked.connect(self.handle_save)
-        self.btn_save.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #3B82F6, stop:1 #2563EB);
-                color: white;
-                border-radius: 12px;
-                font-weight: 600;
-                font-size: 16px;
-                border: none;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #2563EB, stop:1 #1D4ED8);
-            }
-            QPushButton:pressed {
-                background: #1D4ED8;
-                padding-top: 2px;
-                padding-left: 2px;
-            }
-            QPushButton:disabled {
-                background: #94A3B8;
-                color: #CBD5E1;
-            }
-        """)
 
         button_layout.addWidget(self.btn_clear)
         button_layout.addWidget(self.btn_save)

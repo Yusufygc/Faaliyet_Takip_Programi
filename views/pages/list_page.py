@@ -9,22 +9,20 @@ import math
 
 from views.widgets import MonthYearWidget
 from views.dialogs.edit_dialog import EditDialog
-from views.styles import COLORS as GLOBAL_COLORS
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# MODERN STYLE CONSTANTS
+# STYLE CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 COLORS = {
-    'bg_main': '#F4F7F6',
-    'bg_card': '#FFFFFF',
-    'text_main': '#2C3E50',
-    'text_sub': '#7F8C8D',
-    'primary': GLOBAL_COLORS['primary'],
-    'primary_light': '#EBF5FB', # Seçili satır rengi
-    'border': '#E0E6ED',
-    'table_header': '#F8F9F9',
-    'table_alt_row': '#FAFAFA'
+    'bg_main':       '#F8FAFC',  # C_BG_LIGHT
+    'bg_card':       '#FFFFFF',  # C_BG_WHITE
+    'text_main':     '#1E293B',  # C_TEXT_DARK
+    'text_sub':      '#64748B',  # C_TEXT_LIGHT
+    'primary':       '#3B82F6',  # C_PRIMARY
+    'primary_light': '#EFF6FF',
+    'border':        '#E2E8F0',  # C_BORDER
+    'table_header':  '#F1F5F9',  # C_BG_SUBTLE
+    'table_alt_row': '#F8FAFC',  # C_BG_LIGHT
 }
 
 class ListPage(QWidget):
@@ -79,13 +77,7 @@ class ListPage(QWidget):
 
     def _build_filter(self, layout):
         filter_frame = QFrame()
-        filter_frame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {COLORS['bg_card']};
-                border-radius: 16px;
-                border: 1px solid {COLORS['border']};
-            }}
-        """)
+        filter_frame.setObjectName("filter_frame")
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(25)
         shadow.setColor(QColor(0, 0, 0, 12))
@@ -95,15 +87,6 @@ class ListPage(QWidget):
         filter_layout = QHBoxLayout(filter_frame)
         filter_layout.setContentsMargins(20, 15, 20, 15)
         filter_layout.setSpacing(20)
-
-        input_style = f"""
-            background-color: #FAFAFA;
-            border: 1px solid {COLORS['border']};
-            border-radius: 8px;
-            padding: 10px 15px;
-            color: {COLORS['text_main']};
-            font-size: 14px;
-        """
 
         lbl_type = QLabel("Tür:")
         lbl_type.setStyleSheet(f"font-weight: 700; color: {COLORS['text_sub']}; font-size: 14px; border: none;")
@@ -123,15 +106,6 @@ class ListPage(QWidget):
         self.input_search = QLineEdit()
         self.input_search.setPlaceholderText("Faaliyet adı ile ara...")
         self.input_search.setClearButtonEnabled(True)
-        self.input_search.setStyleSheet(f"""
-            QLineEdit {{
-                {input_style}
-            }}
-            QLineEdit:focus {{
-                background-color: white;
-                border: 1px solid {COLORS['primary']};
-            }}
-        """)
         self.input_search.textChanged.connect(lambda: self.search_timer.start())
 
         btn_clear = QPushButton("Temizle")
@@ -171,13 +145,7 @@ class ListPage(QWidget):
 
     def _build_table(self, layout):
         table_container = QFrame()
-        table_container.setStyleSheet(f"""
-            QFrame {{
-                background-color: {COLORS['bg_card']};
-                border-radius: 16px;
-                border: 1px solid {COLORS['border']};
-            }}
-        """)
+        table_container.setObjectName("card")
         t_shadow = QGraphicsDropShadowEffect()
         t_shadow.setBlurRadius(20)
         t_shadow.setColor(QColor(0, 0, 0, 8))
@@ -265,16 +233,8 @@ class ListPage(QWidget):
 
         def create_nav_btn(text, callback):
             btn = QPushButton(text)
+            btn.setObjectName("btn_nav")
             btn.setCursor(Qt.PointingHandCursor)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: white; border: 1px solid {COLORS['border']};
-                    border-radius: 8px; padding: 8px 20px; color: {COLORS['text_main']};
-                    font-weight: 600; font-size: 13px;
-                }}
-                QPushButton:hover {{ background-color: {COLORS['bg_main']}; border-color: {COLORS['primary']}; color: {COLORS['primary']}; }}
-                QPushButton:disabled {{ background-color: #F0F0F0; color: #BBB; border-color: #EEE; }}
-            """)
             btn.clicked.connect(callback)
             return btn
 

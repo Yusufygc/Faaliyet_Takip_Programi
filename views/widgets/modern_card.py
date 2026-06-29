@@ -1,19 +1,16 @@
 # views/widgets/modern_card.py
 from PyQt5.QtWidgets import QFrame, QGraphicsDropShadowEffect
 from PyQt5.QtGui import QColor
-from views.widgets.plan_colors import COLORS
-
-
 class ModernCard(QFrame):
     """Hover animasyonlu temel kart sınıfı"""
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(f"""
-            ModernCard {{
-                background-color: {COLORS['bg_card']};
-                border: 1px solid {COLORS['border']};
+        self.setStyleSheet("""
+            ModernCard {
+                background-color: #FFFFFF;
+                border: 1px solid #E0E6ED;
                 border-radius: 16px;
-            }}
+            }
         """)
 
         self.shadow = QGraphicsDropShadowEffect()

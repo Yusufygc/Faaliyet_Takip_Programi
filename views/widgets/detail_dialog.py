@@ -11,7 +11,6 @@ class DetailDialog(QDialog):
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setFixedSize(400, 500)
         self.setStyleSheet("""
-            QDialog { background-color: #F8FAFC; }
             QListWidget {
                 background-color: white;
                 border: 2px solid #E2E8F0;

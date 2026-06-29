@@ -81,13 +81,7 @@ class SuggestionPage(QWidget):
 
     def _build_filters(self, layout):
         filter_frame = QFrame()
-        filter_frame.setStyleSheet("""
-            QFrame {
-                background-color: #f5f5f5;
-                border-radius: 10px;
-                padding: 10px;
-            }
-        """)
+        filter_frame.setObjectName("filter_frame")
         filter_layout = QHBoxLayout(filter_frame)
         filter_layout.setSpacing(15)
 
@@ -97,7 +91,6 @@ class SuggestionPage(QWidget):
 
         self.period_combo = QComboBox()
         self.period_combo.setMinimumWidth(200)
-        self._style_combobox(self.period_combo)
         for key, name in self.controller.get_all_period_names():
             self.period_combo.addItem(name, key)
         self.period_combo.currentIndexChanged.connect(self.on_period_changed)
@@ -109,13 +102,13 @@ class SuggestionPage(QWidget):
         for cat in ["Film", "Dizi", "Oyun", "Kitap"]:
             btn = QPushButton(cat)
             btn.setCheckable(True)
+            btn.setObjectName("btn_ghost")
             btn.setCursor(Qt.PointingHandCursor)
             btn.setFixedSize(90, 40)
             btn.clicked.connect(lambda checked, c=cat: self.on_category_changed(c))
             filter_layout.addWidget(btn)
             self.cat_btns[cat] = btn
         self.cat_btns["Film"].setChecked(True)
-        self.update_cat_styles()
 
         filter_layout.addSpacing(15)
 
@@ -125,7 +118,6 @@ class SuggestionPage(QWidget):
 
         self.genre_combo = QComboBox()
         self.genre_combo.setMinimumWidth(120)
-        self._style_combobox(self.genre_combo)
         self.genre_combo.currentIndexChanged.connect(self.on_genre_changed)
         filter_layout.addWidget(self.genre_combo)
 
@@ -151,17 +143,7 @@ class SuggestionPage(QWidget):
     def _build_content(self, layout):
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet("""
-            QScrollArea { border: none; background: transparent; }
-            QScrollBar:vertical {
-                background: #f1f1f1; width: 14px; border-radius: 7px;
-            }
-            QScrollBar::handle:vertical {
-                background: #bdbdbd; min-height: 30px; border-radius: 7px;
-            }
-            QScrollBar::handle:vertical:hover { background: #9e9e9e; }
-            QScrollBar::sub-line:vertical, QScrollBar::add-line:vertical { height: 0px; }
-        """)
+        self.scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
 
         self.content_widget = QWidget()
         self.content_widget.setStyleSheet("background: transparent;")
@@ -187,15 +169,8 @@ class SuggestionPage(QWidget):
         pagination_layout.setContentsMargins(0, 10, 0, 10)
 
         self.btn_show_cached = QPushButton("📂 Eski Verileri Göster")
+        self.btn_show_cached.setObjectName("btn_muted")
         self.btn_show_cached.setCursor(Qt.PointingHandCursor)
-        self.btn_show_cached.setStyleSheet("""
-            QPushButton {
-                background-color: #607d8b; color: white; border: none;
-                padding: 12px 25px; border-radius: 10px; font-weight: bold; font-size: 14px;
-            }
-            QPushButton:hover { background-color: #546e7a; }
-            QPushButton:disabled { background-color: #cfd8dc; color: #90a4ae; }
-        """)
         self.btn_show_cached.clicked.connect(self.on_show_cached_clicked)
         pagination_layout.addWidget(self.btn_show_cached)
 
@@ -208,77 +183,13 @@ class SuggestionPage(QWidget):
         pagination_layout.addStretch()
 
         self.btn_load_more = QPushButton("➕ Daha Fazla Göster")
+        self.btn_load_more.setObjectName("btn_success")
         self.btn_load_more.setCursor(Qt.PointingHandCursor)
-        self.btn_load_more.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50; color: white; border: none;
-                padding: 12px 25px; border-radius: 10px; font-weight: bold; font-size: 14px;
-            }
-            QPushButton:hover { background-color: #43a047; }
-            QPushButton:disabled { background-color: #c8e6c9; color: #81c784; }
-        """)
         self.btn_load_more.clicked.connect(self.on_load_more_clicked)
         pagination_layout.addWidget(self.btn_load_more)
 
         return self.pagination_widget
 
-    def _style_combobox(self, combo):
-        """ComboBox stilini uygular."""
-        combo.setStyleSheet("""
-            QComboBox {
-                background-color: white;
-                color: #333;
-                border: 1px solid #ccc;
-                padding: 8px 12px;
-                border-radius: 8px;
-                font-size: 14px;
-            }
-            QComboBox:hover {
-                border: 1px solid #2196F3;
-            }
-            QComboBox::drop-down { 
-                border: none;
-                width: 24px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: white;
-                color: #333;
-                selection-background-color: #2196F3;
-                selection-color: white;
-                border: 1px solid #ccc;
-                outline: none;
-                padding: 4px;
-            }
-        """)
-
-    def update_cat_styles(self):
-        """Kategori butonlarının stilini günceller."""
-        for cat, btn in self.cat_btns.items():
-            if btn.isChecked():
-                btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #2196F3;
-                        color: white;
-                        border: none;
-                        border-radius: 8px;
-                        font-weight: bold;
-                        font-size: 14px;
-                    }
-                """)
-            else:
-                btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: white;
-                        color: #555;
-                        border: 1px solid #ddd;
-                        border-radius: 8px;
-                        font-size: 14px;
-                    }
-                    QPushButton:hover {
-                        background-color: #e3f2fd;
-                        border: 1px solid #2196F3;
-                    }
-                """)
 
     def update_genre_combo(self):
         """Kategori değişince tür combobox'ını günceller."""
@@ -329,7 +240,6 @@ class SuggestionPage(QWidget):
             if cat != category:
                 btn.setChecked(False)
         
-        self.update_cat_styles()
         self.update_genre_combo()
         self._reset_pagination()
         self.load_data()
@@ -432,33 +342,13 @@ class SuggestionPage(QWidget):
         btn_layout = QHBoxLayout()
 
         btn_another = QPushButton("🔄 Başka Öneri")
+        btn_another.setObjectName("btn_muted")
         btn_another.setCursor(Qt.PointingHandCursor)
-        btn_another.setStyleSheet("""
-            QPushButton {
-                background-color: #607d8b;
-                color: white;
-                border: none;
-                padding: 12px 25px;
-                border-radius: 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #546e7a; }
-        """)
         btn_another.clicked.connect(lambda: self._refresh_random_modal(dialog))
 
         btn_close = QPushButton("✓ Tamam")
+        btn_close.setObjectName("btn_success")
         btn_close.setCursor(Qt.PointingHandCursor)
-        btn_close.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                padding: 12px 25px;
-                border-radius: 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #43a047; }
-        """)
         btn_close.clicked.connect(dialog.accept)
 
         btn_layout.addWidget(btn_another)

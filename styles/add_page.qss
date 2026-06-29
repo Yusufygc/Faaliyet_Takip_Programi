@@ -1,0 +1,6 @@
+QFrame#AddCard {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 $C_BG_WHITE, stop:1 $C_BG_LIGHT);
+    border-radius: 16px;
+    border: 3px solid $C_BORDER;
+}

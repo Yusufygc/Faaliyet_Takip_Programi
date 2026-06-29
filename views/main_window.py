@@ -16,7 +16,6 @@ from views.pages.settings_page import SettingsPage
 from views.pages.plans_page import PlansPage
 from views.pages.suggestion_page import SuggestionPage
 from views.pages.analysis_page import TrendAnalysisPage
-from views.styles import STYLESHEET 
 
 import os
 from utils import get_resource_path
@@ -33,7 +32,6 @@ class MainWindow(QMainWindow):
              icon_path = get_resource_path(os.path.join("icons", "icon.png"))
         
         self.setWindowIcon(QIcon(icon_path))
-        self.setStyleSheet(STYLESHEET)
 
         # Status Bar
         self.status_bar = QStatusBar()

@@ -8,31 +8,6 @@ from PyQt5.QtGui import QFont
 
 class EditDialog(QDialog):
 
-    _INPUT_STYLE = """
-        QLineEdit, QComboBox, QDateEdit, QTextEdit {
-            background-color: #FFFFFF; border: 2px solid #E2E8F0;
-            border-radius: 8px; padding: 8px 12px;
-            font-size: 14px; color: #334155;
-        }
-        QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QTextEdit:focus {
-            border: 2px solid #3B82F6; background-color: #F8FAFC;
-        }
-        QLineEdit:hover, QComboBox:hover, QDateEdit:hover, QTextEdit:hover {
-            border: 2px solid #CBD5E1;
-        }
-        QComboBox::drop-down, QDateEdit::drop-down {
-            border: none; width: 30px; background-color: transparent;
-        }
-        QComboBox::down-arrow, QDateEdit::down-arrow {
-            image: url(icons/down_arrow.svg); width: 14px; height: 14px;
-        }
-        QComboBox QAbstractItemView {
-            border: 2px solid #E2E8F0; border-radius: 8px;
-            background-color: white; selection-background-color: #3B82F6;
-            selection-color: white; padding: 4px;
-        }
-    """
-
     def __init__(self, controller, activity, parent=None):
         super().__init__(parent)
         self.controller = controller
@@ -40,7 +15,6 @@ class EditDialog(QDialog):
         self.setWindowTitle(f"Düzenle: {activity.name}")
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setFixedSize(500, 650)
-        self.setStyleSheet("QDialog { background-color: #F8FAFC; }")
         self.init_ui()
         self.load_types()
 
@@ -78,9 +52,7 @@ class EditDialog(QDialog):
 
     def _build_form(self, layout):
         form_frame = QFrame()
-        form_frame.setStyleSheet("""
-            QFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; }
-        """)
+        form_frame.setObjectName("form_frame")
         container = QVBoxLayout(form_frame)
         container.setContentsMargins(20, 25, 20, 25)
 
@@ -90,12 +62,10 @@ class EditDialog(QDialog):
 
         self.combo_type = QComboBox()
         self.combo_type.setMinimumHeight(40)
-        self.combo_type.setStyleSheet(self._INPUT_STYLE)
         form.addRow(self._create_label("Tür:"), self.combo_type)
 
         self.input_name = QLineEdit()
         self.input_name.setMinimumHeight(40)
-        self.input_name.setStyleSheet(self._INPUT_STYLE)
         form.addRow(self._create_label("Ad:"), self.input_name)
 
         # Tarih + bitiş tarihi checkbox
@@ -106,7 +76,6 @@ class EditDialog(QDialog):
         self.input_date.setCalendarPopup(True)
         self.input_date.setDisplayFormat("d MMMM yyyy")
         self.input_date.setMinimumHeight(40)
-        self.input_date.setStyleSheet(self._INPUT_STYLE)
 
         self.chk_range = QCheckBox("Bitiş Tarihi")
         self.chk_range.setStyleSheet("""
@@ -129,21 +98,18 @@ class EditDialog(QDialog):
         self.input_end_date.setCalendarPopup(True)
         self.input_end_date.setDisplayFormat("d MMMM yyyy")
         self.input_end_date.setMinimumHeight(40)
-        self.input_end_date.setStyleSheet(self._INPUT_STYLE)
         form.addRow(self.lbl_end_date, self.input_end_date)
         self.lbl_end_date.hide()
         self.input_end_date.hide()
 
         self.input_comment = QTextEdit()
         self.input_comment.setMinimumHeight(80)
-        self.input_comment.setStyleSheet(self._INPUT_STYLE)
         form.addRow(self._create_label("Yorum:"), self.input_comment)
 
         self.combo_rating = QComboBox()
         self.combo_rating.setMinimumHeight(40)
         self.combo_rating.addItem("Seçiniz")
         self.combo_rating.addItems([str(i) for i in range(1, 11)])
-        self.combo_rating.setStyleSheet(self._INPUT_STYLE)
         form.addRow(self._create_label("Puan:"), self.combo_rating)
 
         container.addLayout(form)
@@ -154,33 +120,16 @@ class EditDialog(QDialog):
         button_row.setSpacing(15)
 
         btn_cancel = QPushButton("İptal")
+        btn_cancel.setObjectName("btn_secondary")
         btn_cancel.setMinimumHeight(45)
         btn_cancel.setCursor(Qt.PointingHandCursor)
         btn_cancel.clicked.connect(self.reject)
-        btn_cancel.setStyleSheet("""
-            QPushButton {
-                background-color: #F1F5F9; color: #64748B;
-                border: 1px solid #CBD5E1; border-radius: 10px;
-                font-weight: 600; font-size: 14px;
-            }
-            QPushButton:hover { background-color: #E2E8F0; color: #475569; }
-        """)
 
         self.btn_save = QPushButton("Kaydet")
+        self.btn_save.setObjectName("btn_primary")
         self.btn_save.setMinimumHeight(45)
         self.btn_save.setCursor(Qt.PointingHandCursor)
         self.btn_save.clicked.connect(self.handle_update)
-        self.btn_save.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #3B82F6, stop:1 #2563EB);
-                color: white; border: none; border-radius: 10px;
-                font-weight: 600; font-size: 14px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2563EB, stop:1 #1D4ED8);
-            }
-            QPushButton:pressed { background-color: #1D4ED8; padding-top: 2px; }
-        """)
 
         button_row.addWidget(btn_cancel)
         button_row.addWidget(self.btn_save)

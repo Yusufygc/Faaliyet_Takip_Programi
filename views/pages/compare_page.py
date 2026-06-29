@@ -33,8 +33,8 @@ class ComparePage(QWidget):
                 border-radius: 2px;
                 margin: 2px 0;
             }
-            QSplitter::handle:hover { 
-                background-color: #2980B9; 
+            QSplitter::handle:hover {
+                background-color: #3B82F6;
             }
         """)
 

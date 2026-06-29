@@ -17,13 +17,7 @@ class TrendAnalysisWidget(QFrame):
         self.current_year = datetime.now().year
         self.peak_month_data = None
 
-        self.setStyleSheet("""
-            QFrame {
-                background-color: white;
-                border: 1px solid #E2E8F0;
-                border-radius: 16px;
-            }
-        """)
+        self.setObjectName("card")
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(20)
         shadow.setXOffset(0)
@@ -109,13 +103,7 @@ class TrendAnalysisWidget(QFrame):
 
         # Activity details list
         self.details_container = QFrame()
-        self.details_container.setStyleSheet("""
-            QFrame {
-                background-color: white;
-                border: 2px solid #E2E8F0;
-                border-radius: 12px;
-            }
-        """)
+        self.details_container.setObjectName("card_elevated")
         self.details_container.hide()
 
         details_layout = QVBoxLayout(self.details_container)
@@ -127,14 +115,6 @@ class TrendAnalysisWidget(QFrame):
         details_layout.addWidget(self.details_title)
 
         self.activity_list = QListWidget()
-        self.activity_list.setStyleSheet("""
-            QListWidget {
-                background-color: #F8FAFC; border: 1px solid #E2E8F0;
-                border-radius: 8px; padding: 5px;
-            }
-            QListWidget::item { border-bottom: 1px solid #E2E8F0; padding: 8px; color: #334155; }
-            QListWidget::item:hover { background-color: #EFF6FF; }
-        """)
         self.activity_list.setMaximumHeight(200)
         details_layout.addWidget(self.activity_list)
         layout.addWidget(self.details_container)

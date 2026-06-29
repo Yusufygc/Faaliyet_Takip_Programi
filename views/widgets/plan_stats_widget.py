@@ -1,7 +1,6 @@
 # views/widgets/plan_stats_widget.py
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from views.widgets.modern_card import ModernCard
-from views.widgets.plan_colors import COLORS
 
 
 class StatCard(ModernCard):
@@ -25,7 +24,7 @@ class StatCard(ModernCard):
         row.addWidget(self.lbl_count)
 
         lbl_title = QLabel(title)
-        lbl_title.setStyleSheet(f"color: {COLORS['text_sub']}; font-size: 13px; font-weight: 600; background: transparent;")
+        lbl_title.setStyleSheet("color: #7F8C8D; font-size: 13px; font-weight: 600; background: transparent;")
 
         layout.addLayout(row)
         layout.addWidget(lbl_title)
@@ -38,7 +37,7 @@ class PlanStatsWidget(QWidget):
         layout.setContentsMargins(0, 10, 0, 20)
         layout.setSpacing(20)
 
-        self.card_total = StatCard("Toplam Plan", "📊", COLORS['primary'])
+        self.card_total = StatCard("Toplam Plan", "📊", "#3B82F6")
         self.card_done = StatCard("Tamamlanan", "✅", "#27AE60")
         self.card_wait = StatCard("Bekleyen", "⏳", "#F39C12")
 

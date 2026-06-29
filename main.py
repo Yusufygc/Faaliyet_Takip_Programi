@@ -32,7 +32,7 @@ try:
     from PyQt5.QtGui import QIcon
     from controllers.main_controller import MainController
     from views.main_window import MainWindow
-    from views.styles import STYLESHEET
+    from styles import load
 except Exception as e:
     err_msg = f"Import Error: {traceback.format_exc()}"
     log_error(err_msg)
@@ -51,7 +51,8 @@ def main():
 
     try:
         app = QApplication(sys.argv)
-        app.setStyle("Fusion") 
+        app.setStyle("Fusion")
+        app.setStyleSheet(load("global", "inputs", "buttons", "cards", "scrollbars", "tables"))
         
         # Uygulama genelinde ikon ayarla (Taskbar icini)
         from utils import get_resource_path

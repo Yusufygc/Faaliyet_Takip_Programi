@@ -1,0 +1,157 @@
+/* --- Primary (objectName="btn_primary") --- */
+QPushButton#btn_primary {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 $C_PRIMARY, stop:1 $C_PRIMARY_DARK);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: $FW_SEMIBOLD;
+    font-size: $F_BASE;
+    min-height: 45px;
+    padding: 0 20px;
+}
+QPushButton#btn_primary:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 $C_PRIMARY_DARK, stop:1 $C_PRIMARY_DARKER);
+}
+QPushButton#btn_primary:pressed {
+    background-color: $C_PRIMARY_DARKER;
+    padding-top: 2px;
+}
+QPushButton#btn_primary:disabled {
+    background: $C_BORDER;
+    color: $C_TEXT_LIGHT;
+}
+
+/* --- Secondary (objectName="btn_secondary") --- */
+QPushButton#btn_secondary {
+    background-color: $C_BG_SUBTLE;
+    color: $C_TEXT_LIGHT;
+    border: 1px solid $C_BORDER_LIGHT;
+    border-radius: 10px;
+    font-weight: $FW_SEMIBOLD;
+    font-size: $F_BASE;
+    min-height: 45px;
+    padding: 0 20px;
+}
+QPushButton#btn_secondary:hover {
+    background-color: $C_BORDER;
+    color: $C_TEXT_MUTED;
+}
+QPushButton#btn_secondary:pressed {
+    background-color: $C_BORDER_LIGHT;
+}
+
+/* --- Danger (objectName="btn_danger") --- */
+QPushButton#btn_danger {
+    background-color: $C_DANGER;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: $FW_SEMIBOLD;
+    font-size: $F_BASE;
+    min-height: 45px;
+    padding: 0 20px;
+}
+QPushButton#btn_danger:hover {
+    background-color: $C_DANGER_DARK;
+}
+QPushButton#btn_danger:pressed {
+    background-color: $C_DANGER_DARKER;
+}
+
+/* --- Success / Green (objectName="btn_success") --- */
+QPushButton#btn_success {
+    background-color: $C_SUCCESS;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: $FW_SEMIBOLD;
+    font-size: $F_BASE;
+    min-height: 45px;
+    padding: 0 20px;
+}
+QPushButton#btn_success:hover {
+    background-color: $C_SUCCESS_DARK;
+}
+QPushButton#btn_success:disabled {
+    background-color: $C_BG_SUBTLE;
+    color: $C_TEXT_LIGHT;
+}
+
+/* --- Muted / Slate (objectName="btn_muted") --- */
+QPushButton#btn_muted {
+    background-color: $C_TEXT_LIGHT;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: $FW_SEMIBOLD;
+    font-size: $F_BASE;
+    min-height: 45px;
+    padding: 0 20px;
+}
+QPushButton#btn_muted:hover {
+    background-color: $C_TEXT_MUTED;
+}
+QPushButton#btn_muted:disabled {
+    background-color: $C_BG_SUBTLE;
+    color: $C_TEXT_LIGHT;
+}
+
+/* --- Warning / Orange (objectName="btn_warning") --- */
+QPushButton#btn_warning {
+    background-color: $C_WARNING;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: $FW_SEMIBOLD;
+    font-size: $F_BASE;
+    min-height: 45px;
+    padding: 0 20px;
+}
+QPushButton#btn_warning:hover {
+    background-color: $C_WARNING_DARK;
+}
+QPushButton#btn_warning:disabled {
+    background-color: $C_BG_SUBTLE;
+    color: $C_TEXT_LIGHT;
+}
+
+/* --- Nav / Pagination small (objectName="btn_nav") --- */
+QPushButton#btn_nav {
+    background-color: $C_BG_SUBTLE;
+    color: $C_TEXT_MID;
+    border: 1px solid $C_BORDER;
+    border-radius: $R_MD;
+    font-size: $F_BASE;
+    padding: 6px 16px;
+    font-weight: $FW_SEMIBOLD;
+}
+QPushButton#btn_nav:hover {
+    background-color: $C_BORDER;
+    color: $C_TEXT_DARK;
+}
+QPushButton#btn_nav:disabled {
+    color: $C_BORDER_LIGHT;
+    background-color: $C_BG_LIGHT;
+    border-color: $C_BORDER;
+}
+
+/* --- Ghost / Nav toggle (objectName="btn_ghost") --- */
+QPushButton#btn_ghost {
+    background-color: transparent;
+    color: $C_TEXT_MUTED;
+    border: 2px solid $C_BORDER;
+    border-radius: $R_MD;
+    font-size: $F_BASE;
+    padding: 6px 16px;
+}
+QPushButton#btn_ghost:hover {
+    background-color: $C_BG_SUBTLE;
+    border-color: $C_BORDER_LIGHT;
+}
+QPushButton#btn_ghost:checked {
+    background-color: $C_PRIMARY;
+    border-color: $C_PRIMARY;
+    color: white;
+}

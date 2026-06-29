@@ -1,0 +1,51 @@
+/* --- Base card (objectName="card") --- */
+QFrame#card {
+    background-color: $C_BG_WHITE;
+    border: 1px solid $C_BORDER;
+    border-radius: $R_LG;
+}
+
+/* --- Elevated card with stronger border (objectName="card_elevated") --- */
+QFrame#card_elevated {
+    background-color: $C_BG_WHITE;
+    border: 2px solid $C_BORDER;
+    border-radius: $R_LG;
+}
+
+/* --- Stat card with left accent (objectName="card_stat") --- */
+QFrame#card_stat {
+    background-color: $C_BG_WHITE;
+    border: 2px solid $C_BORDER;
+    border-radius: 10px;
+    border-left: 4px solid $C_PRIMARY;
+}
+QFrame#card_stat:hover {
+    border: 2px solid $C_PRIMARY;
+    border-left: 4px solid $C_PRIMARY;
+}
+
+/* --- Dialog background --- */
+QDialog {
+    background-color: $C_BG_LIGHT;
+}
+
+/* --- Form inner frame --- */
+QFrame#form_frame {
+    background-color: $C_BG_WHITE;
+    border: 1px solid $C_BORDER;
+    border-radius: $R_LG;
+}
+
+/* --- Filter bar (objectName="filter_frame") --- */
+QFrame#filter_frame {
+    background-color: $C_BG_SUBTLE;
+    border: 1px solid $C_BORDER;
+    border-radius: $R_LG;
+}
+
+/* --- Header / top bar --- */
+QFrame#header_frame {
+    background-color: $C_BG_WHITE;
+    border: 2px solid $C_BORDER;
+    border-radius: $R_LG;
+}
