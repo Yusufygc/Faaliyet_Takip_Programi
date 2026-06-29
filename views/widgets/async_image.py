@@ -45,4 +45,5 @@ class AsyncImage(QLabel):
             ))
             self.setText("")
         else:
-            self.setText("📷")
+            from services.icon_service import IconService
+            self.setPixmap(IconService.pixmap("image", 48))

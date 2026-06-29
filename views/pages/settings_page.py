@@ -1,10 +1,11 @@
 # views/pages/settings_page.py
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QListWidget, QLineEdit, QMessageBox, 
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                             QPushButton, QListWidget, QLineEdit, QMessageBox,
                              QInputDialog, QFrame, QGraphicsDropShadowEffect,
                              QListWidgetItem, QGridLayout)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QColor
+from services.icon_service import IconService
 
 class SettingsPage(QWidget):
     # Sayfalama sabitleri
@@ -27,13 +28,11 @@ class SettingsPage(QWidget):
         main_layout.setContentsMargins(25, 25, 25, 25)
 
         # Başlık
-        title = QLabel("⚙️ Ayarlar")
-        title.setStyleSheet("""
-            font-size: 26px; 
-            font-weight: bold; 
-            color: #2C3E50;
-            padding-bottom: 5px;
-        """)
+        title = IconService.title_widget(
+            "nav_settings", "Ayarlar",
+            style="font-size: 26px; font-weight: bold; color: #2C3E50; padding-bottom: 5px; background: transparent;",
+            icon_size=28
+        )
         main_layout.addWidget(title)
         
         # --- Kartlar Alanı ---
@@ -80,8 +79,11 @@ class SettingsPage(QWidget):
         card_layout.setContentsMargins(18, 15, 18, 15)
         card_layout.setSpacing(10)
 
-        sub_title = QLabel("📋 Faaliyet Türleri")
-        sub_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #34495E; border: none;")
+        sub_title = IconService.title_widget(
+            "tasks", "Faaliyet Türleri",
+            style="font-size: 18px; font-weight: bold; color: #34495E; border: none; background: transparent;",
+            icon_size=20
+        )
         card_layout.addWidget(sub_title)
 
         desc = QLabel("Türleri ekleyin, düzenleyin veya silin.")
@@ -98,8 +100,9 @@ class SettingsPage(QWidget):
         search_layout = QHBoxLayout()
         search_layout.setSpacing(8)
 
-        search_icon = QLabel("🔍")
-        search_icon.setStyleSheet("border: none; font-size: 16px;")
+        search_icon = QLabel()
+        search_icon.setPixmap(IconService.pixmap("search", 16))
+        search_icon.setStyleSheet("border: none;")
         search_layout.addWidget(search_icon)
 
         self.search_input = QLineEdit()
@@ -163,9 +166,9 @@ class SettingsPage(QWidget):
         btn_layout.setAlignment(Qt.AlignTop)
         btn_layout.setSpacing(8)
 
-        self.btn_add = self.create_btn("➕ Ekle", "btn_success", self.add_type)
-        self.btn_edit = self.create_btn("✏️ Düzenle", "btn_warning", self.edit_type)
-        self.btn_delete = self.create_btn("🗑️ Sil", "btn_danger", self.delete_type)
+        self.btn_add = self.create_btn("Ekle", "btn_success", self.add_type, "add")
+        self.btn_edit = self.create_btn("Düzenle", "btn_warning", self.edit_type, "edit")
+        self.btn_delete = self.create_btn("Sil", "btn_danger", self.delete_type, "delete")
 
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_edit)
@@ -190,8 +193,11 @@ class SettingsPage(QWidget):
         layout.setSpacing(10)
         
         # Başlık ve Açıklama
-        header = QLabel("🔑 API Yapılandırması")
-        header.setStyleSheet("font-size: 18px; font-weight: bold; color: #34495E; border: none;")
+        header = IconService.title_widget(
+            "key", "API Yapılandırması",
+            style="font-size: 18px; font-weight: bold; color: #34495E; border: none; background: transparent;",
+            icon_size=20
+        )
         layout.addWidget(header)
         
         desc = QLabel("Keşfet sayfası ve öneri sistemi için gerekli API anahtarlarını buradan yönetebilirsiniz. (Değişikliklerin etkili olması için uygulamayı yeniden başlatmanız önerilir.)")
@@ -222,7 +228,9 @@ class SettingsPage(QWidget):
         form_layout.addWidget(self.txt_rawg)
         
         # Kaydet Butonu
-        btn_save = QPushButton("💾 Kaydet")
+        btn_save = QPushButton("Kaydet")
+        btn_save.setIcon(IconService.get("save"))
+        btn_save.setIconSize(QSize(16, 16))
         btn_save.setObjectName("btn_primary")
         btn_save.setCursor(Qt.PointingHandCursor)
         btn_save.setFixedWidth(120)
@@ -253,7 +261,7 @@ class SettingsPage(QWidget):
         success, msg = result
         if success:
             if self.window().statusBar():
-                self.window().statusBar().showMessage(f"✅ {msg}", 3000)
+                self.window().statusBar().showMessage(msg, 3000)
             
             # Label'ları (Input alanlarını) temizle
             self.txt_tmdb.clear()
@@ -263,8 +271,11 @@ class SettingsPage(QWidget):
         else:
             QMessageBox.warning(self, "Hata", msg)
 
-    def create_btn(self, text, style_name, func):
+    def create_btn(self, text, style_name, func, icon_name=None):
         btn = QPushButton(text)
+        if icon_name:
+            btn.setIcon(IconService.get(icon_name, "#FFFFFF"))
+            btn.setIconSize(QSize(16, 16))
         btn.setObjectName(style_name)
         btn.setCursor(Qt.PointingHandCursor)
         btn.clicked.connect(func)
@@ -364,7 +375,7 @@ class SettingsPage(QWidget):
         if success:
             self.refresh_types()
             if self.window().statusBar():
-                self.window().statusBar().showMessage(f"✅ {msg}", 3000)
+                self.window().statusBar().showMessage(msg, 3000)
         else:
             QMessageBox.warning(self, "Hata", msg)
 
@@ -395,7 +406,7 @@ class SettingsPage(QWidget):
         if success:
             self.refresh_types()
             if self.window().statusBar():
-                 self.window().statusBar().showMessage(f"✅ {msg}", 3000)
+                 self.window().statusBar().showMessage(msg, 3000)
         else:
             QMessageBox.warning(self, "Hata", msg)
 
@@ -421,6 +432,6 @@ class SettingsPage(QWidget):
         if success:
             self.refresh_types()
             if self.window().statusBar():
-                 self.window().statusBar().showMessage(f"🗑️ {msg}", 3000)
+                 self.window().statusBar().showMessage(msg, 3000)
         else:
             QMessageBox.warning(self, "Hata", msg)

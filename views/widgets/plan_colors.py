@@ -14,7 +14,7 @@ COLORS = {
 }
 
 PRIORITY_CFG = {
-    'low': {'bg': '#E8F6F3', 'fg': '#1ABC9C', 'label': 'Düşük', 'dot': '🟢'},
-    'medium': {'bg': '#FEF9E7', 'fg': '#F1C40F', 'label': 'Orta', 'dot': '🟡'},
-    'high': {'bg': '#FDEDEC', 'fg': '#E74C3C', 'label': 'Yüksek', 'dot': '🔴'}
+    'low':    {'bg': '#E8F6F3', 'fg': '#1ABC9C', 'label': 'Düşük',  'dot': '●'},
+    'medium': {'bg': '#FEF9E7', 'fg': '#F1C40F', 'label': 'Orta',   'dot': '●'},
+    'high':   {'bg': '#FDEDEC', 'fg': '#E74C3C', 'label': 'Yüksek', 'dot': '●'}
 }

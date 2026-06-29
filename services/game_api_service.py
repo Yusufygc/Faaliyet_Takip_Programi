@@ -41,7 +41,7 @@ class GameApiService(_BaseApiService):
     def _parse_item(self, item) -> dict:
         return {
             'title': item.get('name'),
-            'description': f"Rating: {item.get('rating', 0)}/5 ⭐ {item.get('ratings_count', 0)} oy",
+            'description': f"Rating: {item.get('rating', 0)}/5 | {item.get('ratings_count', 0)} oy",
             'rating': item.get('rating', 0) * 2,
             'image': item.get('background_image'),
             'date': item.get('released', ''),

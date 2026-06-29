@@ -1,10 +1,11 @@
 # views/widgets/plan_card.py
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
                              QProgressBar, QSizePolicy, QMessageBox)
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from models import Plan
 from views.widgets.modern_card import ModernCard
 from views.widgets.plan_colors import PRIORITY_CFG
+from services.icon_service import IconService
 
 
 class PlanCard(ModernCard):
@@ -45,12 +46,22 @@ class PlanCard(ModernCard):
                       'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
             date_str = f"{months[self.plan.month-1]} {self.plan.year}"
 
-        lbl_date = QLabel(f"📅 {date_str}")
-        lbl_date.setStyleSheet("color: #7F8C8D; font-size: 12px; font-weight: 600;")
+        date_widget = QWidget()
+        date_widget.setStyleSheet("background: transparent;")
+        date_layout = QHBoxLayout(date_widget)
+        date_layout.setContentsMargins(0, 0, 0, 0)
+        date_layout.setSpacing(4)
+        lbl_date_icon = QLabel()
+        lbl_date_icon.setPixmap(IconService.pixmap("calendar", 14))
+        lbl_date_icon.setStyleSheet("background: transparent;")
+        lbl_date_text = QLabel(date_str)
+        lbl_date_text.setStyleSheet("color: #7F8C8D; font-size: 12px; font-weight: 600; background: transparent;")
+        date_layout.addWidget(lbl_date_icon)
+        date_layout.addWidget(lbl_date_text)
 
         header.addWidget(lbl_priority)
         header.addStretch()
-        header.addWidget(lbl_date)
+        header.addWidget(date_widget)
         layout.addLayout(header)
 
         # ─── İçerik (Başlık - Açıklama) ───
@@ -127,10 +138,10 @@ class PlanCard(ModernCard):
         footer.setSpacing(10)
 
         status_map = {
-            'planned': ('📋 Planlandı', '#7F8C8D'),
-            'in_progress': ('⚙️ Sürüyor', '#F39C12'),
-            'completed': ('✅ Tamamlandı', '#27AE60'),
-            'archived': ('📦 Arşiv', '#95A5A6')
+            'planned':     ('Planlandı',  '#7F8C8D'),
+            'in_progress': ('Sürüyor',    '#F39C12'),
+            'completed':   ('Tamamlandı', '#27AE60'),
+            'archived':    ('Arşiv',      '#95A5A6'),
         }
         st_text, st_color = status_map.get(self.plan.status, status_map['planned'])
         lbl_status = QLabel(st_text)
@@ -162,13 +173,19 @@ class PlanCard(ModernCard):
             return btn
 
         if self.plan.status != 'completed':
-            btn_ok = create_circle_btn("✓", "#27AE60", "Tamamla", self.on_quick_complete)
+            btn_ok = create_circle_btn("", "#27AE60", "Tamamla", self.on_quick_complete)
+            btn_ok.setIcon(IconService.get("check", "#27AE60"))
+            btn_ok.setIconSize(QSize(14, 14))
             footer.addWidget(btn_ok)
 
-        btn_edit = create_circle_btn("✏️", "#2980B9", "Düzenle", lambda: self.edited.emit(self.plan))
+        btn_edit = create_circle_btn("", "#2980B9", "Düzenle", lambda: self.edited.emit(self.plan))
+        btn_edit.setIcon(IconService.get("edit", "#2980B9"))
+        btn_edit.setIconSize(QSize(14, 14))
         footer.addWidget(btn_edit)
 
-        btn_del = create_circle_btn("🗑️", "#E74C3C", "Sil", self.on_delete)
+        btn_del = create_circle_btn("", "#E74C3C", "Sil", self.on_delete)
+        btn_del.setIcon(IconService.get("delete", "#E74C3C"))
+        btn_del.setIconSize(QSize(14, 14))
         footer.addWidget(btn_del)
 
         layout.addLayout(footer)

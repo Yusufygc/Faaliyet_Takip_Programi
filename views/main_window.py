@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QShortcut, QSizePolicy, QGraphicsDropShadowEffect)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence, QIcon, QColor
+from PyQt5.QtCore import QSize
+from services.icon_service import IconService
 
 from controllers.main_controller import MainController
 from views.pages.add_page import AddPage
@@ -95,9 +97,10 @@ class MainWindow(QMainWindow):
         logo_layout.setAlignment(Qt.AlignCenter)
         logo_layout.setSpacing(5)
         
-        lbl_icon = QLabel("📊") # Placeholder icon
-        lbl_icon.setStyleSheet("font-size: 40px; background: transparent;")
+        lbl_icon = QLabel()
+        lbl_icon.setPixmap(IconService.pixmap("app_logo", 48))
         lbl_icon.setAlignment(Qt.AlignCenter)
+        lbl_icon.setStyleSheet("background: transparent;")
         
         lbl_title = QLabel("FAALİYET\nTAKİP")
         lbl_title.setAlignment(Qt.AlignCenter)
@@ -119,16 +122,16 @@ class MainWindow(QMainWindow):
         # --- Menü Butonları ---
         self.buttons = []
         
-        # (Label, Icon, Index)
+        # (Label, IconName, Index)
         menu_items = [
-            ("Ekle", "➕", 0),
-            ("Listele", "📋", 1),
-            ("İstatistik", "📊", 2),
-            ("Karşılaştır", "🆚", 3),
-            ("PDF Rapor", "📄", 4),
-            ("Hedefler", "🎯", 5),
-            ("Keşfet", "🚀", 6),
-            ("Ayarlar", "⚙️", 7),
+            ("Ekle",        "nav_add",      0),
+            ("Listele",     "nav_list",     1),
+            ("İstatistik",  "nav_stats",    2),
+            ("Karşılaştır", "nav_compare",  3),
+            ("PDF Rapor",   "nav_pdf",      4),
+            ("Hedefler",    "nav_plans",    5),
+            ("Keşfet",      "nav_discover", 6),
+            ("Ayarlar",     "nav_settings", 7),
         ]
         
         for text, icon, idx in menu_items:
@@ -146,14 +149,15 @@ class MainWindow(QMainWindow):
 
         self.main_layout.addWidget(self.sidebar)
 
-    def add_sidebar_btn(self, text, icon, index, layout):
-        btn = QPushButton(f"  {icon}   {text}")
+    def add_sidebar_btn(self, text, icon_name, index, layout):
+        btn = QPushButton(f"  {text}")
         btn.setObjectName(f"SidebarBtn_{index}")
         btn.setCursor(Qt.PointingHandCursor)
-        
-        # Normal Stil
+        btn.setIcon(IconService.get(icon_name))
+        btn.setIconSize(QSize(20, 20))
+
         self.set_btn_style(btn, False)
-        
+
         btn.clicked.connect(lambda: self.switch_page(index))
         layout.addWidget(btn)
         self.buttons.append(btn)

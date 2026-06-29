@@ -191,7 +191,7 @@ class AddPage(QWidget):
         card_layout.addLayout(button_layout)
 
     def _build_footer(self, card_layout):
-        footer = QLabel("📌 Tüm alanları doldurup kaydedebilirsiniz")
+        footer = QLabel("Tüm alanları doldurup kaydedebilirsiniz")
         footer.setStyleSheet("""
             QLabel {
                 color: #94A3B8;
@@ -302,11 +302,11 @@ class AddPage(QWidget):
         success, message = result
 
         if success:
-            self.show_success_message(f"✅ {message}")
+            self.show_success_message(message)
 
             window = self.window()
             if window and hasattr(window, 'statusBar') and window.statusBar():
-                window.statusBar().showMessage(f"✅ {message}", 3000)
+                window.statusBar().showMessage(message, 3000)
 
             self.clear_inputs()
             self.setup_autocomplete()

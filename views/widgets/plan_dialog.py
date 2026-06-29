@@ -19,18 +19,18 @@ class PlanDialog(QDialog):
         layout.setSpacing(20)
         layout.setContentsMargins(30, 30, 30, 30)
 
-        title_lbl = QLabel("✨ Yeni Plan" if not self.plan else "✏️ Planı Düzenle")
+        title_lbl = QLabel("Yeni Plan" if not self.plan else "Planı Düzenle")
         title_lbl.setStyleSheet("font-size: 20px; font-weight: 800; color: #2C3E50; margin-bottom: 10px;")
         layout.addWidget(title_lbl)
 
         if self.folders:
             layout.addWidget(self._make_label("KLASÖR / PROJE"))
             self.cmb_folder = QComboBox()
-            self.cmb_folder.addItem("📁 Genel (Klasörsüz)", None)
+            self.cmb_folder.addItem("Genel (Klasörsüz)", None)
 
             selected_idx = 0
             for i, f in enumerate(self.folders):
-                self.cmb_folder.addItem(f"📁 {f.name}", f.id)
+                self.cmb_folder.addItem(f.name, f.id)
                 if self.plan and self.plan.folder_id == f.id:
                     selected_idx = i + 1
 
@@ -55,7 +55,7 @@ class PlanDialog(QDialog):
 
         layout.addWidget(self._make_label("ÖNCELİK"))
         self.cmb_priority = QComboBox()
-        self.cmb_priority.addItems(["🔵 Düşük Öncelik", "🟡 Orta Öncelik", "🔴 Yüksek Öncelik"])
+        self.cmb_priority.addItems(["Düşük Öncelik", "Orta Öncelik", "Yüksek Öncelik"])
 
         priority_map = {'low': 0, 'medium': 1, 'high': 2}
         idx = priority_map.get(self.plan.priority, 1) if self.plan else 1
@@ -65,7 +65,7 @@ class PlanDialog(QDialog):
         if self.plan:
             layout.addWidget(self._make_label("DURUM"))
             self.cmb_status = QComboBox()
-            self.cmb_status.addItems(["📋 Planlandı", "⚙️ Sürüyor", "✅ Tamamlandı", "📦 Arşiv"])
+            self.cmb_status.addItems(["Planlandı", "Sürüyor", "Tamamlandı", "Arşiv"])
 
             st_map = {'planned': 0, 'in_progress': 1, 'completed': 2, 'archived': 3}
             self.cmb_status.setCurrentIndex(st_map.get(self.plan.status, 0))

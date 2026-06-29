@@ -11,42 +11,42 @@ Periyotlar, türler ve API sabitleri burada tanımlanır.
 
 PERIODS = {
     "this_month": {
-        "name": "📅 Bu Ayın Trendleri",
+        "name": "Bu Ayın Trendleri",
         "description": "Bu ay çıkan popüler içerikler",
         "type": "date_range"
     },
     "last_year": {
-        "name": "🗓️ Geçen Yılın Efsaneleri",
+        "name": "Geçen Yılın Efsaneleri",
         "description": "Geçen yıl çıkan en iyiler",
         "type": "date_range"
     },
     "all_time_best": {
-        "name": "🏆 Tüm Zamanların En İyileri",
+        "name": "Tüm Zamanların En İyileri",
         "description": "Tüm zamanların en yüksek puanlı içerikleri",
         "type": "top_rated"
     },
     "must_see": {
-        "name": "⭐ Mutlaka İzlenmeli/Oynanmalı",
+        "name": "Mutlaka İzlenmeli/Oynanmalı",
         "description": "En popüler ve beğenilen içerikler",
         "type": "popular"
     },
     "cult_classics": {
-        "name": "🎭 Kült Klasikler",
+        "name": "Kült Klasikler",
         "description": "Kült statüsü kazanmış efsaneler",
         "type": "cult"
     },
     "hidden_gems": {
-        "name": "💎 Gizli Hazineler",
+        "name": "Gizli Hazineler",
         "description": "Az bilinen ama kaliteli içerikler",
         "type": "hidden"
     },
     "new_releases": {
-        "name": "🆕 Yeni Çıkanlar",
+        "name": "Yeni Çıkanlar",
         "description": "Son 3 ayda çıkan içerikler",
         "type": "new"
     },
     "upcoming": {
-        "name": "🔜 Yakında Gelecekler",
+        "name": "Yakında Gelecekler",
         "description": "Yakında çıkacak beklenen içerikler",
         "type": "upcoming"
     }

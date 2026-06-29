@@ -43,7 +43,7 @@ class SuggestionCard(QFrame):
 
         meta_layout = QHBoxLayout()
         rating = self.data.get('rating', 0) or 0
-        rating_lbl = QLabel(f"⭐ {rating:.1f}")
+        rating_lbl = QLabel(f"★ {rating:.1f}")
         rating_lbl.setStyleSheet("color: #FFC107; font-size: 11px;")
 
         date_str = str(self.data.get('date', ''))[:4] if self.data.get('date') else ''

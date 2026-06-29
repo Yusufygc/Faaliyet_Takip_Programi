@@ -244,7 +244,7 @@ class PlansPage(QWidget):
             filtered_plans = [p for p in plans if p.folder_id == self.current_folder_id]
 
         if not filtered_plans:
-            lbl = QLabel("📭 Bu klasörde/dönemde henüz bir plan yok.")
+            lbl = QLabel("Bu klasörde/dönemde henüz bir plan yok.")
             lbl.setAlignment(Qt.AlignCenter)
             lbl.setStyleSheet(f"color: {COLORS['text_sub']}; font-size: 16px; margin-top: 40px;")
             self.card_layout.addWidget(lbl, 0, 0, 1, 3)

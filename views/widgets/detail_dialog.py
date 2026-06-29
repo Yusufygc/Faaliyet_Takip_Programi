@@ -47,11 +47,11 @@ class DetailDialog(QDialog):
                 widget_layout.setContentsMargins(10, 10, 10, 10)
                 widget_layout.setSpacing(5)
 
-                lbl_name = QLabel(f"📌 {item[0]}")
+                lbl_name = QLabel(item[0])
                 lbl_name.setStyleSheet("font-size: 14px; font-weight: 600; color: #334155; background: transparent;")
                 lbl_name.setWordWrap(True)
 
-                lbl_date = QLabel(f"📅 {item[1]}")
+                lbl_date = QLabel(item[1])
                 lbl_date.setStyleSheet("font-size: 12px; color: #64748B; background: transparent;")
 
                 widget_layout.addWidget(lbl_name)

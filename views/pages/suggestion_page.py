@@ -3,7 +3,8 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QScrollArea, QFrame, QGridLayout,
                              QComboBox, QCheckBox, QDialog)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
+from services.icon_service import IconService
 from controllers.recommendation_controller import RecommendationController
 from views.widgets.async_image import AsyncImage
 from views.widgets.suggestion_card import SuggestionCard
@@ -39,12 +40,17 @@ class SuggestionPage(QWidget):
     def _build_header(self, layout):
         header_layout = QHBoxLayout()
 
-        title = QLabel("🚀 Keşfet & Öneriler")
-        title.setStyleSheet("font-size: 26px; font-weight: bold; color: #333;")
+        title = IconService.title_widget(
+            "nav_discover", "Keşfet & Öneriler",
+            style="font-size: 26px; font-weight: bold; color: #333; background: transparent;",
+            icon_size=28
+        )
         header_layout.addWidget(title)
         header_layout.addStretch()
 
-        self.btn_random = QPushButton("🎲 Rastgele Öneri")
+        self.btn_random = QPushButton("Rastgele Öneri")
+        self.btn_random.setIcon(IconService.get("random"))
+        self.btn_random.setIconSize(QSize(16, 16))
         self.btn_random.setCursor(Qt.PointingHandCursor)
         self.btn_random.setStyleSheet("""
             QPushButton {
@@ -61,7 +67,9 @@ class SuggestionPage(QWidget):
         self.btn_random.clicked.connect(self.on_random_clicked)
         header_layout.addWidget(self.btn_random)
 
-        self.btn_refresh = QPushButton("🔄 Yenile")
+        self.btn_refresh = QPushButton("Yenile")
+        self.btn_refresh.setIcon(IconService.get("refresh"))
+        self.btn_refresh.setIconSize(QSize(16, 16))
         self.btn_refresh.setCursor(Qt.PointingHandCursor)
         self.btn_refresh.setStyleSheet("""
             QPushButton {
@@ -85,7 +93,7 @@ class SuggestionPage(QWidget):
         filter_layout = QHBoxLayout(filter_frame)
         filter_layout.setSpacing(15)
 
-        period_label = QLabel("📅 Dönem:")
+        period_label = QLabel("Dönem:")
         period_label.setStyleSheet("font-weight: bold; color: #333;")
         filter_layout.addWidget(period_label)
 
@@ -112,7 +120,7 @@ class SuggestionPage(QWidget):
 
         filter_layout.addSpacing(15)
 
-        genre_label = QLabel("🎭 Tür:")
+        genre_label = QLabel("Tür:")
         genre_label.setStyleSheet("font-weight: bold; color: #333;")
         filter_layout.addWidget(genre_label)
 
@@ -123,7 +131,7 @@ class SuggestionPage(QWidget):
 
         filter_layout.addSpacing(15)
 
-        self.turkish_checkbox = QCheckBox("🇹🇷 Türkçe Yapımlar")
+        self.turkish_checkbox = QCheckBox("Türkçe Yapımlar")
         self.turkish_checkbox.setStyleSheet("""
             QCheckBox { color: #333; font-weight: bold; }
             QCheckBox::indicator { width: 18px; height: 18px; }
@@ -168,7 +176,9 @@ class SuggestionPage(QWidget):
         pagination_layout = QHBoxLayout(self.pagination_widget)
         pagination_layout.setContentsMargins(0, 10, 0, 10)
 
-        self.btn_show_cached = QPushButton("📂 Eski Verileri Göster")
+        self.btn_show_cached = QPushButton("Eski Verileri Göster")
+        self.btn_show_cached.setIcon(IconService.get("archive", "#64748B"))
+        self.btn_show_cached.setIconSize(QSize(16, 16))
         self.btn_show_cached.setObjectName("btn_muted")
         self.btn_show_cached.setCursor(Qt.PointingHandCursor)
         self.btn_show_cached.clicked.connect(self.on_show_cached_clicked)
@@ -182,7 +192,9 @@ class SuggestionPage(QWidget):
 
         pagination_layout.addStretch()
 
-        self.btn_load_more = QPushButton("➕ Daha Fazla Göster")
+        self.btn_load_more = QPushButton("Daha Fazla Göster")
+        self.btn_load_more.setIcon(IconService.get("load_more"))
+        self.btn_load_more.setIconSize(QSize(16, 16))
         self.btn_load_more.setObjectName("btn_success")
         self.btn_load_more.setCursor(Qt.PointingHandCursor)
         self.btn_load_more.clicked.connect(self.on_load_more_clicked)
@@ -258,14 +270,14 @@ class SuggestionPage(QWidget):
     def on_random_clicked(self):
         """Rastgele öneri butonuna basılınca çağrılır. Seçili kategoriden rastgele içerik getirir."""
         self.btn_random.setEnabled(False)
-        self.btn_random.setText("🎲 Yükleniyor...")
+        self.btn_random.setText("Yükleniyor...")
         # Seçili kategoriden rastgele öneri getir
         self.controller.get_random_recommendation(self.on_random_loaded, self.current_category)
 
     def on_random_loaded(self, result):
         """Rastgele öneri geldiğinde çağrılır."""
         self.btn_random.setEnabled(True)
-        self.btn_random.setText("🎲 Rastgele Öneri")
+        self.btn_random.setText("Rastgele Öneri")
         
         if result:
             self._show_random_modal(result)
@@ -291,7 +303,7 @@ class SuggestionPage(QWidget):
 
     def _build_random_dialog_content(self, layout, data):
         category = data.get('random_category', data.get('type', 'İçerik'))
-        cat_label = QLabel(f"📌 {category}")
+        cat_label = QLabel(category)
         cat_label.setStyleSheet("""
             background-color: #9c27b0;
             color: white;
@@ -316,10 +328,10 @@ class SuggestionPage(QWidget):
 
         meta_layout = QHBoxLayout()
         rating = data.get('rating', 0) or 0
-        rating_label = QLabel(f"⭐ {rating:.1f}/10")
+        rating_label = QLabel(f"★ {rating:.1f}/10")
         rating_label.setStyleSheet("color: #FFC107; font-size: 14px; font-weight: bold;")
         date_str = str(data.get('date', ''))[:4] if data.get('date') else ''
-        date_label = QLabel(f"📅 {date_str}" if date_str else "")
+        date_label = QLabel(date_str)
         date_label.setStyleSheet("color: #aaa; font-size: 14px;")
         meta_layout.addStretch()
         meta_layout.addWidget(rating_label)
@@ -341,7 +353,9 @@ class SuggestionPage(QWidget):
     def _build_random_dialog_buttons(self, layout, dialog):
         btn_layout = QHBoxLayout()
 
-        btn_another = QPushButton("🔄 Başka Öneri")
+        btn_another = QPushButton("Başka Öneri")
+        btn_another.setIcon(IconService.get("refresh"))
+        btn_another.setIconSize(QSize(14, 14))
         btn_another.setObjectName("btn_muted")
         btn_another.setCursor(Qt.PointingHandCursor)
         btn_another.clicked.connect(lambda: self._refresh_random_modal(dialog))
@@ -363,7 +377,7 @@ class SuggestionPage(QWidget):
     def on_load_more_clicked(self):
         """Daha fazla göster butonuna basılınca çağrılır."""
         self.btn_load_more.setEnabled(False)
-        self.btn_load_more.setText("⏳ Yükleniyor...")
+        self.btn_load_more.setText("Yükleniyor...")
         
         self.controller.get_next_page(
             self.on_more_data_loaded,
@@ -377,7 +391,7 @@ class SuggestionPage(QWidget):
     def on_show_cached_clicked(self):
         """Eski verileri göster butonuna basılınca çağrılır."""
         self.btn_show_cached.setEnabled(False)
-        self.btn_show_cached.setText("⏳ Yükleniyor...")
+        self.btn_show_cached.setText("Yükleniyor...")
         
         self.controller.get_previous_data(
             self.on_cached_data_loaded,
@@ -396,7 +410,7 @@ class SuggestionPage(QWidget):
         self._clear_grid()
         
         # Yükleniyor göster
-        loading = QLabel("⏳ Veriler Çekiliyor...")
+        loading = QLabel("Veriler Çekiliyor...")
         loading.setStyleSheet("color: #666; font-size: 16px; padding: 50px;")
         loading.setAlignment(Qt.AlignCenter)
         self.grid.addWidget(loading, 0, 0)
@@ -428,7 +442,7 @@ class SuggestionPage(QWidget):
         self._clear_grid()
         
         if not results:
-            lbl = QLabel("❌ Veri bulunamadı veya bir hata oluştu.\n\nAPI anahtarlarınızı kontrol edin.")
+            lbl = QLabel("Veri bulunamadı veya bir hata oluştu.\n\nAPI anahtarlarınızı kontrol edin.")
             lbl.setStyleSheet("color: #f44336; font-size: 14px; padding: 50px;")
             lbl.setAlignment(Qt.AlignCenter)
             self.grid.addWidget(lbl, 0, 0)
@@ -477,9 +491,9 @@ class SuggestionPage(QWidget):
         
         # Butonları etkinleştir
         self.btn_load_more.setEnabled(True)
-        self.btn_load_more.setText("➕ Daha Fazla Göster")
+        self.btn_load_more.setText("Daha Fazla Göster")
         self.btn_show_cached.setEnabled(True)
-        self.btn_show_cached.setText("📂 Eski Verileri Göster")
+        self.btn_show_cached.setText("Eski Verileri Göster")
 
     def on_more_data_loaded(self, results):
         """Sonraki sayfa verisi yüklenince çağrılır."""
@@ -490,7 +504,7 @@ class SuggestionPage(QWidget):
         
         self.update_page_label()
         self.btn_load_more.setEnabled(True)
-        self.btn_load_more.setText("➕ Daha Fazla Göster")
+        self.btn_load_more.setText("Daha Fazla Göster")
 
     def on_cached_data_loaded(self, results):
         """Cache'den veri yüklenince çağrılır."""
@@ -502,4 +516,4 @@ class SuggestionPage(QWidget):
         
         self.update_page_label()
         self.btn_show_cached.setEnabled(True)
-        self.btn_show_cached.setText("📂 Eski Verileri Göster")
+        self.btn_show_cached.setText("Eski Verileri Göster")

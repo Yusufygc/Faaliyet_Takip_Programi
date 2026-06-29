@@ -36,16 +36,13 @@ class TrendAnalysisPage(QWidget):
         header_layout.addWidget(self.btn_back)
         
         # Başlık
-        title = QLabel("📈 Zaman Serisi ve Trend Analizi")
-        title.setStyleSheet("""
-            font-family: 'Segoe UI';
-            font-size: 24px; 
-            font-weight: bold; 
-            color: #1E293B; 
-            background: transparent;
-            border: none;
-        """)
-        title.setAlignment(Qt.AlignCenter)
+        from services.icon_service import IconService
+        from PyQt5.QtCore import QSize as _QSize
+        title = IconService.title_widget(
+            "chart_line", "Zaman Serisi ve Trend Analizi",
+            style="font-family: 'Segoe UI'; font-size: 24px; font-weight: bold; color: #1E293B; background: transparent; border: none;",
+            icon_size=24
+        )
         header_layout.addWidget(title, 1)  # Stretch factor 1 to center
         
         # Sağ tarafta boş alan (geri butonu ile simetri için)

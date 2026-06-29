@@ -36,7 +36,7 @@ class TrendAnalysisWidget(QFrame):
         header_layout = QHBoxLayout()
 
         title_box = QVBoxLayout()
-        lbl_title = QLabel("📈 Zaman Serisi ve Trend Analizi")
+        lbl_title = QLabel("Zaman Serisi ve Trend Analizi")
         lbl_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #1E293B; border: none;")
         lbl_desc = QLabel("Faaliyetlerinizin aylık dağılımı ve değişim trendi.")
         lbl_desc.setStyleSheet("font-size: 12px; color: #64748B; border: none;")
@@ -92,9 +92,9 @@ class TrendAnalysisWidget(QFrame):
         stats_layout.setContentsMargins(0, 15, 0, 0)
         stats_layout.setSpacing(15)
 
-        self.card_total_activities = self.create_stat_card("📊 Toplam Aktivite", "0", "#3B82F6")
-        self.card_avg_per_month = self.create_stat_card("📈 Aylık Ortalama", "0", "#8B5CF6")
-        self.card_peak_month = self.create_stat_card("🏆 En Aktif Ay", "-", "#F59E0B", clickable=True)
+        self.card_total_activities = self.create_stat_card("Toplam Aktivite", "0", "#3B82F6")
+        self.card_avg_per_month = self.create_stat_card("Aylık Ortalama", "0", "#8B5CF6")
+        self.card_peak_month = self.create_stat_card("En Aktif Ay", "-", "#F59E0B", clickable=True)
 
         stats_layout.addWidget(self.card_total_activities, 0, 0)
         stats_layout.addWidget(self.card_avg_per_month, 0, 1)
@@ -260,7 +260,7 @@ class TrendAnalysisWidget(QFrame):
             self.activity_list.clear()
             if activities:
                 for activity_name, activity_date in activities:
-                    self.activity_list.addItem(QListWidgetItem(f"📌 {activity_name} - {activity_date}"))
+                    self.activity_list.addItem(QListWidgetItem(f"{activity_name} — {activity_date}"))
             else:
                 self.activity_list.addItem(QListWidgetItem("Aktivite bulunamadı."))
             self.details_container.show()

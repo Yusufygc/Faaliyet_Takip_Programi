@@ -1,10 +1,11 @@
 # views/widgets/plan_stats_widget.py
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from views.widgets.modern_card import ModernCard
+from services.icon_service import IconService
 
 
 class StatCard(ModernCard):
-    def __init__(self, title, icon, color):
+    def __init__(self, title, icon_name, color):
         super().__init__()
         self.setFixedHeight(100)
         self.setFixedWidth(200)
@@ -13,8 +14,9 @@ class StatCard(ModernCard):
         layout.setContentsMargins(20, 20, 20, 20)
 
         row = QHBoxLayout()
-        lbl_icon = QLabel(icon)
-        lbl_icon.setStyleSheet("font-size: 24px; background: transparent;")
+        lbl_icon = QLabel()
+        lbl_icon.setPixmap(IconService.pixmap(icon_name, 28, color_override=color))
+        lbl_icon.setStyleSheet("background: transparent;")
 
         self.lbl_count = QLabel("0")
         self.lbl_count.setStyleSheet(f"font-size: 28px; font-weight: 800; color: {color}; background: transparent;")
@@ -37,9 +39,9 @@ class PlanStatsWidget(QWidget):
         layout.setContentsMargins(0, 10, 0, 20)
         layout.setSpacing(20)
 
-        self.card_total = StatCard("Toplam Plan", "📊", "#3B82F6")
-        self.card_done = StatCard("Tamamlanan", "✅", "#27AE60")
-        self.card_wait = StatCard("Bekleyen", "⏳", "#F39C12")
+        self.card_total = StatCard("Toplam Plan", "chart_bar", "#3B82F6")
+        self.card_done = StatCard("Tamamlanan", "check",     "#27AE60")
+        self.card_wait = StatCard("Bekleyen",   "clock",     "#F39C12")
 
         layout.addWidget(self.card_total)
         layout.addWidget(self.card_done)

@@ -1,7 +1,8 @@
 # views/widgets/folder_widget.py
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QScrollArea, QPushButton,
                              QMenu, QAction, QInputDialog, QLineEdit, QMessageBox)
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QSize
+from services.icon_service import IconService
 
 
 class FolderWidget(QWidget):
@@ -49,12 +50,12 @@ class FolderWidget(QWidget):
             if item.widget():
                 item.widget().deleteLater()
 
-        btn_all = self._create_chip("📂 Genel", None, self.selected_folder_id is None)
+        btn_all = self._create_chip("Genel", None, self.selected_folder_id is None, "folder_open")
         self.chip_layout.addWidget(btn_all)
 
         for folder in self.folders:
             is_selected = (self.selected_folder_id == folder.id)
-            btn = self._create_chip(f"📁 {folder.name}", folder.id, is_selected)
+            btn = self._create_chip(folder.name, folder.id, is_selected, "folder")
             self.chip_layout.addWidget(btn)
 
         btn_add = QPushButton("+")
@@ -80,8 +81,12 @@ class FolderWidget(QWidget):
 
         self.chip_layout.addStretch()
 
-    def _create_chip(self, text, folder_id, is_active):
-        btn = QPushButton(text)
+    def _create_chip(self, text, folder_id, is_active, icon_name=None):
+        btn = QPushButton(f"  {text}")
+        if icon_name:
+            icon_color = "white" if is_active else "#F59E0B"
+            btn.setIcon(IconService.get(icon_name, icon_color))
+            btn.setIconSize(QSize(14, 14))
         btn.setCursor(Qt.PointingHandCursor)
         btn.setFixedHeight(36)
 
@@ -133,8 +138,10 @@ class FolderWidget(QWidget):
             QMenu::item:selected { background-color: #F4F7F6; }
         """)
 
-        action_rename = QAction("✏️ Yeniden Adlandır", self)
-        action_delete = QAction("🗑️ Sil", self)
+        action_rename = QAction("Yeniden Adlandır", self)
+        action_rename.setIcon(IconService.get("edit", "#2980B9"))
+        action_delete = QAction("Sil", self)
+        action_delete.setIcon(IconService.get("delete"))
 
         action_rename.triggered.connect(lambda: self._rename_folder(folder_id, current_name))
         action_delete.triggered.connect(lambda: self._delete_folder(folder_id))
@@ -146,7 +153,7 @@ class FolderWidget(QWidget):
         menu.exec_(sender.mapToGlobal(pos))
 
     def _rename_folder(self, folder_id, current_name):
-        clean_name = current_name.replace("📁 ", "")
+        clean_name = current_name.strip()
         text, ok = QInputDialog.getText(self, "Klasörü Yeniden Adlandır", "Yeni Ad:", QLineEdit.Normal, clean_name)
         if ok and text and text != clean_name:
             self.folder_renamed.emit(folder_id, text)

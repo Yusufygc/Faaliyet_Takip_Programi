@@ -60,7 +60,11 @@ class StatsPage(QWidget):
 
         filter_layout.addStretch()
 
-        self.btn_trend = QPushButton("📈 Zaman Serisi ve Trend Analizi")
+        from PyQt5.QtCore import QSize as _QSize
+        from services.icon_service import IconService as _IS
+        self.btn_trend = QPushButton("Zaman Serisi ve Trend Analizi")
+        self.btn_trend.setIcon(_IS.get("chart_line"))
+        self.btn_trend.setIconSize(_QSize(16, 16))
         self.btn_trend.setObjectName("btn_primary")
         self.btn_trend.setCursor(Qt.PointingHandCursor)
         self.btn_trend.clicked.connect(self.open_trend_analysis.emit)
@@ -83,7 +87,7 @@ class StatsPage(QWidget):
         layout.addLayout(kpi_layout)
 
     def _build_content_area(self, layout):
-        self.lbl_no_data = QLabel("⚠️ Seçilen kriterlere uygun veri bulunamadı.")
+        self.lbl_no_data = QLabel("Seçilen kriterlere uygun veri bulunamadı.")
         self.lbl_no_data.setAlignment(Qt.AlignCenter)
         self.lbl_no_data.setStyleSheet("""
             font-size: 16px;

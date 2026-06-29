@@ -1,9 +1,10 @@
 # views/pages/compare_page.py
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QTableWidget, QTableWidgetItem, 
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                             QPushButton, QTableWidget, QTableWidgetItem,
                              QHeaderView, QFrame, QSplitter)
-from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve
+from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
 from PyQt5.QtGui import QFont
+from services.icon_service import IconService
 from datetime import datetime, timedelta
 from views.dialogs.compare_selection_dialog import CompareSelectionDialog
 
@@ -127,10 +128,11 @@ class ComparePage(QWidget):
         header_row.addWidget(self.btn_toggle_sidebar)
         
         # Başlık
-        title = QLabel("📊 Dönemsel Karşılaştırma")
-        title.setFont(QFont("Segoe UI", 20, QFont.Bold))
-        title.setStyleSheet("color: #1A1A1A;")
-        title.setAlignment(Qt.AlignCenter)
+        title = IconService.title_widget(
+            "nav_compare", "Dönemsel Karşılaştırma",
+            style="font-size: 20px; font-weight: bold; color: #1A1A1A; background: transparent;",
+            icon_size=22
+        )
         header_row.addWidget(title, 1)
         
         # Sağ tarafta boşluk için placeholder
@@ -146,15 +148,15 @@ class ComparePage(QWidget):
         top_btn_layout = QHBoxLayout()
         top_btn_layout.setSpacing(15)
         top_btn_layout.addStretch()
-        self.create_modern_btn("⏪ Geçen Ay", self.compare_previous_month, top_btn_layout, "#3498DB")
-        self.create_modern_btn("📅 Geçen Yıl", self.compare_previous_year, top_btn_layout, "#9B59B6")
+        self.create_modern_btn("Geçen Ay", self.compare_previous_month, top_btn_layout, "#3498DB", icon_name="prev")
+        self.create_modern_btn("Geçen Yıl", self.compare_previous_year, top_btn_layout, "#9B59B6", icon_name="compare")
         top_btn_layout.addStretch()
         btn_layout.addLayout(top_btn_layout)
         
         # Alt sıra: Özel karşılaştırma
         bottom_btn_layout = QHBoxLayout()
         bottom_btn_layout.addStretch()
-        self.create_modern_btn("🔍 Özel Karşılaştırma", self.open_date_selector, bottom_btn_layout, "#E74C3C", True)
+        self.create_modern_btn("Özel Karşılaştırma", self.open_date_selector, bottom_btn_layout, "#E74C3C", True, icon_name="custom")
         bottom_btn_layout.addStretch()
         btn_layout.addLayout(bottom_btn_layout)
         
@@ -162,7 +164,7 @@ class ComparePage(QWidget):
 
         return container
 
-    def create_modern_btn(self, text, func, layout, color, is_primary=False):
+    def create_modern_btn(self, text, func, layout, color, is_primary=False, icon_name=None):
         btn = QPushButton(text)
         btn.setCursor(Qt.PointingHandCursor)
         btn.clicked.connect(func)
@@ -201,6 +203,9 @@ class ComparePage(QWidget):
                 QPushButton:pressed {{ padding-top: 16px; }}
             """)
         
+        if icon_name:
+            btn.setIcon(IconService.get(icon_name, "#FFFFFF"))
+            btn.setIconSize(QSize(16, 16))
         layout.addWidget(btn)
 
     def create_modern_table_panel(self, default_title, side):
@@ -301,8 +306,10 @@ class ComparePage(QWidget):
         summary_layout.setContentsMargins(15, 8, 15, 8)
         
         # İkon ve Metin
-        icon_label = QLabel("📈" if side == "right" else "📊")
-        icon_label.setFont(QFont("Segoe UI", 16))
+        icon_label = QLabel()
+        icon_name = "chart_line" if side == "right" else "chart_bar"
+        icon_label.setPixmap(IconService.pixmap(icon_name, 20))
+        icon_label.setStyleSheet("background: transparent;")
         summary_layout.addWidget(icon_label)
         
         lbl_summary = QLabel("Toplam: 0 Kayıt")
@@ -339,7 +346,7 @@ class ComparePage(QWidget):
         badge = panel['badge']
         
         if status == "win":
-            badge.setText("🏆 KAZANAN")
+            badge.setText("KAZANAN")
             badge.setStyleSheet("""
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                     stop:0 #52C234, stop:1 #27AE60);
@@ -350,7 +357,7 @@ class ComparePage(QWidget):
             """)
             badge.setVisible(True)
         elif status == "lose":
-            badge.setText("📉 KAYIP")
+            badge.setText("KAYIP")
             badge.setStyleSheet("""
                 background-color: #95A5A6;
                 color: white;
@@ -378,7 +385,7 @@ class ComparePage(QWidget):
 
     def update_panel(self, panel, title, data):
         """Paneli günceller"""
-        panel['label'].setText(f"📅 {title}")
+        panel['label'].setText(title)
         
         item_count = len(data) if data else 0
         panel['summary'].setText(f"Toplam: {item_count} Kayıt")
@@ -419,7 +426,7 @@ class ComparePage(QWidget):
             for row_idx, name in enumerate(items):
                 item = QTableWidgetItem()
                 # Tooltip: Fare ile üzerine gelindiğinde tam adı göster
-                item.setToolTip(f"📌 {name}\n🏷️ Kategori: {main_cat}")
+                item.setToolTip(f"{name}\nKategori: {main_cat}")
                 # Uzun metinleri kısalt (15 karakter - sidebar gizliyken daha fazla alan)
                 display_name = name if len(name) <= 15 else name[:13] + ".."
                 item.setText(display_name)

@@ -449,8 +449,14 @@ class ListPage(QWidget):
             QMenu::item {{ padding: 8px 20px; font-size: 13px; color: {COLORS['text_main']}; }}
             QMenu::item:selected {{ background-color: {COLORS['primary_light']}; color: {COLORS['primary']}; border-radius: 4px; }}
         """)
-        edit_action = menu.addAction("✏️ Düzenle")
-        delete_action = menu.addAction("🗑️ Sil")
+        from PyQt5.QtWidgets import QAction
+        from services.icon_service import IconService
+        edit_action = QAction("Düzenle", menu)
+        edit_action.setIcon(IconService.get("edit", "#2980B9"))
+        menu.addAction(edit_action)
+        delete_action = QAction("Sil", menu)
+        delete_action.setIcon(IconService.get("delete"))
+        menu.addAction(delete_action)
         
         action = menu.exec_(self.table.viewport().mapToGlobal(position))
         
