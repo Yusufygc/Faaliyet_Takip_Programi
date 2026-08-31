@@ -14,9 +14,12 @@ COMPARE_PAGE_DATA_ORDER = ["DIZI", "FILM", "KITAP", "KURS", "OYUN", "ŞEHIR"]
 
 # --- Konfigürasyon ve Sabitler ---
 APP_NAME = "FaaliyetTakip"
+APP_TITLE = "Faaliyet Takip Programı"
+VERSION = "2.0.0"
 DB_FILENAME = "faaliyetler.db"
 LOG_FILENAME = "app.log"
 THEME_NAME = "Fusion"
+
 
 # Dizin Adları
 DATA_DIR_NAME = "FaaliyetTakip"

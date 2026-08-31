@@ -148,17 +148,37 @@ class PlanRepository:
             logger.error(f"Hata (PlanRepository.delete_plan): {e}")
             return False
 
-    def get_plans(self, scope: str, year: int, month: int = None) -> list:
-        """Filtreye göre planları getirir."""
-        query = (
-            "SELECT id, title, description, scope, year, month, status, progress, priority, created_at, folder_id "
-            "FROM plans WHERE scope=? AND year=?"
-        )
-        params = [scope, year]
+    def get_plan_by_id(self, plan_id: int):
+        """ID'ye göre tek bir plan döndürür."""
+        sql = "SELECT id, title, description, scope, year, month, status, progress, priority, created_at, folder_id FROM plans WHERE id = ?"
+        try:
+            with get_db() as conn:
+                row = conn.execute(sql, (plan_id,)).fetchone()
+            return Plan.from_row(row) if row else None
+        except Exception as e:
+            logger.error(f"Hata (PlanRepository.get_plan_by_id): {e}")
+            return None
 
-        if scope == 'monthly' and month is not None:
+    def get_plans(self, scope: str = None, year: int = None, month: int = None, folder_id: int = None) -> list:
+        """Filtreye göre planları getirir. Parametreler verilmezse tüm planları getirir."""
+        query = "SELECT id, title, description, scope, year, month, status, progress, priority, created_at, folder_id FROM plans WHERE 1=1"
+        params = []
+
+        if scope and scope != "all":
+            query += " AND scope=?"
+            params.append(scope)
+
+        if year:
+            query += " AND year=?"
+            params.append(year)
+
+        if month is not None and month > 0:
             query += " AND month=?"
             params.append(month)
+
+        if folder_id is not None and folder_id > 0:
+            query += " AND folder_id=?"
+            params.append(folder_id)
 
         query += " ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, id DESC"
 
@@ -168,3 +188,4 @@ class PlanRepository:
         except Exception as e:
             logger.error(f"Hata (PlanRepository.get_plans): {e}")
             return []
+

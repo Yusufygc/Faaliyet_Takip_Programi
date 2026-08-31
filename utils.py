@@ -36,6 +36,18 @@ def is_valid_yyyy(date_str):
     except ValueError:
         return False
 
+def is_valid_date(date_str):
+    """YYYY-MM-DD veya YYYY-MM formatındaki tarihleri doğrular."""
+    if not date_str:
+        return False
+    for fmt in ("%Y-%m-%d", "%Y-%m", "%d.%m.%Y", "%d/%m/%Y"):
+        try:
+            datetime.strptime(str(date_str).strip(), fmt)
+            return True
+        except ValueError:
+            continue
+    return False
+
 def extract_year_month(date_str):
     """Tarih stringinden yıl ve ayı ayırır. YYYY-MM-DD ve YYYY-MM destekler."""
     for fmt in ("%Y-%m-%d", "%Y-%m"):
@@ -46,4 +58,4 @@ def extract_year_month(date_str):
             continue
     if is_valid_yyyy(date_str):
         return int(date_str), None
-    return None, None
+    return None, None

@@ -1,17 +1,56 @@
+# main.py
 import sys
 import os
-import ctypes
-import matplotlib
 import traceback
 
-# Matplotlib Backend Ayarı - CRASH FIX
-try:
-    matplotlib.use('Qt5Agg')
-except Exception:
-    pass
+# --- PySide6 / Qt6 Platform Eklentisi & OpenSSL DLL Yolu Yapılandırması ---
+if sys.platform == "win32":
+    # 1. Conda OpenSSL (Library/bin) önceliği ayarla
+    env_dir = sys.prefix
+    lib_bin = os.path.join(env_dir, "Library", "bin")
+    if os.path.exists(lib_bin):
+        if hasattr(os, "add_dll_directory"):
+            try:
+                os.add_dll_directory(lib_bin)
+            except Exception:
+                pass
+        # Library/bin'i PATH'in en başına al ve mingw64 çakışmalarını önle
+        raw_paths = os.environ.get("PATH", "").split(os.pathsep)
+        clean_paths = [p for p in raw_paths if "mingw64" not in p.lower()]
+        os.environ["PATH"] = os.pathsep.join([lib_bin] + clean_paths)
+
+import PySide6
+pyside_dir = os.path.dirname(PySide6.__file__)
+plugins_dir = os.path.join(pyside_dir, "plugins")
+platforms_dir = os.path.join(plugins_dir, "platforms")
+
+os.environ["QT_PLUGIN_PATH"] = plugins_dir
+os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = platforms_dir
+
+if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
+    try:
+        os.add_dll_directory(pyside_dir)
+        if os.path.exists(platforms_dir):
+            os.add_dll_directory(platforms_dir)
+    except Exception:
+        pass
+
+from PySide6.QtGui import QIcon, QGuiApplication
+from PySide6.QtWidgets import QApplication
+from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuickControls2 import QQuickStyle
+from PySide6.QtCore import QUrl, Qt
+
+
+from constants import APP_NAME, APP_TITLE, VERSION, DATA_DIR_NAME
+from database.connection import init_db
+from database.repository import ActivityRepository
+from utils import get_resource_path
+from logger_setup import logger
+import bridges
+
 
 def _get_crash_log_path():
-    from constants import DATA_DIR_NAME
     if sys.platform == "win32":
         base = os.environ.get('LOCALAPPDATA') or os.path.expanduser("~")
     else:
@@ -20,6 +59,7 @@ def _get_crash_log_path():
     os.makedirs(log_dir, exist_ok=True)
     return os.path.join(log_dir, "crash_log.txt")
 
+
 def log_error(msg):
     try:
         with open(_get_crash_log_path(), "a", encoding="utf-8") as f:
@@ -27,119 +67,77 @@ def log_error(msg):
     except Exception:
         pass
 
-try:
-    from PyQt5.QtWidgets import QApplication, QMessageBox
-    from PyQt5.QtGui import QIcon
-    from controllers.main_controller import MainController
-    from views.main_window import MainWindow
-    from styles import load
-    from database.connection import init_db
-    from database.repository import ActivityRepository
-except Exception as e:
-    err_msg = f"Import Error: {traceback.format_exc()}"
-    log_error(err_msg)
-    # Konsol yoksa bile hata mesajini goster
-    ctypes.windll.user32.MessageBoxW(0, f"Baslatma hatasi:\n{e}", "Kritik Hata", 0x10)
-    sys.exit(1)
-
-
-def patch_cursors():
-    from PyQt5.QtWidgets import QPushButton, QToolButton, QCheckBox, QRadioButton, QComboBox, QTableWidget, QListWidget, QHeaderView
-    from PyQt5.QtCore import Qt
-
-    # 1. QPushButton
-    orig_push = QPushButton.__init__
-    def new_push(self, *args, **kwargs):
-        orig_push(self, *args, **kwargs)
-        self.setCursor(Qt.PointingHandCursor)
-    QPushButton.__init__ = new_push
-
-    # 2. QToolButton
-    orig_tool = QToolButton.__init__
-    def new_tool(self, *args, **kwargs):
-        orig_tool(self, *args, **kwargs)
-        self.setCursor(Qt.PointingHandCursor)
-    QToolButton.__init__ = new_tool
-
-    # 3. QCheckBox
-    orig_check = QCheckBox.__init__
-    def new_check(self, *args, **kwargs):
-        orig_check(self, *args, **kwargs)
-        self.setCursor(Qt.PointingHandCursor)
-    QCheckBox.__init__ = new_check
-
-    # 4. QRadioButton
-    orig_radio = QRadioButton.__init__
-    def new_radio(self, *args, **kwargs):
-        orig_radio(self, *args, **kwargs)
-        self.setCursor(Qt.PointingHandCursor)
-    QRadioButton.__init__ = new_radio
-
-    # 5. QComboBox
-    orig_combo = QComboBox.__init__
-    def new_combo(self, *args, **kwargs):
-        orig_combo(self, *args, **kwargs)
-        self.setCursor(Qt.PointingHandCursor)
-    QComboBox.__init__ = new_combo
-
-    # 6. QTableWidget (Viewport)
-    orig_table = QTableWidget.__init__
-    def new_table(self, *args, **kwargs):
-        orig_table(self, *args, **kwargs)
-        self.viewport().setCursor(Qt.PointingHandCursor)
-    QTableWidget.__init__ = new_table
-
-    # 7. QListWidget (Viewport)
-    orig_list = QListWidget.__init__
-    def new_list(self, *args, **kwargs):
-        orig_list(self, *args, **kwargs)
-        self.viewport().setCursor(Qt.PointingHandCursor)
-    QListWidget.__init__ = new_list
-
-    # 8. QHeaderView
-    orig_header = QHeaderView.__init__
-    def new_header(self, *args, **kwargs):
-        orig_header(self, *args, **kwargs)
-        self.setCursor(Qt.PointingHandCursor)
-    QHeaderView.__init__ = new_header
-
 
 def main():
-    patch_cursors()
-    # Gorev cubugu ikonu icin App ID ayarla
     try:
-        myappid = 'myy.faaliyettakip.v1.0'
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-    except Exception:
-        pass
+        # High DPI ölçekleme desteği
+        QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
+            Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+        )
+        QQuickStyle.setStyle("Basic")
 
-    try:
         app = QApplication(sys.argv)
+        app.setApplicationName(APP_NAME)
+        app.setApplicationDisplayName(APP_TITLE)
+        app.setApplicationVersion(VERSION)
+        app.setOrganizationName("MYY Yazilim")
 
-        # DB başlatma ve şema migrasyonu: uygulama yaşam döngüsünde bir kez
-        # (ActivityRepository.__init__'ten kaldırıldı — her nesne oluşumunda
-        # tekrarlanan gereksiz başlatma maliyetini ortadan kaldırır)
-        init_db()
-        ActivityRepository().check_and_migrate_schema()
-
-        app.setStyle("Fusion")
-        app.setStyleSheet(load("global", "inputs", "buttons", "cards", "scrollbars", "tables"))
-        
-        # Uygulama genelinde ikon ayarla (Taskbar icini)
-        from utils import get_resource_path
+        # Uygulama İkonu
         icon_path = get_resource_path(os.path.join("icons", "icon.ico"))
+        if not os.path.exists(icon_path):
+            icon_path = get_resource_path(os.path.join("icons", "icon.png"))
         if os.path.exists(icon_path):
-             app.setWindowIcon(QIcon(icon_path)) 
+            app.setWindowIcon(QIcon(icon_path))
 
-        window = MainWindow()
-        window.show()
-        
-        sys.exit(app.exec_())
+        # Veritabanı ve Şema Migration Başlatma
+        init_db()
+        repo = ActivityRepository()
+        repo.check_and_migrate_schema()
+
+        # QML Engine ve Köprülerin Başlatılması
+        engine = QQmlApplicationEngine()
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        qml_dir = os.path.join(base_dir, "qml")
+        engine.addImportPath(qml_dir)
+
+        # Bridge Nesneleri
+        activity_bridge = bridges.ActivityBridge()
+        stats_bridge = bridges.StatsBridge()
+        plan_bridge = bridges.PlanBridge()
+        discover_bridge = bridges.DiscoverBridge()
+        settings_bridge = bridges.SettingsBridge()
+        compare_bridge = bridges.CompareBridge()
+        app_bridge = bridges.AppBridge()
+
+        # QML Context Enjeksiyonu
+        ctx = engine.rootContext()
+        ctx.setContextProperty("activityBridge", activity_bridge)
+        ctx.setContextProperty("statsBridge", stats_bridge)
+        ctx.setContextProperty("planBridge", plan_bridge)
+        ctx.setContextProperty("discoverBridge", discover_bridge)
+        ctx.setContextProperty("settingsBridge", settings_bridge)
+        ctx.setContextProperty("compareBridge", compare_bridge)
+        ctx.setContextProperty("appBridge", app_bridge)
+
+        # Main QML Dosyasını Yükle
+        main_qml_path = os.path.join(qml_dir, "Main.qml")
+        engine.load(QUrl.fromLocalFile(main_qml_path))
+
+        if not engine.rootObjects():
+            logger.error("QML root objects oluşturulamadı. Main.qml yüklenemedi.")
+            sys.exit(-1)
+
+        logger.info(f"{APP_NAME} v{VERSION} (PySide6 + QML) başarıyla başlatıldı.")
+        sys.exit(app.exec())
+
     except Exception as e:
-        err_msg = f"Runtime Error: {traceback.format_exc()}"
-        log_error(err_msg)
-        ctypes.windll.user32.MessageBoxW(0, f"Calisma hatasi:\n{e}", "Hata", 0x10)
+        err = f"Fatal Startup Error: {traceback.format_exc()}"
+        logger.error(err)
+        log_error(err)
+        print(err, file=sys.stderr)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

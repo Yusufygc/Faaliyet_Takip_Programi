@@ -8,7 +8,7 @@ Her sohbet başında `docs/wiki/index.md` okunur. Proje bağlamı, mimari kararl
 
 ## Proje Tanımı
 
-Kişisel aktivite (film, dizi, oyun, kitap, kurs, şehir) takip masaüstü uygulaması. PyQt5 GUI, SQLite yerel veritabanı, harici API'lerden içerik önerisi.
+Kişisel aktivite (film, dizi, oyun, kitap, kurs, şehir) takip masaüstü uygulaması. **PySide6 + QML (QtQuick)** modern arayüz, SQLite yerel veritabanı, harici API'lerden içerik önerisi.
 
 **Giriş noktası:** `main.py`
 
@@ -18,12 +18,11 @@ Kişisel aktivite (film, dizi, oyun, kitap, kurs, şehir) takip masaüstü uygul
 
 | Bileşen | Teknoloji |
 |---------|-----------|
-| Dil | Python 3.8+ |
-| GUI | PyQt5 5.15.11 |
+| Dil | Python 3.10+ |
+| GUI | PySide6 ≥6.7.0 (QML / QtQuick) |
 | Veritabanı | SQLite 3 (stdlib) |
-| Grafik | Matplotlib 3.10.8 |
-| PDF | ReportLab 4.4.9 |
-| HTTP | Requests 2.32.5 |
+| PDF | ReportLab ≥4.4.0 |
+| HTTP | Requests ≥2.32.0 |
 | Credential | keyring ≥25.0.0 |
 
 ---
@@ -31,13 +30,9 @@ Kişisel aktivite (film, dizi, oyun, kitap, kurs, şehir) takip masaüstü uygul
 ## Çalıştırma
 
 ```bash
-pip install -r requirements.txt
+# Conda Ftakip ortamında:
+conda activate Ftakip
 python main.py
-```
-
-**Kurulum (Windows):**
-```bash
-setup.bat
 ```
 
 **DB konumu:** `%LOCALAPPDATA%\FaaliyetTakip\faaliyetler.db`
@@ -47,14 +42,14 @@ setup.bat
 ## Mimari Özeti
 
 ```
-View (views/)  →  Controller (controllers/)  →  Repository (database/)
-                         ↕
-                   Service (services/)   ←→   Harici API'ler
+QML Views (qml/views/, qml/modals/)
+        ↕  (Q_PROPERTY, Slots, Signals, QAbstractListModel)
+Python Bridges (bridges/)
+        ↕
+Database Repositories (database/)  &  Services (services/)
+        ↕
+SQLite DB  &  External APIs (TMDB, RAWG, Books)
 ```
-
-Tüm DB işlemleri `DbWorker` (QThread) ile asenkron çalışır. Senkron validasyon yapıldıktan sonra `_run_async(func, callback)` ile işlem arka plana atılır.
-
-Detay: `docs/wiki/mimari_genel_bakis.md`
 
 ---
 
@@ -62,34 +57,34 @@ Detay: `docs/wiki/mimari_genel_bakis.md`
 
 | Dosya | Rol |
 |-------|-----|
-| `controllers/main_controller.py` | Merkezi iş mantığı — tüm View→DB operasyonları |
+| `main.py` | PySide6 başlatıcı, QML engine ve Bridge enjeksiyonu |
+| `qml/Main.qml` | Ana pencere kabuğu, TitleBar, Sidebar ve Toast container |
+| `bridges/activity_bridge.py` | Faaliyetler Listesi ve Modal Ekleme/Düzenleme köprüsü |
+| `bridges/stats_bridge.py` | İstatistikler, KPI'lar ve entegre PDF oluşturma |
+| `bridges/plan_bridge.py` | Hedefler/Planlar ve Klasör yönetimi köprüsü |
+| `bridges/discover_bridge.py` | TMDB, RAWG, Books API önerileri ve rastgele seçici |
 | `database/repository.py` | `ActivityRepository` — CRUD + istatistik sorguları |
-| `database/connection.py` | DB path ve bağlantı yönetimi |
+| `database/plan_repository.py` | `PlanRepository` — Plan ve Klasör CRUD |
 | `models.py` | `Activity`, `Plan`, `Folder`, `ActivityFilter` |
-| `constants.py` | `FAALIYET_TURLERI`, `APP_NAME`, `DB_FILENAME` |
-| `services/api_service.py` | TMDB, RAWG, Google Books API çağrıları |
-| `views/main_window.py` | Ana pencere + `QStackedWidget` navigasyonu |
+| `constants.py` | `FAALIYET_TURLERI`, `APP_NAME`, `VERSION`, `DB_FILENAME` |
 
 ---
 
 ## Geliştirme Notları
 
-### Yeni sayfa eklemek
-1. `views/pages/` altında yeni dosya oluştur
-2. `views/main_window.py` içinde `stack`'e ekle
-3. `docs/wiki/ui_katmani.md` güncelle
+### 1. Sayfa & Modül Ekleme
+- QML arayüz dosyaları `qml/views/` altında yer alır.
+- Modal ve popuplar `qml/modals/` altında yer alır.
+- Tekrar kullanılabilir arayüz elemanları `qml/components/` altındadır.
+- Global renk ve tipografi `qml/theme/Theme.qml` singleton'ındadır.
 
-### Yeni DB kolonu eklemek
-`database/repository.py::ActivityRepository.check_and_migrate_schema()` içine `ALTER TABLE` ekle. Tablo şeması: `docs/wiki/veritabani.md`
+### 2. UX Akış Kuralları
+- **Ekleme & Düzenleme:** Liste sayfasından `ActivityFormModal` ile modal diyalog olarak açılır.
+- **PDF Raporu:** İstatistikler sayfasından `PdfExportModal` ile doğrudan üretilir.
 
-### API anahtarları
+### 3. API Anahtarları
 `keyring` üzerinden saklanır (`.env` kullanılmaz):
-- Okuma: `keyring.get_password("FaaliyetTakip", "tmdb_api_key")`
-- Yazma: `SettingsPage` → `MainController.save_api_keys()`
-- **Uyarı:** `RecommendationController` eski DB tabanlı yolu kullanıyor; keys boş gelebilir. Detay: `docs/wiki/kontrolcüler.md`
-
-### Faaliyet türleri
-Varsayılan türler `constants.py::FAALIYET_TURLERI`'nde. Kullanıcı özel türler `SettingsPage`'den ekler; `activity_types` tablosunda saklanır.
+- Okuma/Yazma: `SettingsBridge` üzerinden OS Keychain/Keyring kullanılır.
 
 ---
 
@@ -98,11 +93,3 @@ Varsayılan türler `constants.py::FAALIYET_TURLERI`'nde. Kullanıcı özel tür
 ```bash
 python -m pytest tests/
 ```
-
-Mevcut test: `tests/test_date_range.py`
-
----
-
-## Loglama
-
-`logger_setup.py` → `app.log` dosyasına yazar. DB hatalarında `logger.error()`, kritik başlatma hatalarında `logger.critical()`.
