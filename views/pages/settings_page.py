@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QColor
 from services.icon_service import IconService
+from views.widgets.toast_notification import show_toast
+from constants import KEYRING_KEY_TMDB, KEYRING_KEY_RAWG, KEYRING_KEY_GOOGLE_BOOKS
 
 class SettingsPage(QWidget):
     # Sayfalama sabitleri
@@ -180,61 +182,104 @@ class SettingsPage(QWidget):
         """API Anahtarları yönetimi için kart oluşturur."""
         card = QFrame()
         card.setObjectName("card")
-        
+
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(15)
         shadow.setXOffset(0)
         shadow.setYOffset(3)
         shadow.setColor(QColor(0, 0, 0, 30))
         card.setGraphicsEffect(shadow)
-        
+
         layout = QVBoxLayout(card)
         layout.setContentsMargins(18, 15, 18, 15)
         layout.setSpacing(10)
-        
-        # Başlık ve Açıklama
+
         header = IconService.title_widget(
             "key", "API Yapılandırması",
             style="font-size: 18px; font-weight: bold; color: #34495E; border: none; background: transparent;",
             icon_size=20
         )
         layout.addWidget(header)
-        
-        desc = QLabel("Keşfet sayfası ve öneri sistemi için gerekli API anahtarlarını buradan yönetebilirsiniz. (Değişikliklerin etkili olması için uygulamayı yeniden başlatmanız önerilir.)")
+
+        desc = QLabel("Keşfet sayfası ve öneri sistemi için gerekli API anahtarlarını buradan yönetebilirsiniz. Yeni anahtar girmek için alana yazın ve kaydedin.")
         desc.setStyleSheet("color: #95A5A6; font-size: 13px; border: none;")
         desc.setWordWrap(True)
         layout.addWidget(desc)
-        
-        # Form
+
         form_layout = QVBoxLayout()
         form_layout.setSpacing(12)
-        
+
         # TMDB
         tmdb_lbl = QLabel("TMDB API Key (Film/Dizi):")
         tmdb_lbl.setStyleSheet("font-weight: bold; color: #555;")
         self.txt_tmdb = QLineEdit()
-        self.txt_tmdb.setPlaceholderText("TMDB API Anahtarını giriniz...")
+        self.txt_tmdb.setPlaceholderText("Yeni anahtar girin...")
         self.txt_tmdb.setEchoMode(QLineEdit.Password)
+        self.lbl_tmdb_status = QLabel("— Boş")
+        self.lbl_tmdb_status.setStyleSheet("color: #94A3B8; font-size: 12px;")
+        self.lbl_tmdb_status.setMinimumWidth(75)
+        self.lbl_tmdb_status.setAlignment(Qt.AlignCenter)
+        self.btn_tmdb_delete = QPushButton("Sil")
+        self.btn_tmdb_delete.setObjectName("btn_danger")
+        self.btn_tmdb_delete.setFixedWidth(55)
+        self.btn_tmdb_delete.setCursor(Qt.PointingHandCursor)
+        self.btn_tmdb_delete.setEnabled(False)
+        self.btn_tmdb_delete.clicked.connect(lambda: self.delete_api_key(KEYRING_KEY_TMDB))
+        tmdb_row = QHBoxLayout()
+        tmdb_row.setSpacing(8)
+        tmdb_row.addWidget(self.txt_tmdb, 1)
+        tmdb_row.addWidget(self.lbl_tmdb_status)
+        tmdb_row.addWidget(self.btn_tmdb_delete)
         form_layout.addWidget(tmdb_lbl)
-        form_layout.addWidget(self.txt_tmdb)
-        
+        form_layout.addLayout(tmdb_row)
+
         # RAWG
         rawg_lbl = QLabel("RAWG API Key (Oyun):")
         rawg_lbl.setStyleSheet("font-weight: bold; color: #555;")
         self.txt_rawg = QLineEdit()
-        self.txt_rawg.setPlaceholderText("RAWG API Anahtarını giriniz...")
+        self.txt_rawg.setPlaceholderText("Yeni anahtar girin...")
         self.txt_rawg.setEchoMode(QLineEdit.Password)
+        self.lbl_rawg_status = QLabel("— Boş")
+        self.lbl_rawg_status.setStyleSheet("color: #94A3B8; font-size: 12px;")
+        self.lbl_rawg_status.setMinimumWidth(75)
+        self.lbl_rawg_status.setAlignment(Qt.AlignCenter)
+        self.btn_rawg_delete = QPushButton("Sil")
+        self.btn_rawg_delete.setObjectName("btn_danger")
+        self.btn_rawg_delete.setFixedWidth(55)
+        self.btn_rawg_delete.setCursor(Qt.PointingHandCursor)
+        self.btn_rawg_delete.setEnabled(False)
+        self.btn_rawg_delete.clicked.connect(lambda: self.delete_api_key(KEYRING_KEY_RAWG))
+        rawg_row = QHBoxLayout()
+        rawg_row.setSpacing(8)
+        rawg_row.addWidget(self.txt_rawg, 1)
+        rawg_row.addWidget(self.lbl_rawg_status)
+        rawg_row.addWidget(self.btn_rawg_delete)
         form_layout.addWidget(rawg_lbl)
-        form_layout.addWidget(self.txt_rawg)
+        form_layout.addLayout(rawg_row)
 
         # Google Books
         gbooks_lbl = QLabel("Google Books API Key (Kitap):")
         gbooks_lbl.setStyleSheet("font-weight: bold; color: #555;")
         self.txt_google_books = QLineEdit()
-        self.txt_google_books.setPlaceholderText("Google Books API Anahtarını giriniz...")
+        self.txt_google_books.setPlaceholderText("Yeni anahtar girin...")
         self.txt_google_books.setEchoMode(QLineEdit.Password)
+        self.lbl_books_status = QLabel("— Boş")
+        self.lbl_books_status.setStyleSheet("color: #94A3B8; font-size: 12px;")
+        self.lbl_books_status.setMinimumWidth(75)
+        self.lbl_books_status.setAlignment(Qt.AlignCenter)
+        self.btn_books_delete = QPushButton("Sil")
+        self.btn_books_delete.setObjectName("btn_danger")
+        self.btn_books_delete.setFixedWidth(55)
+        self.btn_books_delete.setCursor(Qt.PointingHandCursor)
+        self.btn_books_delete.setEnabled(False)
+        self.btn_books_delete.clicked.connect(lambda: self.delete_api_key(KEYRING_KEY_GOOGLE_BOOKS))
+        books_row = QHBoxLayout()
+        books_row.setSpacing(8)
+        books_row.addWidget(self.txt_google_books, 1)
+        books_row.addWidget(self.lbl_books_status)
+        books_row.addWidget(self.btn_books_delete)
         form_layout.addWidget(gbooks_lbl)
-        form_layout.addWidget(self.txt_google_books)
+        form_layout.addLayout(books_row)
 
         # Kaydet Butonu
         btn_save = QPushButton("Kaydet")
@@ -244,39 +289,74 @@ class SettingsPage(QWidget):
         btn_save.setCursor(Qt.PointingHandCursor)
         btn_save.setFixedWidth(120)
         btn_save.clicked.connect(self.save_api_keys)
-        
+
         layout.addLayout(form_layout)
         layout.addWidget(btn_save, 0, Qt.AlignRight)
-        
+
         return card
 
     def load_api_keys(self):
-        """API anahtarlarını yükler."""
         self.controller.get_api_keys(self.on_keys_loaded)
 
     def on_keys_loaded(self, keys):
         if keys:
-            from constants import KEYRING_KEY_TMDB, KEYRING_KEY_RAWG, KEYRING_KEY_GOOGLE_BOOKS
-            self.txt_tmdb.setText(keys.get(KEYRING_KEY_TMDB, ""))
-            self.txt_rawg.setText(keys.get(KEYRING_KEY_RAWG, ""))
-            self.txt_google_books.setText(keys.get(KEYRING_KEY_GOOGLE_BOOKS, ""))
+            self._update_key_status(KEYRING_KEY_TMDB,         keys.get(KEYRING_KEY_TMDB, ""))
+            self._update_key_status(KEYRING_KEY_RAWG,         keys.get(KEYRING_KEY_RAWG, ""))
+            self._update_key_status(KEYRING_KEY_GOOGLE_BOOKS, keys.get(KEYRING_KEY_GOOGLE_BOOKS, ""))
+
+    def _update_key_status(self, key_name, value):
+        lbl_map = {
+            KEYRING_KEY_TMDB:         self.lbl_tmdb_status,
+            KEYRING_KEY_RAWG:         self.lbl_rawg_status,
+            KEYRING_KEY_GOOGLE_BOOKS: self.lbl_books_status,
+        }
+        btn_map = {
+            KEYRING_KEY_TMDB:         self.btn_tmdb_delete,
+            KEYRING_KEY_RAWG:         self.btn_rawg_delete,
+            KEYRING_KEY_GOOGLE_BOOKS: self.btn_books_delete,
+        }
+        if value:
+            lbl_map[key_name].setText("✓ Kayıtlı")
+            lbl_map[key_name].setStyleSheet("color: #10B981; font-size: 12px; font-weight: bold;")
+            btn_map[key_name].setEnabled(True)
+        else:
+            lbl_map[key_name].setText("— Boş")
+            lbl_map[key_name].setStyleSheet("color: #94A3B8; font-size: 12px;")
+            btn_map[key_name].setEnabled(False)
 
     def save_api_keys(self):
-        """API anahtarlarını kaydeder."""
-        tmdb = self.txt_tmdb.text()
-        rawg = self.txt_rawg.text()
-        gbooks = self.txt_google_books.text()
+        tmdb  = self.txt_tmdb.text().strip() or None
+        rawg  = self.txt_rawg.text().strip() or None
+        gbooks = self.txt_google_books.text().strip() or None
+        if tmdb is None and rawg is None and gbooks is None:
+            show_toast("Değiştirilecek anahtar girilmedi.", "warning")
+            return
         self.controller.save_api_keys(tmdb, rawg, gbooks, self.on_save_keys_finished)
 
     def on_save_keys_finished(self, result):
         success, msg = result
+        self.txt_tmdb.clear()
+        self.txt_rawg.clear()
+        self.txt_google_books.clear()
         if success:
-            self.txt_tmdb.clear()
-            self.txt_rawg.clear()
-            self.txt_google_books.clear()
-            QMessageBox.information(self, "Bilgi", "Ayarlar kaydedildi.\nDeğişikliklerin tam olarak yansıması için uygulamayı yeniden başlatmanız gerekebilir.")
+            show_toast(msg, "success")
+            self.load_api_keys()
         else:
-            QMessageBox.warning(self, "Hata", msg)
+            show_toast(msg, "error")
+
+    def delete_api_key(self, key_name):
+        self.controller.delete_api_key(
+            key_name,
+            lambda res: self._on_delete_key_finished(res, key_name)
+        )
+
+    def _on_delete_key_finished(self, result, key_name):
+        success, msg = result
+        if success:
+            show_toast(msg, "success")
+            self.load_api_keys()
+        else:
+            show_toast(msg, "error")
 
     def create_btn(self, text, style_name, func, icon_name=None):
         btn = QPushButton(text)

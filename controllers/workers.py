@@ -1,7 +1,13 @@
 # controllers/workers.py
+from collections import namedtuple
 from PyQt5.QtCore import QThread, pyqtSignal, QTimer
 from logger_setup import logger
 from exceptions import DatabaseError, ApiError, RateLimitError
+
+# UI'a anlamlı hata taşıyan yapılandırılmış hata nesnesi.
+# _BaseController'daki wrapper (False, message) tuple'ına çevirerek
+# mevcut callback'lerle uyum sağlar.
+WorkerError = namedtuple('WorkerError', ['success', 'message'])
 
 _DEFAULT_TIMEOUT_MS = 12_000  # 12 saniye — image 8s + semaphore 8s bekleme içerir
 
@@ -63,16 +69,17 @@ class DbWorker(QThread):
         except RateLimitError as e:
             if not self._cancelled:
                 logger.warning(f"Worker rate limit: {e}")
-                self.finished.emit(None)
+                # Salt None yerine WorkerError — UI anlamlı mesaj alabilir
+                self.finished.emit(WorkerError(False, f"Rate limit aşıldı: {e}"))
         except ApiError as e:
             if not self._cancelled:
                 logger.error(f"Worker API hatası [{e.status_code}]: {e}")
-                self.finished.emit(None)
+                self.finished.emit(WorkerError(False, f"API hatası: {e}"))
         except DatabaseError as e:
             if not self._cancelled:
                 logger.error(f"Worker veritabanı hatası: {e}")
-                self.finished.emit(None)
+                self.finished.emit(WorkerError(False, f"Veritabanı hatası: {e}"))
         except Exception as e:
             if not self._cancelled:
                 logger.error(f"Worker beklenmeyen hata [{type(e).__name__}]: {e}")
-                self.finished.emit(None)
+                self.finished.emit(WorkerError(False, f"{type(e).__name__}: {e}"))

@@ -49,3 +49,10 @@ QFrame#header_frame {
     border: 2px solid $C_BORDER;
     border-radius: $R_LG;
 }
+
+/* --- MediaCard (objectName="media_card") --- */
+QFrame#media_card {
+    background-color: $C_BG_WHITE;
+    border: 1px solid $C_BORDER;
+    border-radius: 12px;
+}

@@ -115,16 +115,17 @@ QComboBox QAbstractItemView {
 /* ── Liste Elemanları (Dropdown Items) ────────────────────────────────── */
 QComboBox QAbstractItemView::item {
     height: 34px;
-    padding: 6px 12px; /* Dikey 6px, Yatay 12px boşluk */
-    margin: 2px 4px; /* Elemanlar arası dikey/yatay boşluk */
+    padding: 6px 12px;
+    margin: 2px 4px;
+    border: none; /* OS çerçevesi açığa çıkmasın — "kutu içinde kutu" artefaktını giderir */
     border-radius: $R_SM; /* 6px */
     color: $C_TEXT_MID;
     background-color: transparent;
-    outline: 0; /* Focused item'daki noktalı çerçeveyi kaldır */
+    outline: 0;
 }
 
 QComboBox QAbstractItemView::item:hover {
-    background-color: $C_BG_SUBTLE; /* Pastel yumuşak gri-mavi */
+    background-color: #EFF6FF; /* Blue-50 — selected ile tutarlı */
     color: $C_PRIMARY;
 }
 

@@ -1,6 +1,50 @@
 # views/widgets/styled_combo.py
-from PyQt5.QtWidgets import QComboBox, QListView, QStyledItemDelegate, QApplication
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QComboBox, QListView, QStyledItemDelegate,
+                             QApplication, QStyle, QFrame)
+from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtGui import QColor, QPainter, QPen
+
+
+class _RoundedItemDelegate(QStyledItemDelegate):
+    """Dropdown elemanlarını yuvarlak "pill" olarak çizer.
+
+    Neden gerekli: QListView, QSS `::item` üzerindeki margin ve border-radius
+    değerlerini yok sayar; seçim/hover arka planını item'ın TAM dikdörtgenine
+    doldurur. Bu da yuvarlak popup içinde kare bir vurgu barı ("kutu içinde
+    kutu") oluşturur. Delegate, arka planı yatay/dikey inset ile yuvarlatılmış
+    çizerek bu artefaktı tamamen giderir.
+    """
+    _HOVER_BG = QColor("#EFF6FF")   # blue-50
+    _SEL_BG = QColor("#EFF6FF")
+    _ACCENT = QColor("#3B82F6")     # C_PRIMARY
+    _NORMAL = QColor("#475569")     # C_TEXT_MID
+
+    def paint(self, painter, option, index):
+        painter.save()
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        rect = QRectF(option.rect).adjusted(4, 2, -4, -2)
+        selected = bool(option.state & QStyle.State_Selected)
+        hover = bool(option.state & QStyle.State_MouseOver)
+
+        if selected or hover:
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(self._SEL_BG if selected else self._HOVER_BG)
+            painter.drawRoundedRect(rect, 6, 6)
+
+        painter.setPen(QPen(self._ACCENT if (selected or hover) else self._NORMAL))
+        font = painter.font()
+        font.setBold(selected)
+        painter.setFont(font)
+        text_rect = option.rect.adjusted(16, 0, -12, 0)
+        painter.drawText(text_rect, Qt.AlignVCenter | Qt.AlignLeft,
+                         str(index.data(Qt.DisplayRole)))
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        size = super().sizeHint(option, index)
+        size.setHeight(38)
+        return size
 
 
 class StyledComboBox(QComboBox):
@@ -19,7 +63,11 @@ class StyledComboBox(QComboBox):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setView(QListView(self))
-        self.setItemDelegate(QStyledItemDelegate(self))
+        # Yuvarlak pill çizen delegate (QSS ::item margin/radius yok sayıldığı için)
+        self.view().setItemDelegate(_RoundedItemDelegate(self))
+        # View'in kendi kare çerçevesini kaldır — yalnızca container'ın yuvarlak
+        # kenarı görünsün (ekstra "kutu içinde kutu" kaynağını eler).
+        self.view().setFrameShape(QFrame.NoFrame)
 
     def showPopup(self) -> None:
         view = self.view()

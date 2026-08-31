@@ -9,14 +9,12 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from database.repository import ActivityRepository
 from models import Activity, ActivityFilter
-from database.connection import init_db, get_connection
+from database.connection import init_db, get_db
 
 class TestDateRange(unittest.TestCase):
     def setUp(self):
-        # Test için veritabanını temizle veya bellek içi kullan
-        # Ancak mevcut repository connection.py üzerinden gerçek DB kullanıyor olabilir.
-        # Bu test mevcut DB'yi etkileyebilir, bu yüzden dikkatli olmalıyız.
-        # Güvenlik için test verilerini ekleyip sonra temizleyeceğiz.
+        # init_db() main.py'den kaldırıldığı için test ortamında açıkça çağrılmalı
+        init_db()
         self.repo = ActivityRepository()
         self.created_ids = []
 
@@ -27,12 +25,8 @@ class TestDateRange(unittest.TestCase):
     def create_activity(self, name, start_date, end_date=None):
         act = Activity(None, "Test", name, start_date, "Test Comment", 5, end_date)
         self.repo.add(act)
-        # ID'yi bulmak için son eklenen
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT MAX(id) FROM activities")
-        aid = cursor.fetchone()[0]
-        conn.close()
+        with get_db() as conn:
+            aid = conn.execute("SELECT MAX(id) FROM activities").fetchone()[0]
         self.created_ids.append(aid)
         return aid
 

@@ -2,12 +2,13 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QTableWidget, QTableWidgetItem, QHeaderView,
                              QFrame, QScrollArea, QSizePolicy, QPushButton)
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, QDate, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from views.widgets import MonthYearWidget
 from views.widgets.detail_dialog import DetailDialog
+from views.widgets.heatmap_widget import ContributionHeatmap
 
 
 class StatsPage(QWidget):
@@ -34,10 +35,13 @@ class StatsPage(QWidget):
         main_layout.setSpacing(20)
         main_layout.setContentsMargins(20, 20, 20, 20)
 
+        self._current_year = QDate.currentDate().year()
+
         self._build_header(main_layout)
         self._build_filter(main_layout)
         self._build_kpi_cards(main_layout)
         self._build_content_area(main_layout)
+        self._build_heatmap_section(main_layout)
         main_layout.addStretch()
 
         self._scroll.setWidget(self._content)
@@ -193,6 +197,22 @@ class StatsPage(QWidget):
 
         return self.graph_container
 
+    def _build_heatmap_section(self, layout):
+        card = QFrame()
+        card.setObjectName("card_elevated")
+        inner = QVBoxLayout(card)
+        inner.setContentsMargins(20, 16, 20, 20)
+        inner.setSpacing(12)
+
+        title = QLabel("Aktivite Sıklığı")
+        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #1E293B; background: transparent;")
+        inner.addWidget(title)
+
+        self.heatmap = ContributionHeatmap()
+        inner.addWidget(self.heatmap, 0, Qt.AlignLeft)
+
+        layout.addWidget(card)
+
     # --- KPI card factory ---
 
     def create_kpi_card(self, title, value, color, icon_path=None):
@@ -234,6 +254,17 @@ class StatsPage(QWidget):
             self.on_stats_loaded,
             date_str, year_only, ignore_dates
         )
+
+        if date_str:
+            self._current_year = int(date_str[:4])
+        else:
+            self._current_year = QDate.currentDate().year()
+        self.controller.get_heatmap_data(self._current_year, self.on_heatmap_loaded)
+
+    def on_heatmap_loaded(self, daily_counts):
+        if daily_counts is None:
+            daily_counts = {}
+        self.heatmap.set_data(daily_counts, self._current_year)
 
     def on_stats_loaded(self, raw_data):
         if raw_data is None:

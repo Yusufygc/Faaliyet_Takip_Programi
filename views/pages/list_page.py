@@ -1,27 +1,35 @@
 # views/pages/list_page.py
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QLineEdit, QComboBox, QPushButton, QTableWidget, 
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                             QLineEdit, QPushButton, QTableWidget,
                              QTableWidgetItem, QHeaderView, QMessageBox, QFrame,
-                             QMenu, QDialog, QGridLayout, QGraphicsDropShadowEffect, QAbstractItemView)
+                             QMenu, QDialog, QGridLayout, QGraphicsDropShadowEffect,
+                             QScrollArea)
 from PyQt5.QtCore import Qt, QTimer, QSize
-from PyQt5.QtGui import QColor, QFont, QIcon, QBrush, QPalette
+from PyQt5.QtGui import QColor, QFont, QBrush, QPalette
 import math
 
 from views.widgets import MonthYearWidget
 from views.widgets.styled_combo import StyledComboBox
 from views.widgets.table_utils import configure_table
+from views.widgets.empty_state import EmptyStateWidget
+from views.widgets.html_delegate import HtmlDelegate
+from views.widgets.media_card import MediaCard
+from views.widgets.toast_notification import show_toast
 from views.dialogs.edit_dialog import EditDialog
+from utils_markdown import md_to_html
+
 
 class ListPage(QWidget):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
-        
-        # Sayfalama Değişkenleri
+
         self.current_page = 1
         self.items_per_page = 15
         self.total_pages = 1
-        
+        self._view_mode = "list"
+        self._last_activities = []
+
         self.search_timer = QTimer()
         self.search_timer.setSingleShot(True)
         self.search_timer.interval = 300
@@ -34,18 +42,24 @@ class ListPage(QWidget):
         palette.setColor(QPalette.Window, QColor("#F8FAFC"))
         self.setAutoFillBackground(True)
         self.setPalette(palette)
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(20)
+
         self._build_header(layout)
         self._build_filter(layout)
-        self._build_table(layout)
+        self._build_content_area(layout)
         self._build_pagination(layout)
+
         self.load_types()
         self.refresh_data()
 
+    # ── Header ────────────────────────────────────────────────────────────────
+
     def _build_header(self, layout):
         header_layout = QHBoxLayout()
+
         title = QLabel("Faaliyet Listesi")
         title.setStyleSheet("font-size: 28px; font-weight: 800; color: #1E293B; letter-spacing: 0.5px;")
 
@@ -59,11 +73,49 @@ class ListPage(QWidget):
             font-size: 14px;
         """)
 
+        self.btn_view_list = QPushButton("☰ Liste")
+        self.btn_view_list.setCheckable(True)
+        self.btn_view_list.setChecked(True)
+        self.btn_view_list.setCursor(Qt.PointingHandCursor)
+        self.btn_view_list.setFixedHeight(36)
+        self.btn_view_list.clicked.connect(lambda: self._set_view("list"))
+
+        self.btn_view_grid = QPushButton("⊞ Grid")
+        self.btn_view_grid.setCheckable(True)
+        self.btn_view_grid.setCursor(Qt.PointingHandCursor)
+        self.btn_view_grid.setFixedHeight(36)
+        self.btn_view_grid.clicked.connect(lambda: self._set_view("grid"))
+
+        self._apply_toggle_styles()
+
         header_layout.addWidget(title)
         header_layout.addSpacing(15)
         header_layout.addWidget(self.badge_total)
         header_layout.addStretch()
+        header_layout.addWidget(self.btn_view_list)
+        header_layout.addWidget(self.btn_view_grid)
+
         layout.addLayout(header_layout)
+
+    def _apply_toggle_styles(self):
+        active_style = """
+            QPushButton {
+                background: #3B82F6; color: white; border: none;
+                border-radius: 8px; padding: 0 16px; font-weight: 700; font-size: 13px;
+            }
+        """
+        inactive_style = """
+            QPushButton {
+                background: white; color: #64748B;
+                border: 1px solid #E2E8F0; border-radius: 8px;
+                padding: 0 16px; font-weight: 600; font-size: 13px;
+            }
+            QPushButton:hover { background: #F8FAFC; }
+        """
+        self.btn_view_list.setStyleSheet(active_style if self._view_mode == "list" else inactive_style)
+        self.btn_view_grid.setStyleSheet(active_style if self._view_mode == "grid" else inactive_style)
+
+    # ── Filter ────────────────────────────────────────────────────────────────
 
     def _build_filter(self, layout):
         filter_frame = QFrame()
@@ -100,12 +152,12 @@ class ListPage(QWidget):
         btn_clear = QPushButton("Temizle")
         btn_clear.setCursor(Qt.PointingHandCursor)
         btn_clear.setFixedWidth(100)
-        btn_clear.setStyleSheet(f"""
-            QPushButton {{
+        btn_clear.setStyleSheet("""
+            QPushButton {
                 background-color: #FDEDEC; color: #E74C3C; border: none; border-radius: 8px;
                 padding: 10px; font-weight: bold; font-size: 13px;
-            }}
-            QPushButton:hover {{ background-color: #FADBD8; }}
+            }
+            QPushButton:hover { background-color: #FADBD8; }
         """)
         btn_clear.clicked.connect(self.reset_filters)
 
@@ -132,16 +184,36 @@ class ListPage(QWidget):
 
         layout.addWidget(filter_frame)
 
-    def _build_table(self, layout):
-        table_container = QFrame()
-        table_container.setObjectName("card")
+    # ── Content area ──────────────────────────────────────────────────────────
+
+    def _build_content_area(self, layout):
+        # Empty state
+        self.empty_state = EmptyStateWidget(
+            icon_name="inbox",
+            title="Henüz faaliyet bulunmuyor",
+            description="Filtreyi değiştir veya yeni kayıt ekle.",
+            action_text="Yeni Kayıt Ekle",
+            action_page_index=0,
+        )
+        self.empty_state.hide()
+        layout.addWidget(self.empty_state)
+
+        # Table (list mode)
+        self._build_table_container(layout)
+
+        # Grid (grid mode)
+        self._build_grid_container(layout)
+
+    def _build_table_container(self, layout):
+        self.table_container = QFrame()
+        self.table_container.setObjectName("card")
         t_shadow = QGraphicsDropShadowEffect()
         t_shadow.setBlurRadius(20)
         t_shadow.setColor(QColor(0, 0, 0, 8))
         t_shadow.setOffset(0, 4)
-        table_container.setGraphicsEffect(t_shadow)
+        self.table_container.setGraphicsEffect(t_shadow)
 
-        table_layout = QVBoxLayout(table_container)
+        table_layout = QVBoxLayout(self.table_container)
         table_layout.setContentsMargins(0, 0, 0, 0)
 
         self.table = QTableWidget()
@@ -153,12 +225,36 @@ class ListPage(QWidget):
         header.setDefaultAlignment(Qt.AlignCenter)
         header.setFixedHeight(50)
 
+        # Markdown delegate for comment column
+        self._html_delegate = HtmlDelegate(self.table, elide_lines=2)
+        self.table.setItemDelegateForColumn(3, self._html_delegate)
+
         self.table.doubleClicked.connect(self.open_edit_dialog)
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.open_context_menu)
 
         table_layout.addWidget(self.table)
-        layout.addWidget(table_container)
+        layout.addWidget(self.table_container)
+
+    def _build_grid_container(self, layout):
+        self.grid_scroll = QScrollArea()
+        self.grid_scroll.setWidgetResizable(True)
+        self.grid_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.grid_scroll.setFrameShape(QFrame.NoFrame)
+        self.grid_scroll.setStyleSheet("QScrollArea { background: transparent; }")
+
+        grid_inner = QWidget()
+        grid_inner.setStyleSheet("background: transparent;")
+        self.grid_layout = QGridLayout(grid_inner)
+        self.grid_layout.setSpacing(16)
+        self.grid_layout.setContentsMargins(0, 0, 0, 16)
+        self.grid_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+
+        self.grid_scroll.setWidget(grid_inner)
+        self.grid_scroll.hide()
+        layout.addWidget(self.grid_scroll)
+
+    # ── Pagination ────────────────────────────────────────────────────────────
 
     def _build_pagination(self, layout):
         pagination_widget = QWidget()
@@ -201,6 +297,23 @@ class ListPage(QWidget):
 
         layout.addWidget(pagination_widget)
 
+    # ── View toggle ───────────────────────────────────────────────────────────
+
+    def _set_view(self, mode: str):
+        if mode == self._view_mode:
+            return
+        self._view_mode = mode
+        self._apply_toggle_styles()
+        has_data = self.table.rowCount() > 0
+
+        if has_data:
+            self.table_container.setVisible(mode == "list")
+            self.grid_scroll.setVisible(mode == "grid")
+            if mode == "grid":
+                self._fill_grid(self._last_activities)
+
+    # ── Type loading ──────────────────────────────────────────────────────────
+
     def load_types(self):
         if hasattr(self.controller, 'get_all_activity_types'):
             self.controller.get_all_activity_types(self.on_types_loaded)
@@ -212,10 +325,12 @@ class ListPage(QWidget):
         self.combo_filter_type.addItem("Hepsi")
         if types:
             self.combo_filter_type.addItems(types)
-        
         index = self.combo_filter_type.findText(current_text)
-        if index >= 0: self.combo_filter_type.setCurrentIndex(index)
+        if index >= 0:
+            self.combo_filter_type.setCurrentIndex(index)
         self.combo_filter_type.blockSignals(False)
+
+    # ── Filters ───────────────────────────────────────────────────────────────
 
     def on_filter_changed(self):
         self.current_page = 1
@@ -238,7 +353,6 @@ class ListPage(QWidget):
 
     def refresh_data(self):
         self.table.setSortingEnabled(False)
-        
         type_filter = self.combo_filter_type.currentText()
         search_term = self.input_search.text()
         date_filter = self.date_widget.get_date_str()
@@ -246,88 +360,119 @@ class ListPage(QWidget):
         self.load_types()
         self.controller.get_all_activities(
             self.on_data_loaded,
-            type_filter, search_term, date_filter, 
-            page=self.current_page, 
-            items_per_page=self.items_per_page
+            type_filter, search_term, date_filter,
+            page=self.current_page,
+            items_per_page=self.items_per_page,
         )
 
+    # ── Data loaded ───────────────────────────────────────────────────────────
+
     def on_data_loaded(self, result):
-        if not result: return
+        if not result:
+            return
 
         activities, total_count = result
+        self._last_activities = activities
+
         self.badge_total.setText(f"{total_count} Kayıt")
-        
+
         self.total_pages = math.ceil(total_count / self.items_per_page)
-        if self.total_pages == 0: self.total_pages = 1
-        
+        if self.total_pages == 0:
+            self.total_pages = 1
+
         self.lbl_page_info.setText(f"Sayfa {self.current_page} / {self.total_pages}")
         self.btn_prev.setEnabled(self.current_page > 1)
         self.btn_next.setEnabled(self.current_page < self.total_pages)
 
+        has_data = bool(activities)
+        self.empty_state.setVisible(not has_data)
+        self.table_container.setVisible(has_data and self._view_mode == "list")
+        self.grid_scroll.setVisible(has_data and self._view_mode == "grid")
+
+        if has_data:
+            self._fill_table(activities)
+            if self._view_mode == "grid":
+                self._fill_grid(activities)
+
+    def _fill_table(self, activities):
         self.table.setRowCount(0)
         for row_idx, activity in enumerate(activities):
             self.table.insertRow(row_idx)
-            self.table.setRowHeight(row_idx, 60) # Satır yüksekliği arttırıldı
-            
-            # 1. Tür (Badge Görünümü) - ORTALI
+            self.table.setRowHeight(row_idx, 60)
+
+            # Tür
             type_text = activity.type.title() if activity.type else "-"
             item_type = QTableWidgetItem(type_text)
             item_type.setData(Qt.UserRole, activity.id)
-            item_type.setTextAlignment(Qt.AlignCenter) # Ortala
-            item_type.setFont(QFont("Segoe UI", 10, QFont.Bold)) # Font Büyüt
+            item_type.setTextAlignment(Qt.AlignCenter)
+            item_type.setFont(QFont("Segoe UI", 10, QFont.Bold))
             item_type.setForeground(QBrush(QColor("#3B82F6")))
             self.table.setItem(row_idx, 0, item_type)
-            
-            # 2. Ad - ORTALI
+
+            # Ad
             item_name = QTableWidgetItem(activity.name)
-            item_name.setTextAlignment(Qt.AlignCenter) # Ortala
-            item_name.setFont(QFont("Segoe UI", 10, QFont.DemiBold)) # Font Büyüt
+            item_name.setTextAlignment(Qt.AlignCenter)
+            item_name.setFont(QFont("Segoe UI", 10, QFont.DemiBold))
             self.table.setItem(row_idx, 1, item_name)
-            
-            # 3. Tarih - ORTALI
+
+            # Tarih
             date_display = activity.date
             if activity.end_date:
                 date_display = f"{activity.date}  ➜  {activity.end_date}"
             item_date = QTableWidgetItem(date_display)
-            item_date.setTextAlignment(Qt.AlignCenter) # Ortala
-            item_date.setFont(QFont("Segoe UI", 10)) # Font Büyüt
+            item_date.setTextAlignment(Qt.AlignCenter)
+            item_date.setFont(QFont("Segoe UI", 10))
             item_date.setForeground(QBrush(QColor("#64748B")))
             self.table.setItem(row_idx, 2, item_date)
-            
-            # 4. Yorum - ORTALI (İsteğe bağlı, uzunsa sola yaslanabilir ama istek üzerine ortalandı)
-            item_comment = QTableWidgetItem(activity.comment)
-            item_comment.setTextAlignment(Qt.AlignCenter) # Ortala
+
+            # Yorum (HTML/Markdown)
+            html = md_to_html(activity.comment or "")
+            item_comment = QTableWidgetItem(html)
             item_comment.setFont(QFont("Segoe UI", 10))
-            item_comment.setForeground(QBrush(QColor("#64748B")))
             self.table.setItem(row_idx, 3, item_comment)
-            
-            # 5. Puan (Renkli) - ORTALI
+
+            # Puan
             rating_display = str(activity.rating) if activity.rating > 0 else "-"
             rating_item = QTableWidgetItem(rating_display)
-            rating_item.setTextAlignment(Qt.AlignCenter) # Ortala
-            rating_item.setFont(QFont("Segoe UI", 11, QFont.Bold)) # Font Büyüt
-            
-            # Puan Renklendirme
+            rating_item.setTextAlignment(Qt.AlignCenter)
+            rating_item.setFont(QFont("Segoe UI", 11, QFont.Bold))
             if activity.rating >= 8:
-                rating_item.setForeground(QBrush(QColor("#27AE60"))) # Yeşil
+                rating_item.setForeground(QBrush(QColor("#27AE60")))
             elif activity.rating >= 5:
-                rating_item.setForeground(QBrush(QColor("#F39C12"))) # Turuncu
+                rating_item.setForeground(QBrush(QColor("#F39C12")))
             elif activity.rating > 0:
-                rating_item.setForeground(QBrush(QColor("#E74C3C"))) # Kırmızı
-                
+                rating_item.setForeground(QBrush(QColor("#E74C3C")))
             self.table.setItem(row_idx, 4, rating_item)
 
         self.table.setSortingEnabled(True)
+
+    def _fill_grid(self, activities):
+        while self.grid_layout.count():
+            item = self.grid_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        cols = 4
+        for idx, activity in enumerate(activities):
+            card = MediaCard(activity, self)
+            card.edit_requested.connect(self._open_edit_by_id)
+            self.grid_layout.addWidget(card, idx // cols, idx % cols)
+
+    # ── Edit / Delete ─────────────────────────────────────────────────────────
 
     def reset_filters(self):
         self.combo_filter_type.setCurrentIndex(0)
         self.input_search.clear()
         self.date_widget.clear_filters()
         self.current_page = 1
-    
+
+    def _open_edit_by_id(self, activity_id: int):
+        self.controller.get_activity(activity_id, self.on_activity_loaded_for_edit)
+
     def open_edit_dialog(self):
         selected_rows = self.table.selectionModel().selectedRows()
-        if not selected_rows: return
+        if not selected_rows:
+            return
         row_index = selected_rows[0].row()
         activity_id = self.table.item(row_index, 0).data(Qt.UserRole)
         self.controller.get_activity(activity_id, self.on_activity_loaded_for_edit)
@@ -353,9 +498,9 @@ class ListPage(QWidget):
         delete_action = QAction("Sil", menu)
         delete_action.setIcon(IconService.get("delete"))
         menu.addAction(delete_action)
-        
+
         action = menu.exec_(self.table.viewport().mapToGlobal(position))
-        
+
         if action == delete_action:
             self.delete_selected_row()
         elif action == edit_action:
@@ -364,15 +509,16 @@ class ListPage(QWidget):
     def delete_selected_row(self):
         selected_rows = self.table.selectionModel().selectedRows()
         if not selected_rows:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silmek için bir satır seçin.")
+            show_toast("Silmek için bir satır seçin.", "warning")
             return
 
         row_index = selected_rows[0].row()
         activity_id = self.table.item(row_index, 0).data(Qt.UserRole)
 
-        confirm = QMessageBox.question(self, "Onay", "Bu kaydı silmek istediğinize emin misiniz?", 
-                                       QMessageBox.Yes | QMessageBox.No)
-        
+        confirm = QMessageBox.question(
+            self, "Onay", "Bu kaydı silmek istediğinize emin misiniz?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
         if confirm == QMessageBox.Yes:
             self.controller.delete_activity(activity_id, self.on_delete_finished)
 
@@ -380,5 +526,6 @@ class ListPage(QWidget):
         success, msg = result
         if success:
             self.refresh_data()
+            show_toast("Kayıt başarıyla silindi.", "success")
         else:
-            QMessageBox.warning(self, "Hata", msg)
+            show_toast(msg, "error")

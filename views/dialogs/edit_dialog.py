@@ -1,10 +1,12 @@
 # views/dialogs/edit_dialog.py
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QLabel, QLineEdit,
-                             QTextEdit, QComboBox, QPushButton, QMessageBox,
+                             QTextEdit, QTextBrowser, QPushButton,
                              QFormLayout, QDateEdit, QCheckBox, QHBoxLayout, QFrame)
 from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtGui import QFont
 from views.widgets.styled_combo import StyledComboBox
+from views.widgets.toast_notification import show_toast
+from utils_markdown import md_to_html
 
 
 class EditDialog(QDialog):
@@ -15,7 +17,8 @@ class EditDialog(QDialog):
         self.activity = activity
         self.setWindowTitle(f"Düzenle: {activity.name}")
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self.setFixedSize(500, 650)
+        self.setMinimumSize(500, 720)
+        self.resize(500, 780)
         self.init_ui()
         self.load_types()
 
@@ -105,7 +108,20 @@ class EditDialog(QDialog):
 
         self.input_comment = QTextEdit()
         self.input_comment.setMinimumHeight(80)
+        self.input_comment.textChanged.connect(self._update_preview)
         form.addRow(self._create_label("Yorum:"), self.input_comment)
+
+        self.preview_comment = QTextBrowser()
+        self.preview_comment.setMinimumHeight(70)
+        self.preview_comment.setMaximumHeight(120)
+        self.preview_comment.setStyleSheet("""
+            QTextBrowser {
+                background: #F8FAFC; border: 1px solid #E2E8F0;
+                border-radius: 8px; padding: 6px; font-size: 13px;
+            }
+        """)
+        self.preview_comment.setPlaceholderText("Önizleme...")
+        form.addRow(self._create_label("Önizleme:"), self.preview_comment)
 
         self.combo_rating = StyledComboBox()
         self.combo_rating.setMinimumHeight(40)
@@ -160,11 +176,15 @@ class EditDialog(QDialog):
         else:
             self.chk_range.setChecked(False)
 
-        self.input_comment.setText(self.activity.comment)
+        self.input_comment.setText(self.activity.comment or "")
+        self._update_preview()
         if self.activity.rating and self.activity.rating > 0:
             self.combo_rating.setCurrentText(str(self.activity.rating))
         else:
             self.combo_rating.setCurrentIndex(0)
+
+    def _update_preview(self):
+        self.preview_comment.setHtml(md_to_html(self.input_comment.toPlainText()))
 
     def on_range_toggled(self, checked):
         if checked:
@@ -200,7 +220,7 @@ class EditDialog(QDialog):
         self.btn_save.setText("Kaydet")
         success, message = result
         if success:
-            QMessageBox.information(self, "Başarılı", message)
+            show_toast(message, "success")
             self.accept()
         else:
-            QMessageBox.warning(self, "Hata", message)
+            show_toast(message, "error")

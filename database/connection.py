@@ -61,17 +61,6 @@ def init_db():
         if 'conn' in locals() and conn:
             conn.close()
 
-def get_connection():
-    """Veritabanına yeni bir bağlantı döndürür."""
-    try:
-        conn = sqlite3.connect(DB_PATH, timeout=15.0)
-        _configure_conn(conn)
-        conn.row_factory = sqlite3.Row
-        return conn
-    except Exception as e:
-        logger.error(f"Veritabanı bağlantısı alınırken hata oluştu: {e}")
-        return None
-
 
 @contextmanager
 def get_db():

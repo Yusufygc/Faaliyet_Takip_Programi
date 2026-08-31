@@ -33,16 +33,35 @@ class SettingsController(_BaseController):
         self._run_async(op, callback)
 
     def save_api_keys(self, tmdb_key, rawg_key, google_books_key, callback):
+        """None olan parametreleri atla — mevcut anahtara dokunma."""
         def op():
             try:
                 import keyring
-                keyring.set_password(KEYRING_APP_NAME, KEYRING_KEY_TMDB, tmdb_key.strip())
-                keyring.set_password(KEYRING_APP_NAME, KEYRING_KEY_RAWG, rawg_key.strip())
-                keyring.set_password(KEYRING_APP_NAME, KEYRING_KEY_GOOGLE_BOOKS, google_books_key.strip())
-                self.type_repo.set_setting(KEYRING_KEY_TMDB, "")
-                self.type_repo.set_setting(KEYRING_KEY_RAWG, "")
-                return True, "API anahtarları başarıyla kaydedildi."
+                if tmdb_key is not None:
+                    keyring.set_password(KEYRING_APP_NAME, KEYRING_KEY_TMDB, tmdb_key.strip())
+                    self.type_repo.set_setting(KEYRING_KEY_TMDB, "")
+                if rawg_key is not None:
+                    keyring.set_password(KEYRING_APP_NAME, KEYRING_KEY_RAWG, rawg_key.strip())
+                    self.type_repo.set_setting(KEYRING_KEY_RAWG, "")
+                if google_books_key is not None:
+                    keyring.set_password(KEYRING_APP_NAME, KEYRING_KEY_GOOGLE_BOOKS, google_books_key.strip())
+                return True, "API anahtarları kaydedildi."
             except Exception as e:
                 logger.error(f"API key kayıt hatası: {e}")
                 return False, "Kayıt sırasında hata oluştu."
+        self._run_async(op, callback)
+
+    def delete_api_key(self, key_name, callback):
+        def op():
+            try:
+                import keyring
+                try:
+                    keyring.delete_password(KEYRING_APP_NAME, key_name)
+                except Exception:
+                    pass  # Zaten yoksa sessizce geç
+                self.type_repo.set_setting(key_name, "")
+                return True, "API anahtarı silindi."
+            except Exception as e:
+                logger.error(f"API key silme hatası: {e}")
+                return False, "Silme sırasında hata oluştu."
         self._run_async(op, callback)

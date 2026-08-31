@@ -33,6 +33,8 @@ try:
     from controllers.main_controller import MainController
     from views.main_window import MainWindow
     from styles import load
+    from database.connection import init_db
+    from database.repository import ActivityRepository
 except Exception as e:
     err_msg = f"Import Error: {traceback.format_exc()}"
     log_error(err_msg)
@@ -113,6 +115,13 @@ def main():
 
     try:
         app = QApplication(sys.argv)
+
+        # DB başlatma ve şema migrasyonu: uygulama yaşam döngüsünde bir kez
+        # (ActivityRepository.__init__'ten kaldırıldı — her nesne oluşumunda
+        # tekrarlanan gereksiz başlatma maliyetini ortadan kaldırır)
+        init_db()
+        ActivityRepository().check_and_migrate_schema()
+
         app.setStyle("Fusion")
         app.setStyleSheet(load("global", "inputs", "buttons", "cards", "scrollbars", "tables"))
         

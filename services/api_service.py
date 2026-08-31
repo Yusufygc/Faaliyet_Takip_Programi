@@ -36,24 +36,25 @@ class ApiService:
         period = random.choice(['all_time_best', 'must_see', 'cult_classics', 'hidden_gems'])
 
         try:
-            # Sayfa 1 sonuç sayısını total_pages proxy olarak kullan.
-            # Tam sayfa (12 kayıt) dönüyorsa sayfa 2-3 muhtemelen var.
-            from services._base_api_service import ITEMS_PER_PAGE
             page1 = self.get_recommendations(category, period, None, 1, False)
             if not page1:
                 logger.error(f"Random öneri bulunamadı: {category}/{period}")
                 return None
 
-            max_page = 3 if len(page1) >= ITEMS_PER_PAGE else 1
-            page = random.randint(1, max_page)
+            # Sabit ITEMS_PER_PAGE bağımlılığı kaldırıldı. Gerçek dönen öğe
+            # sayısına bakarak sayfa varlığını dinamik kontrol et: >= 10 ise
+            # (en kısıtlı servislerin bile tam sayfa boyutu) sayfa 2/3 dene.
+            pages = {1: page1}
+            if len(page1) >= 10:
+                p2 = self.get_recommendations(category, period, None, 2, False)
+                if p2:
+                    pages[2] = p2
+                    p3 = self.get_recommendations(category, period, None, 3, False)
+                    if p3:
+                        pages[3] = p3
 
-            results = page1
-            if page > 1:
-                extra = self.get_recommendations(category, period, None, page, False)
-                if extra:
-                    results = extra
-
-            selected = random.choice(results)
+            page = random.choice(list(pages.keys()))
+            selected = random.choice(pages[page])
             selected['random_category'] = category
             selected['random_period'] = period
             return selected

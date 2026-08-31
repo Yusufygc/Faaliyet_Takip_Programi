@@ -1,16 +1,15 @@
 # database/repository.py
-from .connection import get_db, get_connection, init_db
+from .connection import get_db
 from models import Activity, ActivityFilter
 from utils import is_valid_yyyymm, is_valid_yyyy
 from logger_setup import logger
+from typing import Optional, Tuple, List
 
 
 class ActivityRepository:
     """Faaliyet kayıtları için CRUD ve istatistik sorguları."""
-
-    def __init__(self):
-        init_db()
-        self.check_and_migrate_schema()
+    # __init__ kaldırıldı: init_db() ve check_and_migrate_schema() artık
+    # uygulama yaşam döngüsünde bir kez çalıştırılmak üzere main.py'ye taşındı.
 
     def check_and_migrate_schema(self):
         """Veritabanı şemasını kontrol eder ve eksik kolonları ekler."""
@@ -100,7 +99,7 @@ class ActivityRepository:
             logger.error(f"Hata (ActivityRepository.delete): {e}")
             return False
 
-    def get_by_id(self, activity_id: int):
+    def get_by_id(self, activity_id: int) -> Optional[Activity]:
         """ID'ye göre tek bir faaliyet kaydını döndürür."""
         sql = "SELECT id, type, name, date, comment, rating, end_date FROM activities WHERE id = ?"
         try:
@@ -111,7 +110,7 @@ class ActivityRepository:
             logger.error(f"Hata (ActivityRepository.get_by_id): {e}")
             return None
 
-    def get_all_filtered(self, filter_obj: ActivityFilter):
+    def get_all_filtered(self, filter_obj: ActivityFilter) -> Tuple[List[Activity], int]:
         """Filtrelenmiş ve sayfalanmış faaliyet listesini döndürür."""
         base_query_parts = ["FROM activities WHERE 1=1"]
         params = []
@@ -183,8 +182,9 @@ class ActivityRepository:
                 params.append(date_prefix + "%")
             else:
                 if not date_prefix or not is_valid_yyyymm(date_prefix): return []
-                query += " WHERE substr(date, 1, 7) = ?"
-                params.append(date_prefix)
+                # O(N) Table Scan'i önlemek için substr() yerine LIKE kullanıldı
+                query += " WHERE date LIKE ?"
+                params.append(date_prefix + "%")
 
         query += " GROUP BY type ORDER BY COUNT(*) DESC"
 
@@ -207,8 +207,9 @@ class ActivityRepository:
                 params.append(date_prefix + "%")
             else:
                 if not date_prefix or not is_valid_yyyymm(date_prefix): return []
-                query += " AND substr(date, 1, 7) = ?"
-                params.append(date_prefix)
+                # O(N) Table Scan'i önlemek için substr() yerine LIKE kullanıldı
+                query += " AND date LIKE ?"
+                params.append(date_prefix + "%")
 
         query += " ORDER BY date DESC"
 
@@ -233,6 +234,7 @@ class ActivityRepository:
 
     def get_available_periods(self, period_type: str = "month") -> list:
         """ComparePage için mevcut dönemleri (YYYY-MM veya YYYY) çeker."""
+        # substr burada SELECT projeksiyon içindir (WHERE filtresi değil) — indeks sorunu yok
         if period_type == "month":
             query = "SELECT DISTINCT substr(date, 1, 7) as period FROM activities ORDER BY period DESC"
         else:
@@ -257,12 +259,13 @@ class ActivityRepository:
 
     def get_monthly_activity_counts(self, year: int, category: str = None) -> list:
         """Trend Analizi için aylık aktivite sayılarını çeker. Dönüş: [(ay_numarası, sayi), ...]"""
+        # O(N) Table Scan'i önlemek için substr() yerine LIKE kullanıldı
         query = """
             SELECT CAST(substr(date, 6, 2) AS INTEGER) as month, COUNT(*)
             FROM activities
-            WHERE substr(date, 1, 4) = ?
+            WHERE date LIKE ?
         """
-        params = [str(year)]
+        params = [str(year) + '%']
 
         if category and category != "Hepsi":
             query += " AND type = ?"
@@ -279,8 +282,9 @@ class ActivityRepository:
 
     def get_activity_details_by_month(self, date_str: str, category: str = None) -> list:
         """Belirli bir aydaki aktivitelerin detaylarını getirir. Dönüş: [(name, date), ...]"""
-        query = "SELECT name, date FROM activities WHERE substr(date, 1, 7) = ?"
-        params = [date_str]
+        # O(N) Table Scan'i önlemek için substr() yerine LIKE kullanıldı
+        query = "SELECT name, date FROM activities WHERE date LIKE ?"
+        params = [date_str + '%']
 
         if category and category != "Hepsi":
             query += " AND type = ?"
@@ -294,3 +298,20 @@ class ActivityRepository:
         except Exception as e:
             logger.error(f"Hata (ActivityRepository.get_activity_details_by_month): {e}")
             return []
+
+    def get_daily_activity_counts(self, year: int) -> dict:
+        """Isı haritası için gün bazlı aktivite sayıları. Dönüş: {'YYYY-MM-DD': count}"""
+        # O(N) Table Scan'i önlemek için substr() yerine LIKE kullanıldı
+        query = """
+            SELECT substr(date, 1, 10) as day, COUNT(*) as cnt
+            FROM activities
+            WHERE date LIKE ?
+            GROUP BY day
+        """
+        try:
+            with get_db() as conn:
+                rows = conn.execute(query, (str(year) + '%',)).fetchall()
+            return {row[0]: row[1] for row in rows}
+        except Exception as e:
+            logger.error(f"Hata (ActivityRepository.get_daily_activity_counts): {e}")
+            return {}

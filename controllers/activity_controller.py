@@ -133,3 +133,6 @@ class ActivityController(_BaseController):
 
     def get_activity_details_by_month(self, callback, date_str, category=None):
         self._run_async(self.repository.get_activity_details_by_month, callback, date_str, category)
+
+    def get_heatmap_data(self, year: int, callback):
+        self._run_async(self.repository.get_daily_activity_counts, callback, year)

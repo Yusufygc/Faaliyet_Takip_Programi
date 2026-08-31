@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QStackedWidget, QLabel, QFrame,
-                             QShortcut, QSizePolicy, QGraphicsDropShadowEffect)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence, QIcon, QColor
-from PyQt5.QtCore import QSize
+                             QShortcut, QSizePolicy, QGraphicsDropShadowEffect,
+                             QGraphicsOpacityEffect)
+from PyQt5.QtCore import Qt, QSize, QPropertyAnimation, QAbstractAnimation, QEasingCurve
+from PyQt5.QtGui import QKeySequence, QIcon, QColor, QPalette
 from services.icon_service import IconService
+from views.widgets.custom_title_bar import CustomTitleBar
 
 from controllers.main_controller import MainController
 from views.pages.add_page import AddPage
@@ -26,23 +27,36 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.setWindowFlags(Qt.FramelessWindowHint)
         self.setWindowTitle("Faaliyet Takip Sistemi")
         self.setGeometry(100, 100, 1150, 750)
-        
+
         icon_path = get_resource_path(os.path.join("icons", "icon.ico"))
         if not os.path.exists(icon_path):
              icon_path = get_resource_path(os.path.join("icons", "icon.png"))
-        
+
         self.setWindowIcon(QIcon(icon_path))
 
         self.controller = MainController()
+        self._animating = False
 
-        # Ana Widget
+        # Ana Widget — dikey: title_bar üstte, içerik altta
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        self.main_layout = QHBoxLayout(self.central_widget)
+        outer_layout = QVBoxLayout(self.central_widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        # Özel başlık çubuğu
+        self.title_bar = CustomTitleBar(self)
+        outer_layout.addWidget(self.title_bar)
+
+        # Yatay: sidebar + içerik
+        content_row = QWidget()
+        self.main_layout = QHBoxLayout(content_row)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
+        outer_layout.addWidget(content_row, 1)
 
         # 1. Modern Sidebar
         self.setup_sidebar()
@@ -51,16 +65,16 @@ class MainWindow(QMainWindow):
         self.content_area = QWidget()
         self.content_layout = QVBoxLayout(self.content_area)
         self.content_layout.setContentsMargins(25, 25, 25, 0)
-        
+
         self.stacked_widget = QStackedWidget()
         self.content_layout.addWidget(self.stacked_widget)
-        
+
         self.main_layout.addWidget(self.content_area)
 
         # Sayfaları Başlat
         self.init_pages()
         self.setup_shortcuts()
-        
+
         # İlk butonu aktif yap
         self.update_active_button(0)
 
@@ -235,17 +249,49 @@ class MainWindow(QMainWindow):
         self.controller.plan_changed.connect(self._on_plan_changed)
 
     def switch_page(self, index):
-        self.stacked_widget.setCurrentIndex(index)
-        self.update_active_button(index)
-        
+        if self._animating or self.stacked_widget.currentIndex() == index:
+            return
+        self._animating = True
+
         if index != 3 and not self.sidebar.isVisible():
             self.sidebar.show()
-        
-        current_widget = self.stacked_widget.currentWidget()
-        if hasattr(current_widget, 'refresh_data'):
-            current_widget.refresh_data()
-        elif hasattr(current_widget, 'refresh_statistics'):
-            current_widget.refresh_statistics()
+
+        self.stacked_widget.setCurrentIndex(index)
+        self.update_active_button(index)
+
+        # Animate a child-less overlay on content_area — avoids QPainter conflicts
+        # that arise when QGraphicsOpacityEffect is applied directly to page widgets
+        # that have descendant widgets with their own QGraphicsDropShadowEffect.
+        overlay = QWidget(self.content_area)
+        overlay.setAutoFillBackground(True)
+        pal = overlay.palette()
+        pal.setColor(QPalette.Window, QColor("#FFFFFF"))
+        overlay.setPalette(pal)
+        overlay.resize(self.content_area.size())
+        overlay.show()
+        overlay.raise_()
+
+        eff = QGraphicsOpacityEffect(overlay)
+        overlay.setGraphicsEffect(eff)
+        eff.setOpacity(0.85)
+
+        anim = QPropertyAnimation(eff, b"opacity", self)
+        anim.setDuration(200)
+        anim.setStartValue(0.85)
+        anim.setEndValue(0.0)
+        anim.setEasingCurve(QEasingCurve.OutCubic)
+
+        def _done():
+            overlay.deleteLater()
+            self._animating = False
+            new_widget = self.stacked_widget.currentWidget()
+            if hasattr(new_widget, 'refresh_data'):
+                new_widget.refresh_data()
+            elif hasattr(new_widget, 'refresh_statistics'):
+                new_widget.refresh_statistics()
+
+        anim.finished.connect(_done)
+        anim.start(QAbstractAnimation.DeleteWhenStopped)
 
     def toggle_sidebar(self):
         if self.sidebar.isVisible():
@@ -281,15 +327,8 @@ class MainWindow(QMainWindow):
         self._refresh_current(self.plans_page)
 
     def open_trend_analysis(self):
-        """İstatistik sayfasından trend analizi sayfasına geç"""
-        self.stacked_widget.setCurrentWidget(self.trend_analysis_page)
-        # Sidebar'ı gizle (daha geniş alan için)
-        # self.sidebar.hide()  # İsterseniz bunu açabilirsiniz
-    
+        idx = self.stacked_widget.indexOf(self.trend_analysis_page)
+        self.switch_page(idx)
+
     def close_trend_analysis(self):
-        """Trend analizi sayfasından istatistik sayfasına geri dön"""
-        self.stacked_widget.setCurrentWidget(self.stats_page)
-        self.update_active_button(2)  # İstatistik butonu index 2
-        # Sidebar'ı göster
-        if not self.sidebar.isVisible():
-            self.sidebar.show()
+        self.switch_page(2)  # İstatistik index 2
