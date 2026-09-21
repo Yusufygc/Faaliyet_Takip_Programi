@@ -16,21 +16,12 @@ Rectangle {
     implicitHeight: 110
     radius: Theme.radiusLg
     color: Theme.bgCard
-    border.color: mouseArea.containsMouse ? root.accentColor : Theme.borderSubtle
-    border.width: 1
+    border.color: root.accentColor
+    border.width: 2
     clip: true
 
     Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
     Behavior on scale { NumberAnimation { duration: Theme.animFast } }
-
-    // Üstteki renkli çizgi
-    Rectangle {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 3
-        color: root.accentColor
-    }
 
     // Arkaplan yumuşak parlama
     Rectangle {

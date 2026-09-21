@@ -1,6 +1,7 @@
 // qml/views/StatsView.qml
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import "../theme"
 import "../components"
 import "../modals"
@@ -238,16 +239,16 @@ Rectangle {
                         }
                     }
 
-                    // Pasta Grafiği ve Liste Tablosu Yan Yana
-                    Row {
+                    // Pasta Grafiği, Bar Grafiği ve Liste Tablosu Yan Yana
+                    RowLayout {
                         width: parent.width
                         spacing: 24
 
                         // Sol: İnteraktif Pasta/Donut Grafiği
                         CategoryPieChart {
                             id: pieChart
-                            width: 280
-                            height: 280
+                            Layout.preferredWidth: 280
+                            Layout.preferredHeight: 280
                             dataModel: statsBridge.categoryDistribution
                             totalCount: statsBridge.kpiTotal
                             onCategoryClicked: function(catName) {
@@ -255,10 +256,20 @@ Rectangle {
                             }
                         }
 
+                        // Orta: Zamana Göre Kategori Payı
+                        CategoryTimelineChart {
+                            id: timelineChart
+                            Layout.preferredWidth: 240
+                            Layout.preferredHeight: 280
+                            dataModel: statsBridge.monthlyCategoryDistribution
+                        }
+
                         // Sağ: Kategori Dağılım Listesi
                         ListView {
                             id: catListView
-                            width: parent.width - 304
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 260
+                            Layout.maximumWidth: 340
                             implicitHeight: Math.max(260, contentHeight)
                             clip: true
                             model: statsBridge.categoryDistribution
@@ -303,11 +314,11 @@ Rectangle {
                                     Row {
                                         anchors.right: parent.right
                                         anchors.verticalCenter: parent.verticalCenter
-                                        spacing: 12
+                                        spacing: 8
 
                                         // İlerleme Yüzde Barı
                                         Rectangle {
-                                            width: 100
+                                            width: 50
                                             height: 6
                                             radius: 3
                                             color: Theme.borderSubtle
@@ -322,7 +333,7 @@ Rectangle {
                                         }
 
                                         Text {
-                                            text: "Ort. " + (modelData.avgRating > 0 ? (modelData.avgRating.toFixed(1) + " ★") : "-") + "  (%" + modelData.percent.toFixed(1) + ")"
+                                            text: modelData.avgRating > 0 ? (modelData.avgRating.toFixed(1) + " ★") : "-"
                                             font.pixelSize: Theme.fontXs
                                             font.bold: true
                                             color: Theme.textSecondary

@@ -20,6 +20,13 @@ ApplicationWindow {
     flags: Qt.Window | Qt.FramelessWindowHint
     color: Theme.bgApp
 
+    // --- Tema Durumu (Python <-> QML) ---
+    Binding {
+        target: Theme
+        property: "isDark"
+        value: settingsBridge.isDarkTheme
+    }
+
     // --- Klavye Kısayolları ---
     Shortcut {
         sequence: "Ctrl+N"

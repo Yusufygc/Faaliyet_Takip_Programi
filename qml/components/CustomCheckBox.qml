@@ -33,10 +33,11 @@ Item {
             Behavior on color { ColorAnimation { duration: Theme.animFast } }
             Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
 
-            Icon {
-                name: Icons.check
-                size: 10
-                color: "#FFFFFF"
+            Image {
+                source: "../../assets/icons/check.svg"
+                sourceSize: Qt.size(12, 12)
+                width: 12
+                height: 12
                 anchors.centerIn: parent
                 visible: root.checked
                 scale: root.checked ? 1.0 : 0.0

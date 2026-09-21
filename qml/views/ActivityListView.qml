@@ -1,6 +1,7 @@
 // qml/views/ActivityListView.qml
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import "../theme"
 import "../components"
 import "../modals"
@@ -124,7 +125,7 @@ Rectangle {
             border.color: Theme.borderSubtle
             border.width: 1
 
-            Row {
+            RowLayout {
                 anchors.fill: parent
                 anchors.margins: 10
                 anchors.leftMargin: 16
@@ -134,7 +135,9 @@ Rectangle {
                 // Arama Çubuğu
                 CustomTextField {
                     id: searchInput
-                    width: 280
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 140
+                    Layout.preferredWidth: 280
                     placeholderText: "Faaliyet adı ile ara..."
                     iconText: "🔍"
                     onTextEdited: function(txt) {
@@ -151,7 +154,7 @@ Rectangle {
                 // Tür Filtresi
                 Row {
                     spacing: 8
-                    anchors.verticalCenter: parent.verticalCenter
+                    Layout.alignment: Qt.AlignVCenter
 
                     Text {
                         text: "Tür:"
@@ -172,7 +175,7 @@ Rectangle {
                 // Tarih Filtresi (YYYY-MM)
                 Row {
                     spacing: 8
-                    anchors.verticalCenter: parent.verticalCenter
+                    Layout.alignment: Qt.AlignVCenter
 
                     Text {
                         text: "Dönem:"
@@ -196,6 +199,30 @@ Rectangle {
                     }
                 }
 
+                // Sayfa Başına Veri Adedi (15 - 30 - 50 - 100)
+                Row {
+                    spacing: 8
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Text {
+                        text: "Sayfa Başına:"
+                        font.pixelSize: Theme.fontSm
+                        font.bold: true
+                        color: Theme.textSecondary
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    CustomComboBox {
+                        id: pageSizeCombo
+                        width: 80
+                        model: ["15", "30", "50", "100"]
+                        currentIndex: 0
+                        onActivated: {
+                            activityBridge.setItemsPerPage(parseInt(currentText))
+                        }
+                    }
+                }
+
                 Item { width: 1; height: 1 }
 
                 // Filtreleri Temizle Butonu
@@ -203,7 +230,7 @@ Rectangle {
                     visible: searchInput.text !== "" || typeFilterCombo.currentIndex !== 0 || dateFilterInput.text !== ""
                     text: "Filtreleri Sıfırla"
                     variant: "ghost"
-                    anchors.verticalCenter: parent.verticalCenter
+                    Layout.alignment: Qt.AlignVCenter
                     onClicked: {
                         searchInput.text = ""
                         typeFilterCombo.currentIndex = 0
@@ -456,12 +483,12 @@ Rectangle {
                 visible: root.viewMode === "grid" && activityBridge.totalCount > 0
                 clip: true
                 cellWidth: 235
-                cellHeight: 365
+                cellHeight: 448
                 model: activityBridge.model
 
                 delegate: Rectangle {
                     width: 215
-                    height: 345
+                    height: 428
                     radius: Theme.radiusLg
                     color: gridMouse.containsMouse ? Theme.bgCardElevated : Theme.bgCard
                     border.color: gridMouse.containsMouse ? typeColor : Theme.borderSubtle
@@ -478,7 +505,7 @@ Rectangle {
                         Rectangle {
                             id: coverArea
                             width: parent.width
-                            height: 240
+                            height: Math.round(width * 1.5)
                             color: Theme.bgInput
                             clip: true
 
@@ -507,7 +534,7 @@ Rectangle {
                                 id: cardCover
                                 anchors.fill: parent
                                 source: activityBridge.getCover(activityName, activityType) || ""
-                                fillMode: Image.PreserveAspectCrop
+                                fillMode: Image.PreserveAspectFit
                                 asynchronous: true
                             }
 
@@ -718,30 +745,6 @@ Rectangle {
                     variant: "secondary"
                     enabled: activityBridge.currentPage < activityBridge.totalPages
                     onClicked: activityBridge.nextPage()
-                }
-            }
-
-            // Sağ: Sayfa Başına Veri Adedi (15 - 30 - 50 - 100)
-            Row {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
-
-                Text {
-                    text: "Sayfa Başına:"
-                    font.pixelSize: Theme.fontSm
-                    color: Theme.textSecondary
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                CustomComboBox {
-                    id: pageSizeCombo
-                    width: 80
-                    model: ["15", "30", "50", "100"]
-                    currentIndex: 0
-                    onActivated: {
-                        activityBridge.setItemsPerPage(parseInt(currentText))
-                    }
                 }
             }
         }

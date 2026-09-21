@@ -16,6 +16,11 @@ Item {
     onDataModelChanged: canvas.requestPaint()
     onHoveredIndexChanged: canvas.requestPaint()
 
+    Connections {
+        target: Theme
+        function onIsDarkChanged() { canvas.requestPaint() }
+    }
+
     Canvas {
         id: canvas
         anchors.fill: parent
@@ -31,7 +36,7 @@ Item {
                 // Boş durum halkası
                 ctx.beginPath()
                 ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 20, 0, 2 * Math.PI)
-                ctx.strokeStyle = "#334155"
+                ctx.strokeStyle = Theme.borderSubtle
                 ctx.lineWidth = 28
                 ctx.stroke()
                 return

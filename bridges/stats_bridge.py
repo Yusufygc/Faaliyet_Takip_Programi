@@ -56,6 +56,7 @@ class StatsBridge(QObject):
         self._kpi_top_category = "-"
         self._kpi_top_category_count = 0
         self._category_distribution = []
+        self._monthly_category_distribution = []
         self._monthly_distribution = []
         self._heatmap_data = {}
         self._is_exporting_pdf = False
@@ -99,6 +100,10 @@ class StatsBridge(QObject):
     @Property(list, notify=statsLoaded)
     def categoryDistribution(self) -> list:
         return self._category_distribution
+
+    @Property(list, notify=statsLoaded)
+    def monthlyCategoryDistribution(self) -> list:
+        return self._monthly_category_distribution
 
     @Property(list, notify=statsLoaded)
     def monthlyDistribution(self) -> list:
@@ -223,6 +228,32 @@ class StatsBridge(QObject):
 
             self._monthly_distribution = [
                 {"month": m, "monthName": MONTH_NAMES[m - 1], "count": month_dict[m]}
+                for m in range(1, 13)
+            ]
+
+            # 2b. Zamana Göre Kategori Payı (Yığılmış Alan Grafiği için)
+            monthly_cat_raw = self._repo.get_monthly_category_distribution(target_year)
+            month_cat_map = {m: {} for m in range(1, 13)}
+            cat_totals = {}
+            for m, cat_type, count in monthly_cat_raw:
+                month_cat_map[m][cat_type] = count
+                cat_totals[cat_type] = cat_totals.get(cat_type, 0) + count
+            sorted_categories = sorted(cat_totals.keys(), key=lambda c: -cat_totals[c])
+
+            self._monthly_category_distribution = [
+                {
+                    "month": m,
+                    "monthName": MONTH_NAMES[m - 1],
+                    "total": sum(month_cat_map[m].values()),
+                    "categories": [
+                        {
+                            "type": c,
+                            "count": month_cat_map[m].get(c, 0),
+                            "color": get_type_color(c)
+                        }
+                        for c in sorted_categories
+                    ]
+                }
                 for m in range(1, 13)
             ]
 

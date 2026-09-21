@@ -248,16 +248,17 @@ Rectangle {
         }
     }
 
-    // --- 3. Alt Bilgi (Sürüm & Durum) ---
+    // --- 3. Alt Bilgi (Tema Değiştirici & Sürüm) ---
     Rectangle {
         id: footerArea
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 48
+        height: 88
         color: "transparent"
 
         Rectangle {
+            id: footerSeparator
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
@@ -267,12 +268,24 @@ Rectangle {
             color: Theme.borderSubtle
         }
 
-        Text {
-            anchors.centerIn: parent
-            text: root.isCollapsed ? "v2.0" : "v2.0 • Modern QML Edition"
-            font.pixelSize: Theme.fontXs - 1
-            font.family: Theme.fontFamily
-            color: Theme.textMuted
+        Column {
+            anchors.top: footerSeparator.bottom
+            anchors.topMargin: 12
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 8
+
+            ThemeToggle {
+                isCollapsed: root.isCollapsed
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: root.isCollapsed ? "v2.0" : "v2.0 • Modern QML Edition"
+                font.pixelSize: Theme.fontXs - 1
+                font.family: Theme.fontFamily
+                color: Theme.textMuted
+            }
         }
     }
 }

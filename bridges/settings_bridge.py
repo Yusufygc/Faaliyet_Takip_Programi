@@ -1,6 +1,6 @@
 # bridges/settings_bridge.py
 import keyring
-from PySide6.QtCore import QObject, Signal, Slot, Property
+from PySide6.QtCore import QObject, Signal, Slot, Property, QSettings
 from database.type_repository import TypeRepository
 from logger_setup import logger
 
@@ -8,10 +8,11 @@ SERVICE_NAME = "FaaliyetTakip"
 
 
 class SettingsBridge(QObject):
-    """Ayarlar, Tür Yönetimi ve Keyring API Anahtarları Köprüsü."""
+    """Ayarlar, Tür Yönetimi, Keyring API Anahtarları ve Tema Köprüsü."""
 
     typesChanged = Signal()
     apiKeysLoaded = Signal()
+    themeChanged = Signal()
     notification = Signal(str, str, str)  # type, title, message
 
     def __init__(self, parent=None):
@@ -22,6 +23,9 @@ class SettingsBridge(QObject):
         self._tmdb_key = ""
         self._rawg_key = ""
         self._google_books_key = ""
+
+        self._settings = QSettings()
+        self._is_dark_theme = self._settings.value("appearance/isDarkTheme", True, type=bool)
 
         self.loadTypes()
         self.loadApiKeys()
@@ -43,6 +47,26 @@ class SettingsBridge(QObject):
     @Property(str, notify=apiKeysLoaded)
     def googleBooksKey(self) -> str:
         return self._google_books_key
+
+    @Property(bool, notify=themeChanged)
+    def isDarkTheme(self) -> bool:
+        return self._is_dark_theme
+
+    # --- Tema Slotları ---
+
+    @Slot()
+    def toggleTheme(self):
+        """Açık/Koyu tema arasında geçiş yapar."""
+        self.setTheme(not self._is_dark_theme)
+
+    @Slot(bool)
+    def setTheme(self, is_dark: bool):
+        """Tema modunu ayarlar ve kalıcı olarak saklar."""
+        if is_dark == self._is_dark_theme:
+            return
+        self._is_dark_theme = is_dark
+        self._settings.setValue("appearance/isDarkTheme", is_dark)
+        self.themeChanged.emit()
 
     # --- Tür Yönetimi Slotları ---
 

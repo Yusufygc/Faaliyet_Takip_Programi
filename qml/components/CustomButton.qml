@@ -29,7 +29,7 @@ Rectangle {
     Behavior on scale { NumberAnimation { duration: Theme.animFast } }
 
     function getBackgroundColor() {
-        if (!enabled) return "#1E293B"
+        if (!enabled) return Theme.bgCardElevated
         if (mouseArea.pressed) {
             if (variant === "primary") return Theme.primaryHover
             if (variant === "success") return "#059669"
@@ -42,7 +42,7 @@ Rectangle {
             if (variant === "success") return "#34D399"
             if (variant === "danger") return "#F87171"
             if (variant === "secondary") return Theme.bgCardElevated
-            if (variant === "ghost") return "#1E293B"
+            if (variant === "ghost") return Theme.bgCardElevated
             return Theme.primaryHover
         }
         if (variant === "primary") return Theme.primary

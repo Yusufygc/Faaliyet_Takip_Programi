@@ -5,18 +5,27 @@ import QtQuick
 QtObject {
     id: theme
 
-    // --- Renk Paleti (Modern Dark Navy / Slate) ---
-    readonly property color bgApp: "#0F172A"          // En koyu lacivert zemin
-    readonly property color bgSidebar: "#1E293B"      // Sol menü
-    readonly property color bgCard: "#1E293B"         // Kart ve yüzeyler
-    readonly property color bgCardElevated: "#334155" // Hover ve seçili durum
-    readonly property color bgInput: "#0F172A"        // Form girdi alanları
+    // --- Tema Modu ---
+    property bool isDark: true
+
+    // --- Renk Paleti (Modern Dark Navy / Slate + Açık Tema) ---
+    property color bgApp: isDark ? "#0F172A" : "#F8FAFC"
+    Behavior on bgApp { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
+    property color bgSidebar: isDark ? "#1E293B" : "#FFFFFF"
+    Behavior on bgSidebar { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
+    property color bgCard: isDark ? "#1E293B" : "#FFFFFF"
+    Behavior on bgCard { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
+    property color bgCardElevated: isDark ? "#334155" : "#F1F5F9"
+    Behavior on bgCardElevated { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
+    property color bgInput: isDark ? "#0F172A" : "#F1F5F9"
+    Behavior on bgInput { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
     readonly property color bgModalOverlay: "#B3000000"// %70 karartmalı modal zemin
 
     // --- Vurgu Renkleri ---
     readonly property color primary: "#3B82F6"        // Ana Mavi
     readonly property color primaryHover: "#2563EB"   // Koyu Mavi Hover
-    readonly property color primaryLight: "#60A5FA"   // Açık Mavi
+    property color primaryLight: isDark ? "#60A5FA" : "#1D4ED8"
+    Behavior on primaryLight { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
     readonly property color primaryGlow: "#333B82F6"  // Saydam Mavi Parlama
     readonly property color accent: "#8B5CF6"         // Mor Vurgu
     readonly property color success: "#10B981"        // Yeşil
@@ -25,14 +34,19 @@ QtObject {
     readonly property color info: "#06B6D4"           // Cyan
 
     // --- Metin Renkleri ---
-    readonly property color textPrimary: "#F8FAFC"    // Beyaza yakın ana metin
-    readonly property color textSecondary: "#94A3B8"  // Açık gri ikincil metin
-    readonly property color textMuted: "#64748B"      // Koyu gri pasif metin
+    property color textPrimary: isDark ? "#F8FAFC" : "#0F172A"
+    Behavior on textPrimary { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
+    property color textSecondary: isDark ? "#94A3B8" : "#475569"
+    Behavior on textSecondary { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
+    property color textMuted: isDark ? "#64748B" : "#94A3B8"
+    Behavior on textMuted { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
 
     // --- Kenarlıklar ---
-    readonly property color borderSubtle: "#334155"   // İnce ayırıcı
+    property color borderSubtle: isDark ? "#334155" : "#E2E8F0"
+    Behavior on borderSubtle { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
     readonly property color borderFocus: "#3B82F6"    // Odaklanmış kenarlık
-    readonly property color borderLight: "#475569"    // Belirgin kenarlık
+    property color borderLight: isDark ? "#475569" : "#CBD5E1"
+    Behavior on borderLight { ColorAnimation { duration: theme.animNormal; easing.type: Easing.InOutQuad } }
 
     // --- Kategori Renkleri ---
     function categoryColor(type) {

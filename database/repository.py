@@ -195,6 +195,22 @@ class ActivityRepository:
             logger.error(f"Hata (ActivityRepository.get_stats_by_type): {e}")
             return []
 
+    def get_monthly_category_distribution(self, year: int) -> list:
+        """Yığılmış alan grafiği için ay + tür kırılımlı aktivite sayıları. Dönüş: [(ay, tür, sayı), ...]"""
+        query = """
+            SELECT CAST(substr(date, 6, 2) AS INTEGER) as month, type, COUNT(*)
+            FROM activities
+            WHERE date LIKE ?
+            GROUP BY month, type
+            ORDER BY month
+        """
+        try:
+            with get_db() as conn:
+                return conn.execute(query, (str(year) + '%',)).fetchall()
+        except Exception as e:
+            logger.error(f"Hata (ActivityRepository.get_monthly_category_distribution): {e}")
+            return []
+
     def get_details_for_type(self, activity_type: str, date_prefix: str = "", year_only: bool = False, ignore_dates: bool = False) -> list:
         """StatsPage detayları için (isim, tarih) listesini çeker."""
         query = "SELECT name, date FROM activities WHERE lower(type) = ?"

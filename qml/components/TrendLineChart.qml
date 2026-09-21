@@ -16,6 +16,11 @@ Item {
     onDataModelChanged: canvas.requestPaint()
     onHoveredMonthIndexChanged: canvas.requestPaint()
 
+    Connections {
+        target: Theme
+        function onIsDarkChanged() { canvas.requestPaint() }
+    }
+
     Canvas {
         id: canvas
         anchors.fill: parent
@@ -48,9 +53,9 @@ Item {
             // 1. Yatay Izgara Çizgileri & Y-Eksen Etiketleri
             var numGridLines = 4
             ctx.lineWidth = 1
-            ctx.strokeStyle = "#1E293B"
+            ctx.strokeStyle = Theme.borderSubtle
             ctx.font = "10px " + Theme.fontFamily
-            ctx.fillStyle = "#64748B"
+            ctx.fillStyle = Theme.textMuted
             ctx.textAlign = "right"
             ctx.textBaseline = "middle"
 
@@ -127,7 +132,7 @@ Item {
                 var isHovered = (root.hoveredMonthIndex === i)
 
                 // Ay Etiketi
-                ctx.fillStyle = isHovered ? Theme.primaryLight : "#94A3B8"
+                ctx.fillStyle = isHovered ? Theme.primaryLight : Theme.textSecondary
                 ctx.fillText(pt.item.monthName || String(i + 1), pt.x, padTop + chartH + 10)
 
                 // Dış Halka (Hover ise parlama)

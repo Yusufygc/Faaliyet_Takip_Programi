@@ -235,24 +235,22 @@ Rectangle {
                 cellHeight: 220
                 model: planBridge.model
 
-                delegate: Rectangle {
+                delegate: Item {
+                    width: planGrid.cellWidth
+                    height: planGrid.cellHeight
+
+                Rectangle {
+                    id: planCard
                     width: 300
                     height: 200
+                    anchors.centerIn: parent
                     radius: Theme.radiusLg
                     color: planCardMouse.containsMouse ? Theme.bgCardElevated : Theme.bgCard
-                    border.color: planCardMouse.containsMouse ? statusColor : Theme.borderSubtle
+                    border.color: statusColor
                     border.width: 1
 
                     Behavior on color { ColorAnimation { duration: Theme.animFast } }
-
-                    // Üst Durum Çizgisi
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 3
-                        color: statusColor
-                    }
+                    Behavior on scale { NumberAnimation { duration: Theme.animFast } }
 
                     Column {
                         anchors.fill: parent
@@ -262,6 +260,7 @@ Rectangle {
                         // Rozetler
                         Row {
                             width: parent.width
+                            spacing: 8
 
                             Badge {
                                 text: periodText
@@ -273,11 +272,10 @@ Rectangle {
                                 badgeColor: Theme.textMuted
                             }
 
-                            Item { width: 1; height: 1 }
-
                             Badge {
-                                text: planPriority === "high" ? "🔴 Yüksek" : (planPriority === "low" ? "🟢 Düşük" : "🟡 Orta")
+                                text: planPriority === "high" ? "Yüksek" : (planPriority === "low" ? "Düşük" : "Orta")
                                 badgeColor: priorityColor
+                                dotColor: priorityColor
                             }
                         }
 
@@ -444,8 +442,11 @@ Rectangle {
                         anchors.fill: parent
                         hoverEnabled: true
                         z: -1
+                        onEntered: planCard.scale = 1.02
+                        onExited: planCard.scale = 1.0
                         onDoubleClicked: planFormModal.openEdit(planId)
                     }
+                }
                 }
             }
         }

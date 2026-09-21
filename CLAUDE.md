@@ -30,8 +30,8 @@ Kişisel aktivite (film, dizi, oyun, kitap, kurs, şehir) takip masaüstü uygul
 ## Çalıştırma
 
 ```bash
-# Conda Ftakip ortamında:
-conda activate Ftakip
+# venv ortamında (Windows):
+venv\Scripts\activate
 python main.py
 ```
 

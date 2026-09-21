@@ -59,4 +59,8 @@ QtObject {
     readonly property string chevron_left: "\uf053"    // chevron-left
     readonly property string chevron_right: "\uf054"   // chevron-right
     readonly property string chevron_down: "\uf078"    // chevron-down
+
+    // \u2014 Tema \u2014
+    readonly property string sun: "\uf185"             // sun
+    readonly property string moon: "\uf186"            // moon
 }

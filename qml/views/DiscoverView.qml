@@ -236,12 +236,12 @@ Rectangle {
                 visible: discoverBridge.items.length > 0 && !discoverBridge.isLoading
                 clip: true
                 cellWidth: 235
-                cellHeight: 365
+                cellHeight: 468
                 model: discoverBridge.items
 
                 delegate: Rectangle {
                     width: 215
-                    height: 345
+                    height: 448
                     radius: Theme.radiusLg
                     color: mediaMouse.containsMouse ? Theme.bgCardElevated : Theme.bgCard
                     border.color: mediaMouse.containsMouse ? Theme.primary : Theme.borderSubtle
@@ -257,7 +257,7 @@ Rectangle {
                         // 1. Afiş Görseli (240px Dikey Poster)
                         Rectangle {
                             width: parent.width
-                            height: 220
+                            height: Math.round(width * 1.5)
                             color: Theme.bgInput
                             clip: true
 
@@ -286,7 +286,7 @@ Rectangle {
                                 id: posterImg
                                 anchors.fill: parent
                                 source: (modelData.poster || modelData.image || "")
-                                fillMode: Image.PreserveAspectCrop
+                                fillMode: Image.PreserveAspectFit
                                 asynchronous: true
                             }
 
