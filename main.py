@@ -97,8 +97,7 @@ def main():
         # QML Engine ve Köprülerin Başlatılması
         engine = QQmlApplicationEngine()
 
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        qml_dir = os.path.join(base_dir, "qml")
+        qml_dir = get_resource_path("qml")
         engine.addImportPath(qml_dir)
 
         # Bridge Nesneleri
@@ -135,7 +134,8 @@ def main():
         err = f"Fatal Startup Error: {traceback.format_exc()}"
         logger.error(err)
         log_error(err)
-        print(err, file=sys.stderr)
+        if sys.stderr is not None:
+            print(err, file=sys.stderr)
         sys.exit(1)
 
 

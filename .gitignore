@@ -4,6 +4,8 @@
 build/
 dist/
 *.spec
+!FaaliyetTakip.spec
+installer/output/
 
 # =========================
 # Python cache / artifacts
