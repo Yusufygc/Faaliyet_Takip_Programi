@@ -78,7 +78,7 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.preferredHeight: 38
             targetWindow: mainWindow
-            title: appBridge.appName + " — Faaliyet & Planlama Sistemi"
+            title: "Faaliyet & Planlama Sistemi"
         }
 
         // 2. Gövde (Sol Menü + Sayfa İçerik Alanı)

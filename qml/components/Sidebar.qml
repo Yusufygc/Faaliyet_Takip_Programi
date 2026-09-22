@@ -281,7 +281,7 @@ Rectangle {
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: root.isCollapsed ? "v2.0" : "v2.0 • Modern QML Edition"
+                text: "v2.0"
                 font.pixelSize: Theme.fontXs - 1
                 font.family: Theme.fontFamily
                 color: Theme.textMuted

@@ -20,9 +20,9 @@ class SettingsBridge(QObject):
         self._type_repo = TypeRepository()
         self._types = []
 
-        self._tmdb_key = ""
-        self._rawg_key = ""
-        self._google_books_key = ""
+        self._has_tmdb_key = False
+        self._has_rawg_key = False
+        self._has_google_books_key = False
 
         self._settings = QSettings()
         self._is_dark_theme = self._settings.value("appearance/isDarkTheme", True, type=bool)
@@ -36,17 +36,17 @@ class SettingsBridge(QObject):
     def typesList(self) -> list:
         return self._types
 
-    @Property(str, notify=apiKeysLoaded)
-    def tmdbKey(self) -> str:
-        return self._tmdb_key
+    @Property(bool, notify=apiKeysLoaded)
+    def hasTmdbKey(self) -> bool:
+        return self._has_tmdb_key
 
-    @Property(str, notify=apiKeysLoaded)
-    def rawgKey(self) -> str:
-        return self._rawg_key
+    @Property(bool, notify=apiKeysLoaded)
+    def hasRawgKey(self) -> bool:
+        return self._has_rawg_key
 
-    @Property(str, notify=apiKeysLoaded)
-    def googleBooksKey(self) -> str:
-        return self._google_books_key
+    @Property(bool, notify=apiKeysLoaded)
+    def hasGoogleBooksKey(self) -> bool:
+        return self._has_google_books_key
 
     @Property(bool, notify=themeChanged)
     def isDarkTheme(self) -> bool:
@@ -129,11 +129,16 @@ class SettingsBridge(QObject):
 
     @Slot()
     def loadApiKeys(self):
-        """OS Keyring'den API anahtarlarını okur."""
+        """OS Keyring'de bir anahtarın kayıtlı olup olmadığını kontrol eder.
+
+        Not: Anahtarların düz metin değeri hiçbir zaman QML katmanına
+        aktarılmaz — arayüzde yalnızca "kayıtlı mı" bilgisi gösterilir.
+        Gerçek değerler API çağrıları sırasında servisler tarafından
+        doğrudan keyring'den okunur (bkz. services/_base_api_service.py)."""
         try:
-            self._tmdb_key = keyring.get_password(SERVICE_NAME, "tmdb_api_key") or ""
-            self._rawg_key = keyring.get_password(SERVICE_NAME, "rawg_api_key") or ""
-            self._google_books_key = keyring.get_password(SERVICE_NAME, "google_books_api_key") or ""
+            self._has_tmdb_key = bool(keyring.get_password(SERVICE_NAME, "tmdb_api_key"))
+            self._has_rawg_key = bool(keyring.get_password(SERVICE_NAME, "rawg_api_key"))
+            self._has_google_books_key = bool(keyring.get_password(SERVICE_NAME, "google_books_api_key"))
             self.apiKeysLoaded.emit()
         except Exception as e:
             logger.error(f"SettingsBridge loadApiKeys error: {e}")
@@ -145,13 +150,13 @@ class SettingsBridge(QObject):
         try:
             if key_name == "tmdb":
                 keyring.set_password(SERVICE_NAME, "tmdb_api_key", key_val)
-                self._tmdb_key = key_val
+                self._has_tmdb_key = bool(key_val)
             elif key_name == "rawg":
                 keyring.set_password(SERVICE_NAME, "rawg_api_key", key_val)
-                self._rawg_key = key_val
+                self._has_rawg_key = bool(key_val)
             elif key_name == "google_books":
                 keyring.set_password(SERVICE_NAME, "google_books_api_key", key_val)
-                self._google_books_key = key_val
+                self._has_google_books_key = bool(key_val)
             else:
                 return False
 

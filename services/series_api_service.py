@@ -41,9 +41,11 @@ class SeriesApiService(_BaseApiService):
             return []
 
     def _parse_item(self, item) -> dict:
+        overview = item.get('overview', '')
+        description = (overview[:500] + "...") if len(overview) > 500 else overview
         return {
             'title': item.get('name'),
-            'description': item.get('overview', '')[:200] + "..." if item.get('overview') else '',
+            'description': description,
             'rating': item.get('vote_average', 0),
             'image': f"https://image.tmdb.org/t/p/w500{item['poster_path']}" if item.get('poster_path') else None,
             'date': item.get('first_air_date', ''),
@@ -118,6 +120,38 @@ class SeriesApiService(_BaseApiService):
             except Exception:
                 continue
         return results
+
+    def fetch_details(self, series_id) -> dict:
+        try:
+            resp = self._request_with_retry(
+                f"{_TMDB_BASE}/tv/{series_id}",
+                {
+                    'api_key': self._get_key(KEYRING_KEY_TMDB),
+                    'language': 'tr-TR',
+                    'append_to_response': 'credits',
+                },
+            )
+            data = resp.json()
+            genres = ", ".join(g.get('name', '') for g in data.get('genres', []) if g.get('name'))
+            cast = ", ".join(c.get('name', '') for c in data.get('credits', {}).get('cast', [])[:5] if c.get('name'))
+            run_times = data.get('episode_run_time') or []
+            seasons = data.get('number_of_seasons')
+            episodes = data.get('number_of_episodes')
+            return {
+                'genres': genres,
+                'runtime': f"{run_times[0]} dk/bölüm" if run_times else "",
+                'seasons': f"{seasons} Sezon" if seasons else "",
+                'episodes': f"{episodes} Bölüm" if episodes else "",
+                'cast': cast,
+                'tagline': data.get('tagline') or "",
+                'voteCount': data.get('vote_count') or 0,
+            }
+        except (ApiError, RateLimitError) as e:
+            logger.warning(f"Dizi detay hatası: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"Dizi detay beklenmeyen hata: {e}")
+            return {}
 
     def _hidden(self, genre_id=None, page=1, is_turkish=False) -> list:
         params = {

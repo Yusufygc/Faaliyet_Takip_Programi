@@ -35,18 +35,12 @@ Rectangle {
         }
     }
 
-    // Logo & Başlık
+    // Başlık
     Row {
         anchors.left: parent.left
         anchors.leftMargin: 14
         anchors.verticalCenter: parent.verticalCenter
         spacing: 10
-
-        Text {
-            text: "📊"
-            font.pixelSize: 16
-            anchors.verticalCenter: parent.verticalCenter
-        }
 
         Text {
             text: root.title

@@ -40,9 +40,11 @@ class MovieApiService(_BaseApiService):
             return []
 
     def _parse_item(self, item) -> dict:
+        overview = item.get('overview', '')
+        description = (overview[:500] + "...") if len(overview) > 500 else overview
         return {
             'title': item.get('title'),
-            'description': item.get('overview', '')[:200] + "..." if item.get('overview') else '',
+            'description': description,
             'rating': item.get('vote_average', 0),
             'image': f"https://image.tmdb.org/t/p/w500{item['poster_path']}" if item.get('poster_path') else None,
             'date': item.get('release_date', ''),
@@ -117,6 +119,34 @@ class MovieApiService(_BaseApiService):
             except Exception:
                 continue
         return results
+
+    def fetch_details(self, movie_id) -> dict:
+        try:
+            resp = self._request_with_retry(
+                f"{_TMDB_BASE}/movie/{movie_id}",
+                {
+                    'api_key': self._get_key(KEYRING_KEY_TMDB),
+                    'language': 'tr-TR',
+                    'append_to_response': 'credits',
+                },
+            )
+            data = resp.json()
+            genres = ", ".join(g.get('name', '') for g in data.get('genres', []) if g.get('name'))
+            cast = ", ".join(c.get('name', '') for c in data.get('credits', {}).get('cast', [])[:5] if c.get('name'))
+            runtime = data.get('runtime')
+            return {
+                'genres': genres,
+                'runtime': f"{runtime} dk" if runtime else "",
+                'cast': cast,
+                'tagline': data.get('tagline') or "",
+                'voteCount': data.get('vote_count') or 0,
+            }
+        except (ApiError, RateLimitError) as e:
+            logger.warning(f"Film detay hatası: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"Film detay beklenmeyen hata: {e}")
+            return {}
 
     def _hidden(self, genre_id=None, page=1, is_turkish=False) -> list:
         params = {

@@ -1,4 +1,4 @@
-// qml/modals/RandomPickModal.qml
+// qml/modals/MediaPreviewModal.qml
 import QtQuick
 import QtQuick.Controls
 import "../theme"
@@ -8,6 +8,7 @@ Rectangle {
     id: root
 
     property var currentItem: null
+    property var detailInfo: ({})
 
     signal addRequested(string category, string title, real rating)
 
@@ -21,6 +22,7 @@ Rectangle {
 
     function openWith(item) {
         currentItem = item || null
+        detailInfo = {}
         opacity = 1.0
     }
 
@@ -28,10 +30,33 @@ Rectangle {
         opacity = 0.0
     }
 
-    // Modal Kart
+    function buildDetailRows() {
+        var rows = []
+        var d = root.detailInfo || {}
+        if (d.genres) rows.push({ label: "Tür", value: d.genres })
+        if (d.runtime) rows.push({ label: "Süre", value: d.runtime })
+        if (d.seasons) rows.push({ label: "Sezon", value: d.seasons })
+        if (d.episodes) rows.push({ label: "Bölüm", value: d.episodes })
+        if (d.cast) rows.push({ label: "Oyuncular", value: d.cast })
+        if (d.platforms) rows.push({ label: "Platformlar", value: d.platforms })
+        if (d.author) rows.push({ label: "Yazar", value: d.author })
+        if (d.publisher) rows.push({ label: "Yayınevi", value: d.publisher })
+        if (d.pageCount) rows.push({ label: "Sayfa Sayısı", value: d.pageCount + " sayfa" })
+        if (d.tagline) rows.push({ label: "Slogan", value: d.tagline })
+        return rows
+    }
+
+    Connections {
+        target: discoverBridge
+        function onItemDetailsLoaded(details) {
+            root.detailInfo = details
+        }
+    }
+
+    // Önizleme Kartı
     Rectangle {
         id: modalCard
-        width: Math.min(parent.width - 40, 540)
+        width: Math.min(parent.width - 40, 620)
         implicitHeight: modalContent.implicitHeight + 48
         anchors.centerIn: parent
         radius: Theme.radiusLg
@@ -59,27 +84,28 @@ Rectangle {
                     Row {
                         spacing: 8
                         Icon {
-                            name: Icons.random
+                            name: Icons.search
                             size: 16
                             color: Theme.accent
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
                         Text {
-                            text: "GÜNÜN RASTGELE ÖNERİSİ"
+                            text: "İÇERİK ÖNİZLEME"
                             font.pixelSize: Theme.fontLg
                             font.bold: true
                             font.family: Theme.fontFamily
                             color: Theme.textPrimary
                             anchors.verticalCenter: parent.verticalCenter
                         }
-                    }
 
-                    Text {
-                        text: "Karar veremediğinizde algoritmanın sizin için seçtiği yapım"
-                        font.pixelSize: Theme.fontXs
-                        font.family: Theme.fontFamily
-                        color: Theme.textSecondary
+                        BusyIndicator {
+                            width: 16
+                            height: 16
+                            running: discoverBridge.isLoadingDetails
+                            visible: discoverBridge.isLoadingDetails
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
                 }
 
@@ -116,12 +142,12 @@ Rectangle {
             Row {
                 id: contentRow
                 width: parent.width
-                spacing: 16
+                spacing: 20
 
                 // Poster
                 Rectangle {
-                    width: 130
-                    height: 190
+                    width: 180
+                    height: 270
                     radius: Theme.radiusMd
                     color: Theme.bgInput
                     border.color: Theme.borderSubtle
@@ -129,7 +155,7 @@ Rectangle {
                     clip: true
 
                     Image {
-                        id: randPosterImg
+                        id: previewPosterImg
                         anchors.fill: parent
                         source: root.currentItem ? (root.currentItem.poster || root.currentItem.image || "") : ""
                         fillMode: Image.PreserveAspectCrop
@@ -139,22 +165,36 @@ Rectangle {
                     Icon {
                         anchors.centerIn: parent
                         name: root.currentItem && root.currentItem.category === "Dizi" ? Icons.tv : (root.currentItem && root.currentItem.category === "Oyun" ? Icons.game : (root.currentItem && root.currentItem.category === "Kitap" ? Icons.book : Icons.film))
-                        size: 32
+                        size: 40
                         color: Theme.textMuted
-                        visible: randPosterImg.status !== Image.Ready
+                        visible: previewPosterImg.status !== Image.Ready
                     }
                 }
 
                 // Detaylar
                 Column {
-                    width: parent.width - 146
-                    spacing: 8
+                    id: detailsColumn
+                    width: parent.width - 200
+                    spacing: 10
 
                     Row {
                         spacing: 8
+
                         Badge {
                             text: root.currentItem ? root.currentItem.category : ""
                             badgeColor: Theme.categoryColor(root.currentItem ? root.currentItem.category : "")
+                        }
+
+                        Badge {
+                            text: root.detailInfo ? (root.detailInfo.genres || "") : ""
+                            badgeColor: Theme.textMuted
+                            visible: text !== ""
+                        }
+
+                        Badge {
+                            text: root.currentItem ? (root.currentItem.year || "") : ""
+                            badgeColor: Theme.textMuted
+                            visible: text !== ""
                         }
 
                         // Puan Rozeti
@@ -187,17 +227,11 @@ Rectangle {
                                 }
                             }
                         }
-
-                        Badge {
-                            text: root.currentItem ? (root.currentItem.year || "") : ""
-                            badgeColor: Theme.textMuted
-                            visible: text !== ""
-                        }
                     }
 
                     Text {
                         text: root.currentItem ? root.currentItem.title : ""
-                        font.pixelSize: Theme.fontLg
+                        font.pixelSize: Theme.fontLg + 2
                         font.bold: true
                         font.family: Theme.fontFamily
                         color: Theme.textPrimary
@@ -206,14 +240,46 @@ Rectangle {
                     }
 
                     Text {
-                        text: root.currentItem ? (root.currentItem.overview || "Açıklama bulunmuyor.") : ""
-                        font.pixelSize: Theme.fontXs
+                        text: (root.detailInfo && root.detailInfo.description) ? root.detailInfo.description : (root.currentItem ? (root.currentItem.overview || "Açıklama bulunmuyor.") : "")
+                        font.pixelSize: Theme.fontSm
                         font.family: Theme.fontFamily
                         color: Theme.textSecondary
                         wrapMode: Text.WordWrap
                         width: parent.width
-                        maximumLineCount: 5
-                        elide: Text.ElideRight
+                        lineHeight: 1.3
+                    }
+
+                    // Ek Detay Bilgileri (API detay uç noktasından)
+                    Column {
+                        width: parent.width
+                        spacing: 4
+                        visible: repeaterDetails.count > 0
+
+                        Repeater {
+                            id: repeaterDetails
+                            model: root.buildDetailRows()
+
+                            Row {
+                                spacing: 6
+
+                                Text {
+                                    text: modelData.label + ":"
+                                    font.pixelSize: Theme.fontXs
+                                    font.bold: true
+                                    font.family: Theme.fontFamily
+                                    color: Theme.textMuted
+                                }
+
+                                Text {
+                                    text: modelData.value
+                                    font.pixelSize: Theme.fontXs
+                                    font.family: Theme.fontFamily
+                                    color: Theme.textSecondary
+                                    wrapMode: Text.WordWrap
+                                    width: detailsColumn.width - 90
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -225,11 +291,9 @@ Rectangle {
                 topPadding: 8
 
                 CustomButton {
-                    text: "Başka Öneri Bul"
-                    icon: Icons.refresh
+                    text: "Kapat"
                     variant: "secondary"
-                    busy: discoverBridge.isLoading
-                    onClicked: discoverBridge.getRandomRecommendation(root.currentItem ? root.currentItem.category : "Tümü")
+                    onClicked: root.close()
                 }
 
                 CustomButton {

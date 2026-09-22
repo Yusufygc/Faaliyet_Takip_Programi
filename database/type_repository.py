@@ -90,8 +90,12 @@ class TypeRepository:
             logger.error(f"Hata (TypeRepository.synchronize_types): {e}")
 
     def get_all_types(self) -> list:
-        """Tüm aktif türleri alfabetik sırayla döndürür (kayıtlı + kullanılan)."""
-        self.ensure_types_table_exists()
+        """Tüm aktif türleri alfabetik sırayla döndürür (kayıtlı + kullanılan).
+
+        Not: Tablo varlığı __init__ içinde zaten garanti edilir; burada
+        tekrar kontrol etmek her çağrıda gereksiz bir CREATE TABLE + COUNT
+        sorgusuna yol açardı (ör. karşılaştırma sayfasında her filtre
+        değişiminde)."""
         sql = """
             SELECT DISTINCT name FROM (
                 SELECT name FROM activity_types

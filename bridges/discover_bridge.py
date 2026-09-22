@@ -50,6 +50,25 @@ class FetchRecommendationsWorker(QRunnable):
             self.callback(False, self.category, [])
 
 
+class FetchDetailsWorker(QRunnable):
+    """Tek bir öğe için zenginleştirilmiş detay bilgisini arka planda çeker."""
+
+    def __init__(self, api_service: ApiService, category: str, item_id, callback):
+        super().__init__()
+        self.api_service = api_service
+        self.category = category
+        self.item_id = item_id
+        self.callback = callback
+
+    def run(self):
+        try:
+            details = self.api_service.get_item_details(self.category, self.item_id) or {}
+            self.callback(True, details)
+        except Exception as e:
+            logger.error(f"FetchDetailsWorker error: {e}")
+            self.callback(False, {})
+
+
 class RandomRecommendationWorker(QRunnable):
     """Rastgele öneri aramasını arka planda çalıştırır."""
 
@@ -93,6 +112,10 @@ class DiscoverBridge(QObject):
     loadingChanged = Signal(bool)
     categoryChanged = Signal()
     errorOccurred = Signal(str)
+    hasMoreChanged = Signal()
+    isLoadingMoreChanged = Signal(bool)
+    itemDetailsLoaded = Signal(dict)
+    isLoadingDetailsChanged = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -106,6 +129,11 @@ class DiscoverBridge(QObject):
         self._page = 1
         self._is_loading = False
         self._items = []
+        self._has_more = True
+        self._is_loading_more = False
+        self._is_loading_details = False
+        self._request_seq = 0
+        self._details_seq = 0
 
     # --- Property Tanımları ---
 
@@ -129,6 +157,18 @@ class DiscoverBridge(QObject):
     def availableGenres(self) -> list:
         return self.getGenresForCategory(self._active_category)
 
+    @Property(bool, notify=hasMoreChanged)
+    def hasMore(self) -> bool:
+        return self._has_more
+
+    @Property(bool, notify=isLoadingMoreChanged)
+    def isLoadingMore(self) -> bool:
+        return self._is_loading_more
+
+    @Property(bool, notify=isLoadingDetailsChanged)
+    def isLoadingDetails(self) -> bool:
+        return self._is_loading_details
+
     @Property(list, constant=True)
     def periods(self) -> list:
         return [
@@ -140,7 +180,16 @@ class DiscoverBridge(QObject):
 
     @Slot()
     def fetchRecommendations(self):
-        """Mevcut ayarlarla API'den içerik önerilerini çeker."""
+        """Mevcut ayarlarla API'den içerik önerilerini çeker (listeyi baştan yükler)."""
+        self._page = 1
+        self._has_more = True
+        self.hasMoreChanged.emit()
+        self._is_loading_more = False
+        self.isLoadingMoreChanged.emit(False)
+
+        self._request_seq += 1
+        request_id = self._request_seq
+
         self._is_loading = True
         self.loadingChanged.emit(True)
 
@@ -148,6 +197,8 @@ class DiscoverBridge(QObject):
 
         def on_done(success: bool, category: str, results: list):
             try:
+                if request_id != self._request_seq:
+                    return  # Bu arada yeni bir istek başladı, bu yanıt artık geçersiz
                 self._is_loading = False
                 self.loadingChanged.emit(False)
                 if success:
@@ -169,6 +220,69 @@ class DiscoverBridge(QObject):
             self._is_turkish,
             on_done
         )
+        self._thread_pool.start(worker)
+
+    @Slot()
+    def loadMore(self):
+        """Mevcut ayarlarla bir sonraki API sayfasını çekip listeye ekler."""
+        if self._is_loading or self._is_loading_more or not self._has_more:
+            return
+
+        self._is_loading_more = True
+        self.isLoadingMoreChanged.emit(True)
+
+        genre_val = self._get_genre_value(self._active_category, self._active_genre_name)
+        next_page = self._page + 1
+        request_id = self._request_seq
+
+        def on_done(success: bool, category: str, results: list):
+            try:
+                if request_id != self._request_seq:
+                    return  # Bu arada kategori/filtre değişti, bu sayfa artık geçersiz
+                self._is_loading_more = False
+                self.isLoadingMoreChanged.emit(False)
+                if success and results:
+                    self._page = next_page
+                    self._items = self._items + results
+                    self.recommendationsLoaded.emit(self._items)
+                else:
+                    self._has_more = False
+                    self.hasMoreChanged.emit()
+            except RuntimeError:
+                pass  # Bridge closed during background worker
+
+        worker = FetchRecommendationsWorker(
+            self._api,
+            self._active_category,
+            self._active_period,
+            genre_val,
+            next_page,
+            self._is_turkish,
+            on_done
+        )
+        self._thread_pool.start(worker)
+
+    @Slot(str, "QVariant")
+    def fetchItemDetails(self, category: str, item_id):
+        """Tek bir öğe için zenginleştirilmiş detay bilgisini arka planda çeker."""
+        self._is_loading_details = True
+        self.isLoadingDetailsChanged.emit(True)
+
+        self._details_seq += 1
+        request_id = self._details_seq
+
+        def on_done(success: bool, details: dict):
+            try:
+                if request_id != self._details_seq:
+                    return  # Kullanıcı bu arada başka bir öğe açtı, bu yanıt artık geçersiz
+                self._is_loading_details = False
+                self.isLoadingDetailsChanged.emit(False)
+                if success:
+                    self.itemDetailsLoaded.emit(details)
+            except RuntimeError:
+                pass  # Bridge closed during background worker
+
+        worker = FetchDetailsWorker(self._api, category, item_id, on_done)
         self._thread_pool.start(worker)
 
     @Slot(str)

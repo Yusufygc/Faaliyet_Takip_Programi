@@ -49,6 +49,36 @@ class GameApiService(_BaseApiService):
             'id': item.get('id'),
         }
 
+    def fetch_details(self, game_id) -> dict:
+        try:
+            resp = self._request_with_retry(
+                f"{_RAWG_BASE}/games/{game_id}",
+                {'key': self._get_key(KEYRING_KEY_RAWG)},
+            )
+            data = resp.json()
+            genres = ", ".join(g.get('name', '') for g in data.get('genres', []) if g.get('name'))
+            platforms = ", ".join(
+                p.get('platform', {}).get('name', '')
+                for p in data.get('platforms', [])
+                if p.get('platform', {}).get('name')
+            )
+            desc_raw = data.get('description_raw') or ""
+            description = (desc_raw[:500] + "...") if len(desc_raw) > 500 else desc_raw
+            playtime = data.get('playtime')
+            return {
+                'genres': genres,
+                'platforms': platforms,
+                'description': description,
+                'playtime': f"~{playtime} saat" if playtime else "",
+                'metacritic': data.get('metacritic') or 0,
+            }
+        except (ApiError, RateLimitError) as e:
+            logger.warning(f"Oyun detay hatası: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"Oyun detay beklenmeyen hata: {e}")
+            return {}
+
     def _by_date(self, period, genre_slug=None, page=1) -> list:
         start_date, end_date = self.get_date_range(period)
         if not start_date:

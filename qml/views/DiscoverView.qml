@@ -12,6 +12,8 @@ Rectangle {
 
     signal quickAddActivity(string category, string title, real rating)
 
+    Component.onCompleted: discoverBridge.fetchRecommendations()
+
     function handleQuickAdd(category, title, rating) {
         var now = new Date()
         var dateStr = now.toISOString().split('T')[0]
@@ -236,12 +238,27 @@ Rectangle {
                 visible: discoverBridge.items.length > 0 && !discoverBridge.isLoading
                 clip: true
                 cellWidth: 235
-                cellHeight: 468
+                cellHeight: 490
                 model: discoverBridge.items
+
+                footer: Item {
+                    width: discoverGrid.width
+                    height: discoverBridge.hasMore ? 70 : 0
+                    visible: discoverBridge.hasMore
+
+                    CustomButton {
+                        anchors.centerIn: parent
+                        text: "Daha Fazla Yükle"
+                        icon: Icons.refresh
+                        variant: "secondary"
+                        busy: discoverBridge.isLoadingMore
+                        onClicked: discoverBridge.loadMore()
+                    }
+                }
 
                 delegate: Rectangle {
                     width: 215
-                    height: 448
+                    height: 470
                     radius: Theme.radiusLg
                     color: mediaMouse.containsMouse ? Theme.bgCardElevated : Theme.bgCard
                     border.color: mediaMouse.containsMouse ? Theme.primary : Theme.borderSubtle
@@ -334,9 +351,9 @@ Rectangle {
                         // 2. Bilgiler Alanı
                         Column {
                             width: parent.width
-                            height: 125
+                            height: 147
                             padding: 10
-                            spacing: 4
+                            spacing: 6
 
                             Text {
                                 text: modelData.title
@@ -366,7 +383,7 @@ Rectangle {
                                 text: "Faaliyetlerime Ekle"
                                 icon: Icons.add
                                 variant: "primary"
-                                fullWidth: true
+                                width: parent.width - 20
                                 fontSize: Theme.fontXs
                                 onClicked: root.handleQuickAdd(modelData.category, modelData.title, modelData.rating)
                             }
@@ -377,7 +394,12 @@ Rectangle {
                         id: mediaMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
                         z: -1
+                        onClicked: {
+                            previewModal.openWith(modelData)
+                            discoverBridge.fetchItemDetails(modelData.category, modelData.id)
+                        }
                     }
                 }
             }
@@ -387,6 +409,14 @@ Rectangle {
     // ✨ Rastgele Öneri Modalı ✨
     RandomPickModal {
         id: randomPickModal
+        onAddRequested: function(cat, title, rat) {
+            root.handleQuickAdd(cat, title, rat)
+        }
+    }
+
+    // 🔎 İçerik Önizleme Modalı
+    MediaPreviewModal {
+        id: previewModal
         onAddRequested: function(cat, title, rat) {
             root.handleQuickAdd(cat, title, rat)
         }

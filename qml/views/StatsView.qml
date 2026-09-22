@@ -239,16 +239,16 @@ Rectangle {
                         }
                     }
 
-                    // Pasta Grafiği, Bar Grafiği ve Liste Tablosu Yan Yana
-                    RowLayout {
-                        width: parent.width
+                    // Pasta Grafiği ve Liste Tablosu — kutucuğun içinde ortalanmış kompakt blok
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
                         spacing: 24
 
                         // Sol: İnteraktif Pasta/Donut Grafiği
                         CategoryPieChart {
                             id: pieChart
-                            Layout.preferredWidth: 280
-                            Layout.preferredHeight: 280
+                            width: 280
+                            height: 280
                             dataModel: statsBridge.categoryDistribution
                             totalCount: statsBridge.kpiTotal
                             onCategoryClicked: function(catName) {
@@ -256,20 +256,10 @@ Rectangle {
                             }
                         }
 
-                        // Orta: Zamana Göre Kategori Payı
-                        CategoryTimelineChart {
-                            id: timelineChart
-                            Layout.preferredWidth: 240
-                            Layout.preferredHeight: 280
-                            dataModel: statsBridge.monthlyCategoryDistribution
-                        }
-
                         // Sağ: Kategori Dağılım Listesi
                         ListView {
                             id: catListView
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 260
-                            Layout.maximumWidth: 340
+                            width: 320
                             implicitHeight: Math.max(260, contentHeight)
                             clip: true
                             model: statsBridge.categoryDistribution
@@ -350,6 +340,31 @@ Rectangle {
                                     onClicked: categoryDetailModal.openCategory(modelData.type)
                                 }
                             }
+                        }
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 1
+                        color: Theme.borderSubtle
+                    }
+
+                    // Alt: Kategori × Ay Yoğunluk Haritası (Tam Genişlik)
+                    Column {
+                        width: parent.width
+                        spacing: 12
+
+                        Text {
+                            text: "Kategori × Ay Yoğunluk Haritası"
+                            font.pixelSize: Theme.fontMd
+                            font.bold: true
+                            font.family: Theme.fontFamily
+                            color: Theme.textPrimary
+                        }
+
+                        CategoryMonthHeatmap {
+                            width: parent.width
+                            dataModel: statsBridge.monthlyCategoryDistribution
                         }
                     }
                 }

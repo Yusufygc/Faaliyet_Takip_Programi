@@ -29,6 +29,17 @@ class ApiService:
             return self._books.fetch(period, genre, page, is_turkish)
         return []
 
+    def get_item_details(self, category, item_id) -> dict:
+        if category == 'Film':
+            return self._movies.fetch_details(item_id)
+        elif category == 'Dizi':
+            return self._series.fetch_details(item_id)
+        elif category == 'Oyun':
+            return self._games.fetch_details(item_id)
+        elif category == 'Kitap':
+            return self._books.fetch_details(item_id)
+        return {}
+
     def get_random_recommendation(self, category=None):
         if not category:
             category = random.choice(['Film', 'Dizi', 'Oyun', 'Kitap'])

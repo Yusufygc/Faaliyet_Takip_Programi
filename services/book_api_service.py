@@ -45,6 +45,32 @@ class BookApiService(_BaseApiService):
             logger.error(f"Google Books API beklenmeyen hata: {e}")
             return []
 
+    def fetch_details(self, volume_id) -> dict:
+        try:
+            params = {}
+            api_key = self._get_key(KEYRING_KEY_GOOGLE_BOOKS)
+            if api_key:
+                params['key'] = api_key
+            resp = self._request_with_retry(f"{_GOOGLE_BOOKS_URL}/{volume_id}", params, timeout=15)
+            info = resp.json().get('volumeInfo', {})
+            authors = info.get('authors') or []
+            categories = info.get('categories') or []
+            description = info.get('description') or ""
+            description = (description[:500] + "...") if len(description) > 500 else description
+            return {
+                'genres': ", ".join(categories),
+                'author': ", ".join(authors),
+                'publisher': info.get('publisher') or "",
+                'pageCount': info.get('pageCount') or 0,
+                'description': description,
+            }
+        except (ApiError, RateLimitError) as e:
+            logger.warning(f"Kitap detay hatası: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"Kitap detay beklenmeyen hata: {e}")
+            return {}
+
     def _parse_response(self, data: dict) -> list:
         results = []
         seen_titles = set()
@@ -71,7 +97,7 @@ class BookApiService(_BaseApiService):
 
             description = volume_info.get('description', '')
             if description:
-                description = description[:150] + "..." if len(description) > 150 else description
+                description = description[:500] + "..." if len(description) > 500 else description
             else:
                 description = f"Yazar: {author_name}"
 
