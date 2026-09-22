@@ -104,11 +104,6 @@ class ActivityListModel(QAbstractListModel):
         self._activities = activities
         self.endResetModel()
 
-    def get_activity_at(self, row: int):
-        if 0 <= row < len(self._activities):
-            return self._activities[row]
-        return None
-
 
 class ActivityBridge(QObject):
     """QML ile Activity CRUD ve filtreleme işlemlerini bağlayan Köprü."""
@@ -165,18 +160,6 @@ class ActivityBridge(QObject):
     @Property(bool, notify=activitiesChanged)
     def isLoading(self) -> bool:
         return self._is_loading
-
-    @Property(str, notify=filterChanged)
-    def searchTerm(self) -> str:
-        return self._search_term
-
-    @Property(str, notify=filterChanged)
-    def typeFilter(self) -> str:
-        return self._type_filter
-
-    @Property(str, notify=filterChanged)
-    def dateFilter(self) -> str:
-        return self._date_filter
 
     @Property(list, notify=typesChanged)
     def availableTypes(self) -> list:
@@ -238,12 +221,6 @@ class ActivityBridge(QObject):
             self.filterChanged.emit()
             self.loadActivities()
 
-    @Slot(int)
-    def setPage(self, page: int):
-        if 1 <= page <= self._total_pages and page != self._current_page:
-            self._current_page = page
-            self.loadActivities()
-
     @Slot()
     def nextPage(self):
         if self._current_page < self._total_pages:
@@ -262,10 +239,6 @@ class ActivityBridge(QObject):
             self._items_per_page = count
             self._current_page = 1
             self.loadActivities()
-
-    @Slot(int)
-    def setPageSize(self, count: int):
-        self.setItemsPerPage(count)
 
     @Slot(str, str, result=str)
     def getCover(self, name: str, activity_type: str) -> str:
@@ -422,7 +395,3 @@ class ActivityBridge(QObject):
             return all_names[:10]
         prefix_lower = prefix.lower()
         return [n for n in all_names if prefix_lower in n.lower()][:10]
-
-    @Slot(result=list)
-    def getTypes(self) -> list:
-        return self._type_repo.get_all_types()

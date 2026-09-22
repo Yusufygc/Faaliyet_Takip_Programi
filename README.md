@@ -62,8 +62,8 @@ Kişisel aktivitelerinizi (Film, Dizi, Oyun, Kitap vb.) takip etmenizi, istatist
 - **Tür Filtreleme**: Her kategori için ayrı tür seçenekleri
 - **🇹🇷 Türkçe Yapımlar Filtresi**: Sadece Türk yapımlarını görün
 - **🎲 Rastgele Öneri**: Karar veremediğinizde tek tıkla rastgele öneri alın
-- **📂 Veritabanı Önbelleği**: API sonuçları 7 gün önbelleğe alınır
-- **➕ Sayfalama**: "Daha Fazla Göster" ile yeni içerikler yükleyin
+- **🖼️ İçerik Önizleme**: Bir karta tıklayınca API'den zenginleştirilmiş detay (oyuncular, tür, süre vb.) gösteren önizleme penceresi
+- **➕ Sayfalama**: "Daha Fazla Yükle" ile yeni içerikler yükleyin
 
 ### 📅 Hedef & Plan Yönetimi
 - **Aylık Planlar**: Her ay için hedefler belirleyin
@@ -217,11 +217,9 @@ Aksiyon, RPG, Strateji, Spor, Yarış, Macera, Bulmaca, Shooter, Platform, Simü
 **📚 Kitap Türleri:**
 Dünya Klasikleri, Türk Klasikleri, Gerilim, Romantik, Bilim Kurgu, Fantastik, Korku, Tarih, Gizem, Polisiye, Biyografi, Felsefe, Psikoloji, Kişisel Gelişim
 
-#### Önbellek Sistemi
-- API sonuçları SQLite veritabanında 7 gün saklanır
-- Tekrar eden istekler önbellekten karşılanır (hızlı)
-- "Yenile" butonu ile taze veri çekilebilir
-- "Eski Verileri Göster" ile önceki tüm çekilen veriler görüntülenebilir
+#### Veri Kaynağı
+Öneriler her seçim/filtre değişiminde doğrudan ilgili API'den (TMDB, RAWG, Google
+Books) taze olarak çekilir; ayrı bir yerel önbellekleme katmanı yoktur.
 
 ---
 

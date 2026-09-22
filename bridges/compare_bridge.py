@@ -16,8 +16,6 @@ class CompareBridge(QObject):
         self._repo = ActivityRepository()
         self._type_repo = TypeRepository()
 
-        self._period_a = ""
-        self._period_b = ""
         self._total_a = 0
         self._total_b = 0
         self._columns = []
@@ -25,14 +23,6 @@ class CompareBridge(QObject):
         self._items_b = []
 
     # --- Property Tanımları ---
-
-    @Property(str, notify=comparisonLoaded)
-    def periodA(self) -> str:
-        return self._period_a
-
-    @Property(str, notify=comparisonLoaded)
-    def periodB(self) -> str:
-        return self._period_b
 
     @Property(int, notify=comparisonLoaded)
     def totalA(self) -> int:
@@ -67,11 +57,9 @@ class CompareBridge(QObject):
 
         Not: date_prefix ile LIKE eşleşmesi (ör. "2026" veya "2026-09")
         hem ay hem yıl ölçeği için aynı şekilde çalıştığından, scope_a/scope_b
-        burada sorgu davranışını değiştirmez; sadece etiket olarak saklanır.
+        burada sorgu davranışını değiştirmez; QML tarafındaki çağrı imzasıyla
+        eşleşmesi için parametre olarak alınır.
         """
-        self._period_a = period_a
-        self._period_b = period_b
-
         try:
             data_a = self._repo.get_comparison_data(period_a)
             data_b = self._repo.get_comparison_data(period_b)

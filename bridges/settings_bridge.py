@@ -108,23 +108,6 @@ class SettingsBridge(QObject):
             self.notification.emit("error", "Hata", msg)
             return False
 
-    @Slot(str, str, result=bool)
-    def renameType(self, old_name: str, new_name: str) -> bool:
-        """Faaliyet türünü yeniden adlandırır."""
-        new_name = (new_name or "").strip()
-        if not new_name:
-            self.notification.emit("warning", "Uyarı", "Yeni tür adı boş olamaz.")
-            return False
-
-        success, msg = self._type_repo.rename_type(old_name, new_name)
-        if success:
-            self.notification.emit("success", "Başarılı", f"Tür güncellendi: '{old_name}' -> '{new_name}'")
-            self.loadTypes()
-            return True
-        else:
-            self.notification.emit("error", "Hata", msg)
-            return False
-
     # --- API Anahtarları (Keyring) Slotları ---
 
     @Slot()

@@ -149,10 +149,6 @@ class DiscoverBridge(QObject):
     def activeCategory(self) -> str:
         return self._active_category
 
-    @Property(str, notify=recommendationsLoaded)
-    def activePeriod(self) -> str:
-        return self._active_period
-
     @Property(list, notify=categoryChanged)
     def availableGenres(self) -> list:
         return self.getGenresForCategory(self._active_category)

@@ -175,14 +175,6 @@ class PlanBridge(QObject):
     def inProgressPlansCount(self) -> int:
         return self._in_progress_count
 
-    @Property(str, notify=plansChanged)
-    def scopeFilter(self) -> str:
-        return self._scope_filter
-
-    @Property(str, notify=plansChanged)
-    def statusFilter(self) -> str:
-        return self._status_filter
-
     # --- Slotlar: Veri Yükleme & Filtreleme ---
 
     @Slot()
@@ -383,20 +375,6 @@ class PlanBridge(QObject):
             self.loadPlans()
             return True
         self.folderSaved.emit(False, "Klasör oluşturulamadı.")
-        return False
-
-    @Slot(int, str, result=bool)
-    def updateFolder(self, folder_id: int, name: str) -> bool:
-        name = (name or "").strip()
-        if not name:
-            self.folderSaved.emit(False, "Klasör adı boş olamaz.")
-            return False
-        success = self._repo.update_folder(folder_id, name)
-        if success:
-            self.folderSaved.emit(True, "Klasör güncellendi.")
-            self.loadFolders()
-            self.loadPlans()
-            return True
         return False
 
     @Slot(int, result=bool)

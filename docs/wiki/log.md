@@ -6,6 +6,36 @@ Bağlantılar: [[index]] | [[Rules]]
 
 ---
 
+## [2026-09-23] LINT | Ölü kod temizliği — ~7500 satır kaldırıldı
+
+Tam repo taraması ile tespit edilen ölü/kullanılmayan kod temizlendi:
+- **`controllers/` (9 dosya), `views/` (36 dosya), `styles/` (10 dosya)** — PyQt5
+  döneminden kalma, QML geçişinden sonra hiçbir yerden import edilmeyen eski
+  widget tabanlı arayüz tamamen silindi (git geçmişinde duruyor, gerekirse
+  eski commit'lerden geri bakılabilir).
+- **`services/icon_service.py`** — referanssız; bağımlılığı olan `qtawesome`
+  paketi zaten requirements.txt'de yoktu.
+- **`database/recommendation_repository.py`** — `discover_bridge.py` artık
+  DB önbelleği kullanmıyor, doğrudan API'ye gidiyor. README'deki "API
+  sonuçları 7 gün önbelleğe alınır" ifadesi de bu yüzden güncellendi/kaldırıldı.
+- **`utils_markdown.py`**, `utils.py`'deki `extract_year_month()` — referanssız.
+- **Bridge'lerde bağlanmamış property/slot'lar** kaldırıldı: `activity_bridge.py`
+  (`get_activity_at`, `searchTerm`/`typeFilter`/`dateFilter` property'leri,
+  `setPage`, `setPageSize`, `getTypes`), `app_bridge.py` (`appVersion`),
+  `compare_bridge.py` (`periodA`/`periodB`), `discover_bridge.py`
+  (`activePeriod`), `plan_bridge.py` (`scopeFilter`/`statusFilter`,
+  `updateFolder` — ardından `PlanRepository.update_folder()` de dead oldu,
+  o da kaldırıldı), `stats_bridge.py` (`monthlyDistribution`/`heatmapData` —
+  bunları besleyen `ActivityRepository.get_daily_activity_counts()` sorgusu
+  da her `loadStats()` çağrısında boşuna çalışıyordu, kaldırıldı).
+- **Gizli gerçek hata:** `settings_bridge.py`'deki `renameType()` slotu
+  `TypeRepository`'de var olmayan `rename_type()` metodunu çağırıyordu
+  (doğrusu `update_type()`). QML'den hiç çağrılmadığı için sorun
+  çıkarmıyordu; slot tamamen kaldırıldı (kullanılmayan + bozuk).
+
+Her adımdan sonra `python main.py` temiz başlangıç + `pytest tests/` (5/5)
+ile doğrulandı.
+
 ## [2026-09-23] FIX | API anahtarları artık arayüzde düz metin olarak kalmıyor
 
 `SettingsBridge` (`bridges/settings_bridge.py`) TMDB/RAWG/Google Books anahtarlarının

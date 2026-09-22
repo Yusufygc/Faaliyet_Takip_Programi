@@ -315,19 +315,3 @@ class ActivityRepository:
             logger.error(f"Hata (ActivityRepository.get_activity_details_by_month): {e}")
             return []
 
-    def get_daily_activity_counts(self, year: int) -> dict:
-        """Isı haritası için gün bazlı aktivite sayıları. Dönüş: {'YYYY-MM-DD': count}"""
-        # O(N) Table Scan'i önlemek için substr() yerine LIKE kullanıldı
-        query = """
-            SELECT substr(date, 1, 10) as day, COUNT(*) as cnt
-            FROM activities
-            WHERE date LIKE ?
-            GROUP BY day
-        """
-        try:
-            with get_db() as conn:
-                rows = conn.execute(query, (str(year) + '%',)).fetchall()
-            return {row[0]: row[1] for row in rows}
-        except Exception as e:
-            logger.error(f"Hata (ActivityRepository.get_daily_activity_counts): {e}")
-            return {}

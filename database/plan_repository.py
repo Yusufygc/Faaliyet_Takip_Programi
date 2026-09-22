@@ -48,16 +48,6 @@ class PlanRepository:
             logger.error(f"Hata (PlanRepository.add_folder): {e}")
             return False
 
-    def update_folder(self, folder_id: int, name: str) -> bool:
-        """Klasör ismini günceller."""
-        try:
-            with get_db() as conn:
-                conn.execute("UPDATE folders SET name=? WHERE id=?", (name, folder_id))
-            return True
-        except Exception as e:
-            logger.error(f"Hata (PlanRepository.update_folder): {e}")
-            return False
-
     def delete_folder(self, folder_id: int) -> bool:
         """Klasörü siler. İçindeki planların folder_id'si NULL olur (ON DELETE SET NULL)."""
         try:

@@ -4,7 +4,7 @@ import subprocess
 import sys
 from PySide6.QtCore import QObject, Signal, Slot, Property, QUrl
 from PySide6.QtGui import QDesktopServices
-from constants import APP_NAME, VERSION
+from constants import APP_NAME
 
 
 class AppBridge(QObject):
@@ -17,17 +17,12 @@ class AppBridge(QObject):
         super().__init__(parent)
         self._is_maximized = False
         self._app_name = APP_NAME
-        self._app_version = VERSION
 
     # --- Property Tanımları ---
 
     @Property(str, constant=True)
     def appName(self) -> str:
         return self._app_name
-
-    @Property(str, constant=True)
-    def appVersion(self) -> str:
-        return self._app_version
 
     @Property(bool, notify=windowStateChanged)
     def isMaximized(self) -> bool:

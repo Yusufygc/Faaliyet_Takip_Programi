@@ -57,8 +57,6 @@ class StatsBridge(QObject):
         self._kpi_top_category_count = 0
         self._category_distribution = []
         self._monthly_category_distribution = []
-        self._monthly_distribution = []
-        self._heatmap_data = {}
         self._is_exporting_pdf = False
 
         self._current_year = datetime.now().year
@@ -104,14 +102,6 @@ class StatsBridge(QObject):
     @Property(list, notify=statsLoaded)
     def monthlyCategoryDistribution(self) -> list:
         return self._monthly_category_distribution
-
-    @Property(list, notify=statsLoaded)
-    def monthlyDistribution(self) -> list:
-        return self._monthly_distribution
-
-    @Property(dict, notify=statsLoaded)
-    def heatmapData(self) -> dict:
-        return self._heatmap_data
 
     @Property(bool, notify=pdfExportingChanged)
     def isExportingPdf(self) -> bool:
@@ -219,19 +209,9 @@ class StatsBridge(QObject):
                 self._kpi_avg_rating = 0.0
                 self._category_distribution = []
 
-            # 2. Aylık trend dökümü (12 Ay)
             target_year = int(date_prefix[:4]) if (date_prefix and len(date_prefix) >= 4) else self._current_year
-            monthly_raw = self._repo.get_monthly_activity_counts(target_year)
-            month_dict = {m: 0 for m in range(1, 13)}
-            for m, count in monthly_raw:
-                month_dict[m] = count
 
-            self._monthly_distribution = [
-                {"month": m, "monthName": MONTH_NAMES[m - 1], "count": month_dict[m]}
-                for m in range(1, 13)
-            ]
-
-            # 2b. Zamana Göre Kategori Payı (Yığılmış Alan Grafiği için)
+            # Kategori × Ay ısı haritası için aylık tür dağılımı
             monthly_cat_raw = self._repo.get_monthly_category_distribution(target_year)
             month_cat_map = {m: {} for m in range(1, 13)}
             cat_totals = {}
@@ -256,9 +236,6 @@ class StatsBridge(QObject):
                 }
                 for m in range(1, 13)
             ]
-
-            # 3. Isı haritası verileri
-            self._heatmap_data = self._repo.get_daily_activity_counts(target_year)
 
         except Exception as e:
             logger.error(f"StatsBridge loadStats error: {e}")

@@ -47,15 +47,4 @@ def is_valid_date(date_str):
         except ValueError:
             continue
     return False
-
-def extract_year_month(date_str):
-    """Tarih stringinden yıl ve ayı ayırır. YYYY-MM-DD ve YYYY-MM destekler."""
-    for fmt in ("%Y-%m-%d", "%Y-%m"):
-        try:
-            dt = datetime.strptime(date_str, fmt)
-            return dt.year, dt.month
-        except ValueError:
-            continue
-    if is_valid_yyyy(date_str):
-        return int(date_str), None
-    return None, None
+
