@@ -51,8 +51,9 @@ Projeyle ilgili detaylı soru sorulduğunda:
 ## 4. Bu Projeye Özel Notlar
 
 - Proje dili: Türkçe (yorum ve wiki içerikleri)
-- Kod dili: Python 3.8+
-- UI framework: PyQt5 — tüm UI değişikliklerinde [[ui_katmani]] güncellenir.
+- Kod dili: Python 3.10+
+- UI framework: PySide6 (QtQuick/QML) — tüm UI değişikliklerinde [[ui_katmani]] güncellenir
+  (not: bu sayfa şu an PyQt5 dönemine ait, güncellenmeyi bekliyor).
 - DB değişikliklerinde [[veritabani]] güncellenir.
 - Yeni API entegrasyonlarında [[api_entegrasyonlari]] güncellenir.
 - Yeni model/dataclass eklendiğinde [[modeller]] güncellenir.

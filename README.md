@@ -2,8 +2,8 @@
 
 Kişisel aktivitelerinizi (Film, Dizi, Oyun, Kitap vb.) takip etmenizi, istatistiklerini görmenizi ve yeni içerik önerileri almanızı sağlayan modern bir masaüstü uygulaması.
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![PyQt5](https://img.shields.io/badge/PyQt5-5.15+-green.svg)
+![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+![PySide6](https://img.shields.io/badge/PySide6-QtQuick%2FQML-green.svg)
 ![SQLite](https://img.shields.io/badge/SQLite-3-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-purple.svg)
 
@@ -85,13 +85,13 @@ Kişisel aktivitelerinizi (Film, Dizi, Oyun, Kitap vb.) takip etmenizi, istatist
 ## 🛠️ Kurulum
 
 ### Gereksinimler
-- Python 3.8 veya üzeri
+- Python 3.10 veya üzeri
 - pip (Python paket yöneticisi)
 
 ### Adım 1: Repoyu Klonlayın
 ```bash
 git clone https://github.com/Yusufygc/Faaliyet_Takip_Programi.git
-cd Faaliyet_Takip_Programi/PyQt5_Modern_Tasarim
+cd Faaliyet_Takip_Programi
 ```
 
 ### Adım 2: Sanal Ortam Oluşturun (Önerilen)
@@ -107,70 +107,71 @@ source venv/bin/activate
 
 ### Adım 3: Bağımlılıkları Yükleyin
 ```bash
-pip install PyQt5 matplotlib requests python-dotenv reportlab
+pip install -r requirements.txt
 ```
 
-### Adım 4: API Anahtarlarını Ayarlayın
-`.env` dosyası oluşturun veya mevcut olanı düzenleyin:
-
-```env
-TMDB_API_KEY=your_tmdb_api_key_here
-RAWG_API_KEY=your_rawg_api_key_here
+### Adım 4: Uygulamayı Başlatın
+```bash
+python main.py
 ```
+
+### Adım 5: API Anahtarlarını Ayarlayın (İsteğe Bağlı, Keşfet için)
+`.env` dosyası **kullanılmaz**. Anahtarlar uygulama içinden, **Ayarlar → API Anahtarları**
+bölümünden girilir ve işletim sisteminin güvenli kasasında (Windows Credential
+Manager / macOS Keychain / Linux Secret Service — Python `keyring` paketi üzerinden)
+şifreli olarak saklanır; arayüzde tekrar düz metin olarak gösterilmez.
 
 **API Anahtarı Alma:**
 - **TMDB**: [https://www.themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
 - **RAWG**: [https://rawg.io/apidocs](https://rawg.io/apidocs)
 - **Google Books**: API anahtarı gerektirmez (ücretsiz)
 
-### Adım 5: Uygulamayı Başlatın
-```bash
-python main.py
-```
-
 ---
 
 ## 📁 Proje Yapısı
 
+Mimari: **QML Views/Modals ↔ Python Bridges ↔ Database Repositories & Services ↔ SQLite / Harici API'ler**
+
 ```
-PyQt5_Modern_Tasarim/
-├── main.py                 # Uygulama giriş noktası
+P001-Faaliyet_Takip_Programi/
+├── main.py                 # PySide6 başlatıcı, QML engine + Bridge enjeksiyonu
 ├── constants.py            # Sabit değerler
-├── models.py               # Veri modelleri (Activity, Plan, Filter)
-├── utils.py                # Yardımcı fonksiyonlar
+├── models.py               # Veri modelleri (Activity, Plan, Folder, ActivityFilter)
 ├── logger_setup.py         # Loglama yapılandırması
 │
-├── controllers/            # İş mantığı katmanı
-│   ├── activity_controller.py
-│   ├── recommendation_controller.py
-│   └── workers.py          # Asenkron işlemler (DbWorker)
+├── qml/
+│   ├── Main.qml             # Ana pencere kabuğu, TitleBar, Sidebar, Toast
+│   ├── theme/                # Theme.qml singleton (renk/tipografi), ikon fontu
+│   ├── views/                 # ActivityListView, StatsView, DiscoverView, CompareView, PlansView, SettingsView
+│   ├── modals/                # ActivityFormModal, MediaPreviewModal, RandomPickModal, PdfExportModal...
+│   └── components/            # CustomButton, ComparePanel, CategoryMonthHeatmap, CategoryPieChart...
 │
-├── database/               # Veritabanı katmanı
-│   ├── connection.py       # SQLite bağlantısı
-│   ├── repository.py       # CRUD işlemleri
+├── bridges/                 # QML ↔ Python köprüleri (Q_PROPERTY / Slot / Signal)
+│   ├── activity_bridge.py
+│   ├── stats_bridge.py
+│   ├── plan_bridge.py
+│   ├── discover_bridge.py
+│   ├── compare_bridge.py
+│   ├── settings_bridge.py
+│   └── app_bridge.py
+│
+├── database/                # Veritabanı katmanı
+│   ├── connection.py        # SQLite bağlantısı
+│   ├── repository.py        # ActivityRepository — CRUD + istatistik sorguları
+│   ├── plan_repository.py
+│   ├── type_repository.py
 │   └── recommendation_repository.py  # Öneri önbelleği
 │
-├── services/               # Harici servis entegrasyonları
-│   ├── api_service.py      # TMDB, RAWG, Google Books API
-│   └── recommendation_config.py  # Öneri yapılandırmaları
+├── services/                # Harici servis entegrasyonları
+│   ├── _base_api_service.py # Ortak HTTP istemcisi (retry, throttle, keyring okuma)
+│   ├── movie_api_service.py / series_api_service.py  # TMDB
+│   ├── game_api_service.py  # RAWG
+│   ├── book_api_service.py  # Google Books
+│   ├── pdf_service.py
+│   └── recommendation_config.py
 │
-├── views/                  # Kullanıcı arayüzü
-│   ├── main_window.py      # Ana pencere
-│   ├── styles.py           # Global stiller
-│   ├── widgets/            # Yeniden kullanılabilir bileşenler
-│   ├── pages/              # Sayfa görünümleri
-│   │   ├── dashboard.py
-│   │   ├── list_page.py
-│   │   ├── stats_page.py
-│   │   ├── suggestion_page.py
-│   │   ├── plans_page.py
-│   │   ├── compare_page.py
-│   │   └── pdfcreate_page.py
-│   └── dialogs/            # Diyalog pencereleri
-│
-├── icons/                  # Uygulama ikonları
-├── fonts/                  # Özel fontlar
-└── .env                    # API anahtarları (git'e eklenmez)
+├── icons/ fonts/ assets/    # Statik kaynaklar
+└── tests/                   # pytest test paketi
 ```
 
 ---
@@ -189,12 +190,11 @@ PyQt5_Modern_Tasarim/
 
 | Teknoloji | Kullanım |
 |-----------|----------|
-| **Python 3.8+** | Ana programlama dili |
-| **PyQt5** | GUI framework |
+| **Python 3.10+** | Ana programlama dili |
+| **PySide6 (QtQuick/QML)** | GUI framework |
 | **SQLite** | Yerel veritabanı |
-| **Matplotlib** | Grafik görselleştirme |
 | **Requests** | HTTP istekleri |
-| **python-dotenv** | Ortam değişkenleri |
+| **keyring** | API anahtarlarının OS kasasında şifreli saklanması |
 | **ReportLab** | PDF oluşturma |
 
 ---
@@ -228,8 +228,7 @@ Dünya Klasikleri, Türk Klasikleri, Gerilim, Romantik, Bilim Kurgu, Fantastik, 
 ## ⚙️ Yapılandırma
 
 ### Veritabanı Konumu
-- **Windows**: `%LOCALAPPDATA%\FaaliyetTakip\faaliyet_takip.db`
-- **macOS/Linux**: `~/.config/FaaliyetTakip/faaliyet_takip.db`
+- **Windows**: `%LOCALAPPDATA%\FaaliyetTakip\faaliyetler.db`
 
 ### Log Dosyası
 - `app.log` dosyasında uygulama logları tutulur
@@ -251,7 +250,7 @@ Dünya Klasikleri, Türk Klasikleri, Gerilim, Romantik, Bilim Kurgu, Fantastik, 
 - [TMDB](https://www.themoviedb.org/) - Film ve dizi verileri için
 - [RAWG](https://rawg.io/) - Oyun verileri için
 - [Google Books](https://books.google.com/) - Kitap verileri için
-- [PyQt5](https://www.riverbankcomputing.com/software/pyqt/) - GUI framework için
+- [PySide6 (Qt for Python)](https://doc.qt.io/qtforpython/) - GUI framework için
 
 ---
 
