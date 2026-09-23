@@ -8,8 +8,8 @@ Rectangle {
     id: root
 
     property string currentPeriod: ""
-    property bool isYearOnly: false
-    property bool isAllTime: false
+    // scopeIndex: 0 = Aylık, 1 = Yıllık, 2 = Tüm Zamanlar
+    property int scopeIndex: 0
 
     anchors.fill: parent
     color: Theme.bgModalOverlay
@@ -19,18 +19,25 @@ Rectangle {
 
     Behavior on opacity { NumberAnimation { duration: Theme.animNormal } }
 
+    function currentPrefix() {
+        if (scopeIndex === 2) return ""
+        if (scopeIndex === 1) return periodField.text.trim().substring(0, 4)
+        return periodField.text.trim()
+    }
+
+    function refreshSuggestions() {
+        var prefix = currentPrefix()
+        pathField.text = statsBridge.getDefaultPdfPath(prefix)
+        titleField.text = prefix ? (prefix + " Faaliyet Raporu") : "Tüm Zamanlar Faaliyet Raporu"
+    }
+
     function openExport(periodPrefix, yearOnly, allTime) {
         currentPeriod = periodPrefix || ""
-        isYearOnly = yearOnly || false
-        isAllTime = allTime || false
+        scopeIndex = allTime ? 2 : (yearOnly ? 1 : 0)
+        scopeCombo.currentIndex = scopeIndex
+        periodField.text = allTime ? "" : (yearOnly ? currentPeriod.substring(0, 4) : currentPeriod)
 
-        var defaultPrefix = isAllTime ? "" : (isYearOnly ? currentPeriod.substring(0, 4) : currentPeriod)
-        var suggestedPath = statsBridge.getDefaultPdfPath(defaultPrefix)
-        pathField.text = suggestedPath
-
-        var titleStr = defaultPrefix ? (defaultPrefix + " Faaliyet Raporu") : "Tüm Zamanlar Faaliyet Raporu"
-        titleField.text = titleStr
-
+        refreshSuggestions()
         opacity = 1.0
     }
 
@@ -39,9 +46,14 @@ Rectangle {
     }
 
     function startExport() {
-        var prefix = isAllTime ? "" : (isYearOnly ? currentPeriod.substring(0, 4) : currentPeriod)
+        var prefix = currentPrefix()
         var savePath = pathField.text.trim()
         var reportTitle = titleField.text.trim()
+
+        if (scopeIndex !== 2 && !prefix) {
+            appBridge.showToast("warning", "Uyarı", "Lütfen bir dönem giriniz.")
+            return
+        }
 
         if (!savePath) {
             appBridge.showToast("warning", "Uyarı", "Lütfen bir kayıt dosyası yolu belirtiniz.")
@@ -125,32 +137,39 @@ Rectangle {
                 color: Theme.borderSubtle
             }
 
-            // Dönem Özeti
-            Rectangle {
+            // Rapor Kapsamı Seçimi
+            Column {
                 width: parent.width
-                height: 50
-                radius: Theme.radiusMd
-                color: Theme.primaryGlow
-                border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.4)
-                border.width: 1
+                spacing: 6
+
+                Text {
+                    text: "Rapor Kapsamı"
+                    font.pixelSize: Theme.fontXs
+                    font.bold: true
+                    color: Theme.textSecondary
+                }
 
                 Row {
-                    anchors.fill: parent
-                    anchors.margins: 12
+                    width: parent.width
                     spacing: 10
 
-                    Text {
-                        text: "📅"
-                        font.pixelSize: 16
-                        anchors.verticalCenter: parent.verticalCenter
+                    CustomComboBox {
+                        id: scopeCombo
+                        width: 160
+                        model: ["Aylık", "Yıllık", "Tüm Zamanlar"]
+                        onActivated: function(index) {
+                            root.scopeIndex = index
+                            root.refreshSuggestions()
+                        }
                     }
 
-                    Text {
-                        text: "Rapor Dönemi: " + (root.isAllTime ? "Tüm Zamanlar" : (root.isYearOnly ? (root.currentPeriod.substring(0, 4) + " Yılı (Yıllık)") : (root.currentPeriod + " (Aylık)")))
-                        font.pixelSize: Theme.fontSm
-                        font.bold: true
-                        color: Theme.primaryLight
-                        anchors.verticalCenter: parent.verticalCenter
+                    CustomTextField {
+                        id: periodField
+                        width: parent.width - scopeCombo.width - 10
+                        visible: root.scopeIndex !== 2
+                        placeholderText: root.scopeIndex === 1 ? "YYYY" : "YYYY-MM"
+                        iconText: "📅"
+                        onTextChanged: root.refreshSuggestions()
                     }
                 }
             }
