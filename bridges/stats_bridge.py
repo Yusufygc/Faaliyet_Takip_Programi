@@ -349,7 +349,7 @@ class StatsBridge(QObject):
 
         def on_done(success: bool, message: str, fpath: str):
             try:
-                self._is_loading_pdf = False
+                self._is_exporting_pdf = False
                 self.pdfExportingChanged.emit(False)
                 self.pdfExportResult.emit(success, message, fpath)
             except RuntimeError:
