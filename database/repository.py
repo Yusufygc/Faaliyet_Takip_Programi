@@ -120,7 +120,7 @@ class ActivityRepository:
             params.append(filter_obj.type_filter)
 
         if filter_obj.search_term:
-            base_query_parts.append("AND name LIKE ?")
+            base_query_parts.append("AND lower(name) LIKE lower(?)")
             params.append(f"%{filter_obj.search_term}%")
 
         if filter_obj.date_filter:
