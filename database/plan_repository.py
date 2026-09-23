@@ -71,7 +71,6 @@ class PlanRepository:
                 year INTEGER NOT NULL,
                 month INTEGER,
                 status TEXT DEFAULT 'planned',
-                progress INTEGER DEFAULT 0,
                 priority TEXT DEFAULT 'medium',
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL
@@ -86,14 +85,14 @@ class PlanRepository:
     def add_plan(self, plan: Plan) -> bool:
         """Yeni plan ekler."""
         sql = '''
-            INSERT INTO plans (title, description, scope, year, month, status, progress, priority, created_at, folder_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO plans (title, description, scope, year, month, status, priority, created_at, folder_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         '''
         try:
             with get_db() as conn:
                 conn.execute(sql, (
                     plan.title, plan.description, plan.scope, plan.year, plan.month,
-                    plan.status, plan.progress, plan.priority, plan.created_at, plan.folder_id
+                    plan.status, plan.priority, plan.created_at, plan.folder_id
                 ))
             return True
         except Exception as e:
@@ -104,28 +103,28 @@ class PlanRepository:
         """Planı günceller."""
         sql = '''
             UPDATE plans
-            SET title=?, description=?, status=?, progress=?, priority=?, folder_id=?
+            SET title=?, description=?, status=?, priority=?, folder_id=?
             WHERE id=?
         '''
         try:
             with get_db() as conn:
                 conn.execute(sql, (
                     plan.title, plan.description, plan.status,
-                    plan.progress, plan.priority, plan.folder_id, plan.id
+                    plan.priority, plan.folder_id, plan.id
                 ))
             return True
         except Exception as e:
             logger.error(f"Hata (PlanRepository.update_plan): {e}")
             return False
 
-    def update_plan_progress(self, plan_id: int, progress: int, status: str) -> bool:
-        """Sadece ilerleme ve durumu günceller."""
+    def update_plan_status(self, plan_id: int, status: str) -> bool:
+        """Sadece durumu günceller."""
         try:
             with get_db() as conn:
-                conn.execute("UPDATE plans SET progress=?, status=? WHERE id=?", (progress, status, plan_id))
+                conn.execute("UPDATE plans SET status=? WHERE id=?", (status, plan_id))
             return True
         except Exception as e:
-            logger.error(f"Hata (PlanRepository.update_plan_progress): {e}")
+            logger.error(f"Hata (PlanRepository.update_plan_status): {e}")
             return False
 
     def delete_plan(self, plan_id: int) -> bool:
@@ -140,7 +139,7 @@ class PlanRepository:
 
     def get_plan_by_id(self, plan_id: int):
         """ID'ye göre tek bir plan döndürür."""
-        sql = "SELECT id, title, description, scope, year, month, status, progress, priority, created_at, folder_id FROM plans WHERE id = ?"
+        sql = "SELECT id, title, description, scope, year, month, status, priority, created_at, folder_id FROM plans WHERE id = ?"
         try:
             with get_db() as conn:
                 row = conn.execute(sql, (plan_id,)).fetchone()
@@ -151,7 +150,7 @@ class PlanRepository:
 
     def get_plans(self, scope: str = None, year: int = None, month: int = None, folder_id: int = None) -> list:
         """Filtreye göre planları getirir. Parametreler verilmezse tüm planları getirir."""
-        query = "SELECT id, title, description, scope, year, month, status, progress, priority, created_at, folder_id FROM plans WHERE 1=1"
+        query = "SELECT id, title, description, scope, year, month, status, priority, created_at, folder_id FROM plans WHERE 1=1"
         params = []
 
         if scope and scope != "all":

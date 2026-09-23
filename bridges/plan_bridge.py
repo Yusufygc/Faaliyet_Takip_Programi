@@ -43,7 +43,6 @@ class PlanListModel(QAbstractListModel):
     YearRole = Qt.UserRole + 5
     MonthRole = Qt.UserRole + 6
     StatusRole = Qt.UserRole + 7
-    ProgressRole = Qt.UserRole + 8
     PriorityRole = Qt.UserRole + 9
     FolderIdRole = Qt.UserRole + 10
     FolderNameRole = Qt.UserRole + 11
@@ -79,8 +78,6 @@ class PlanListModel(QAbstractListModel):
             return p.month or 0
         elif role == self.StatusRole:
             return p.status or "planned"
-        elif role == self.ProgressRole:
-            return p.progress or 0
         elif role == self.PriorityRole:
             return p.priority or "medium"
         elif role == self.FolderIdRole:
@@ -107,7 +104,6 @@ class PlanListModel(QAbstractListModel):
             self.YearRole: QByteArray(b"planYear"),
             self.MonthRole: QByteArray(b"planMonth"),
             self.StatusRole: QByteArray(b"planStatus"),
-            self.ProgressRole: QByteArray(b"planProgress"),
             self.PriorityRole: QByteArray(b"planPriority"),
             self.FolderIdRole: QByteArray(b"planFolderId"),
             self.FolderNameRole: QByteArray(b"planFolderName"),
@@ -260,7 +256,6 @@ class PlanBridge(QObject):
             year=year or datetime.now().year,
             month=m,
             status="planned",
-            progress=0,
             priority=priority or "medium",
             created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             folder_id=fid
@@ -275,8 +270,8 @@ class PlanBridge(QObject):
             self.planSaved.emit(False, "Plan eklenirken hata oluştu.")
             return False
 
-    @Slot(int, str, str, str, int, str, int, result=bool)
-    def updatePlan(self, plan_id: int, title: str, description: str, status: str, progress: int, priority: str, folder_id: int) -> bool:
+    @Slot(int, str, str, str, str, int, result=bool)
+    def updatePlan(self, plan_id: int, title: str, description: str, status: str, priority: str, folder_id: int) -> bool:
         title = (title or "").strip()
         if not title:
             self.planSaved.emit(False, "Plan başlığı boş bırakılamaz.")
@@ -284,13 +279,6 @@ class PlanBridge(QObject):
 
         existing = self._repo.get_plan_by_id(plan_id)
         fid = folder_id if folder_id and folder_id > 0 else None
-
-        # İlerleme 100 olunca otomatik tamamlandı yap
-        if progress >= 100 and status != "completed":
-            status = "completed"
-            progress = 100
-        elif progress < 100 and status == "completed":
-            status = "in_progress"
 
         plan = Plan(
             id=plan_id,
@@ -300,7 +288,6 @@ class PlanBridge(QObject):
             year=existing.year if existing else datetime.now().year,
             month=existing.month if existing else None,
             status=status,
-            progress=max(0, min(100, progress)),
             priority=priority,
             created_at=existing.created_at if existing else "",
             folder_id=fid
@@ -316,20 +303,11 @@ class PlanBridge(QObject):
             self.planSaved.emit(False, "Plan güncellenirken hata oluştu.")
             return False
 
-    @Slot(int, int)
-    def updateProgress(self, plan_id: int, progress: int):
-        plan = self._repo.get_plan_by_id(plan_id)
-        if plan:
-            new_status = "completed" if progress >= 100 else ("in_progress" if progress > 0 else "planned")
-            self._repo.update_plan_progress(plan_id, max(0, min(100, progress)), new_status)
-            self.loadPlans()
-
     @Slot(int, str)
     def updateStatus(self, plan_id: int, status: str):
         plan = self._repo.get_plan_by_id(plan_id)
         if plan:
-            prog = 100 if status == "completed" else (0 if status == "planned" else plan.progress)
-            self._repo.update_plan_progress(plan_id, prog, status)
+            self._repo.update_plan_status(plan_id, status)
             self.loadPlans()
 
 
@@ -355,7 +333,6 @@ class PlanBridge(QObject):
             "year": plan.year,
             "month": plan.month or 1,
             "status": plan.status,
-            "progress": plan.progress,
             "priority": plan.priority,
             "folderId": plan.folder_id or 0
         }

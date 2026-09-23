@@ -63,7 +63,6 @@ class Plan:
     year: int
     month: Optional[int] # yearly için None
     status: str # 'planned', 'in_progress', 'completed', 'archived'
-    progress: int # 0-100
     priority: str # 'low', 'medium', 'high'
     created_at: str
     folder_id: Optional[int] = None # Proje/Klasör ID'si
@@ -79,7 +78,6 @@ class Plan:
             year=row['year'],
             month=row['month'],
             status=row['status'],
-            progress=row['progress'],
             priority=row['priority'],
             created_at=row['created_at'],
             folder_id=row['folder_id'] if 'folder_id' in row.keys() else None,

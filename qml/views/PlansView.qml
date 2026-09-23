@@ -292,7 +292,8 @@ Rectangle {
 
                         // Açıklama
                         Text {
-                            text: planDescription !== "" ? planDescription : "Açıklama girilmedi."
+                            text: planDescription
+                            visible: planDescription !== ""
                             font.pixelSize: Theme.fontXs
                             font.family: Theme.fontFamily
                             color: Theme.textSecondary
@@ -303,48 +304,6 @@ Rectangle {
                         }
 
                         Item { width: 1; height: 1 }
-
-                        // İlerleme Çubuğu & Yüzde
-                        Column {
-                            width: parent.width
-                            spacing: 4
-
-                            Item {
-                                width: parent.width
-                                height: 16
-
-                                Text {
-                                    text: "İlerleme"
-                                    font.pixelSize: Theme.fontXs
-                                    color: Theme.textMuted
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                Text {
-                                    text: "%" + planProgress
-                                    font.pixelSize: Theme.fontXs
-                                    font.bold: true
-                                    color: statusColor
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-
-                            Rectangle {
-                                width: parent.width
-                                height: 6
-                                radius: 3
-                                color: Theme.borderSubtle
-
-                                Rectangle {
-                                    width: Math.max(6, parent.width * (planProgress / 100))
-                                    height: parent.height
-                                    radius: 3
-                                    color: statusColor
-                                }
-                            }
-                        }
 
                         // Aksiyon Butonları & Durum
                         Row {

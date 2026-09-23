@@ -111,10 +111,9 @@ class TestBridges(unittest.TestCase):
         self.assertTrue(len(plans) > 0)
         plan_id = plans[0].id
 
-        plan_bridge.updateProgress(plan_id, 100)
+        plan_bridge.updateStatus(plan_id, "completed")
         p_updated = plan_bridge.getPlanById(plan_id)
         self.assertEqual(p_updated["status"], "completed")
-        self.assertEqual(p_updated["progress"], 100)
 
         # Temizle
         plan_bridge.deletePlan(plan_id)

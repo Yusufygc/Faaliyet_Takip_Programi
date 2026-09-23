@@ -9,6 +9,7 @@ Rectangle {
 
     property bool isEdit: false
     property int editId: 0
+    property string editStatus: "planned"
 
     anchors.fill: parent
     color: Theme.bgModalOverlay
@@ -41,7 +42,6 @@ Rectangle {
             }
         }
         folderCombo.currentIndex = fIndex
-        progressSlider.value = 0
 
         opacity = 1.0
         titleField.inputItem.forceActiveFocus()
@@ -53,6 +53,7 @@ Rectangle {
 
         isEdit = true
         editId = planId
+        editStatus = data.status || "planned"
         titleField.text = data.title || ""
         descField.text = data.description || ""
         scopeCombo.currentIndex = data.scope === "yearly" ? 1 : 0
@@ -72,7 +73,6 @@ Rectangle {
             }
         }
         folderCombo.currentIndex = fIndex
-        progressSlider.value = data.progress || 0
 
         opacity = 1.0
         titleField.inputItem.forceActiveFocus()
@@ -95,7 +95,6 @@ Rectangle {
 
         var selFolder = planBridge.folders[folderCombo.currentIndex]
         var fid = selFolder ? selFolder.id : 0
-        var prog = Math.round(progressSlider.value)
 
         if (!t) {
             appBridge.showToast("warning", "Uyarı", "Lütfen bir plan başlığı giriniz.")
@@ -104,8 +103,7 @@ Rectangle {
 
         var success = false
         if (isEdit) {
-            var st = prog >= 100 ? "completed" : (prog > 0 ? "in_progress" : "planned")
-            success = planBridge.updatePlan(editId, t, d, st, prog, pr, fid)
+            success = planBridge.updatePlan(editId, t, d, root.editStatus, pr, fid)
         } else {
             success = planBridge.addPlan(t, d, sc, yr, mn, pr, fid)
         }
@@ -309,44 +307,6 @@ Rectangle {
                         textRole: "name"
                         model: planBridge.folders
                     }
-                }
-            }
-
-            // İlerleme Çubuğu (Düzenleme Modunda)
-            Column {
-                width: parent.width
-                spacing: 6
-                visible: root.isEdit
-
-                Item {
-                    width: parent.width
-                    height: 16
-
-                    Text {
-                        text: "Tamamlanma İlerlemesi"
-                        font.pixelSize: Theme.fontXs
-                        font.bold: true
-                        color: Theme.textSecondary
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Text {
-                        text: "%" + Math.round(progressSlider.value)
-                        font.pixelSize: Theme.fontXs
-                        font.bold: true
-                        color: Theme.primaryLight
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-
-                Slider {
-                    id: progressSlider
-                    width: parent.width
-                    from: 0
-                    to: 100
-                    stepSize: 5
                 }
             }
 
